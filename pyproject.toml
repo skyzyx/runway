@@ -1,122 +1,102 @@
-[tool.poetry]
+[project]
 name = "runway"
 version = "0.0.0"
-authors = [
-  "Rackspace Technology, Inc. <opensource@rackspace.com>",
-]
-classifiers = [
-  "Intended Audience :: Developers",
-  "Natural Language :: English",
-  "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.9",
-  "Topic :: Utilities",
-]
 description = "Simplify infrastructure/app testing/deployment"
-documentation = "https://runway.readthedocs.io"
-homepage = "https://github.com/rackspace/runway"
-keywords = ["cli"]
+authors = [{ name = "Rackspace Technology, Inc.", email = "opensource@rackspace.com" }]
+requires-python = ">=3.10, <3.15"
+readme = "README.md"
 license = "Apache-2.0"
 maintainers = [
-  "Kyle Finley <kyle@finley.sh>",
-  "Sam Fakhreddine <sam.fakhreddine@rackspace.com>",
+    { name = "Kyle Finley", email = "kyle@finley.sh" },
+    { name = "Sam Fakhreddine", email = "sam.fakhreddine@rackspace.com" },
+    { name = "Ryan Parman", email = "ryan.parman@rackspace.com" },
 ]
-packages = [
-  {include = "runway"},
+keywords = ["cli"]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Utilities",
 ]
-readme = "README.md"
-repository = "https://github.com/rackspace/runway"
-
-[tool.poetry.dependencies]
-python = ">=3.9, <3.13"
-awacs = "*"
-boto3 = "^1.34.50"
-cfn_flip = "^1.2"  # only used in runway._cli.commands._gen_sample.utils
-click = "^8.0"
-coloredlogs = "*, !=15.0.1"
-docker = ">=3.0.0"  # used in runway.cfngin.hooks
-eval-type-backport = {python = "< 3.10", version = "*"}  # TODO (kyle): remove when dropping support for python 3.9
-formic2 = "*"  # only used in runway.cfngin.hooks.aws_lambda
-gitpython = "*"
-igittigitt = ">=2.0.5"
-jinja2 = ">=2.7"  # used in runway.cfngin.blueprints.raw
-packaging = "*"  # component of setuptools needed for version compare
-pyOpenSSL = "*"  # For embedded hook & associated script usage
-pydantic = "^2.8.0"
-pyhcl = "^0.4"  # does not support HCL2, possibly move to extras_require in the future
-python-hcl2 = ">=3.0.0"
-pyyaml = ">5.4"
-requests = "*"
-tomli = ">=1.2.2"
-troposphere = ">=2.4, <5"
-typing_extensions = "*"  # only really needed for < 3.8 but can still be used in >= 3.8
-
-[tool.poetry.group.dev.dependencies]
-pre-commit = "^4.3.0"
-
-[tool.poetry.group.docs.dependencies]
-autodoc-pydantic = "^2.2.0"
-doc8 = "^1.1.2"
-furo = "^2025.7.19"
-jsx-lexer = "^2.0.1"
-sphinx = "^7.4.7"
-sphinx-copybutton = "^0.5.2"
-sphinx-design = "^0.6.1"
-sphinx-github-changelog = "^1.7.1"
-sphinx-notfound-page = "^1.1.0"
-sphinxcontrib-apidoc = "^0.6.0"
-sphinxcontrib-external-links = "^0.1.1"
-sphinxcontrib-jquery = "^4.1"
-sphinxcontrib-programoutput = "^0.17"
-
-[tool.poetry.group.lint.dependencies]
-ruff = "^0.12.11"
-
-[tool.poetry.group.test.dependencies]
-coverage = {extras = ["toml"], version = "^7.10.6"}
-moto = {extras = ["ec2", "ecs", "iam", "s3", "ssm"], version = "^5.1.11"}
-pytest = "^8.4.1"
-pytest-cov = "^6.2.1"
-pytest-mock = "^3.14.1"
-pytest-order = "^1.3.0"
-pytest-subprocess = "^1.5.3"
-pytest-sugar = "^1.1.1"
-pytest-xdist = {extras = ["psutil"], version = "^3.8.0"}
-testfixtures = "^8.3.0"  # TODO (kyle) remove use of this dependency - was inherited
-tomli-w = "^1.2.0"
-
-[tool.poetry.group.types.dependencies]
-mypy-boto3 = "^1.40.0"  # importable boto3 type annotations
-
-[tool.poetry.group.types.dependencies.boto3-stubs]
-extras = [
-  "acm",
-  "awslambda",
-  "cloudformation",
-  "cloudfront",
-  "cognito-idp",
-  "dynamodb",
-  "ec2",
-  "ecr",
-  "ecs",
-  "iam",
-  "kms",
-  "lambda",
-  "route53",
-  "s3",
-  "ssm",
-  "sts",
+dependencies = [
+    "awacs",
+    "boto3>=1.34.50,<2",
+    "cfn_flip>=1.2,<2",
+    "click>=8.0,<9",
+    "coloredlogs>=15.0.0",
+    "docker>=3.0.0",
+    "formic2",
+    "gitpython",
+    "igittigitt>=2.0.5",
+    "jinja2>=2.7",
+    "packaging",
+    "pyOpenSSL",
+    "pydantic>=2.8.0,<3",
+    "pyhcl>=0.4,<0.5",
+    "python-hcl2>=3.0.0",
+    "pyyaml>5.4",
+    "requests",
+    "tomli>=1.2.2",
+    "troposphere>=2.4, <5",
+    "typing_extensions",
 ]
-version = "^1.40.20"
 
-[tool.poetry.scripts]
+[project.urls]
+Homepage = "https://github.com/rackspace/runway"
+Repository = "https://github.com/rackspace/runway"
+Documentation = "https://runway.readthedocs.io"
+"Bug Tracker" = "https://github.com/rackspace/runway/issues"
+
+[project.scripts]
 runway = "runway._cli.main:cli"
 
-[tool.poetry.urls]
-"Bug Tracker" = "https://github.com/rackspace/runway/issues"
+[dependency-groups]
+dev = ["pre-commit>=4.3.0,<5"]
+docs = [
+    "autodoc-pydantic>=2.2.0,<3",
+    "doc8>=1.1.2,<2",
+    "furo>=2025.7.19,<2026",
+    "jsx-lexer>=2.0.1,<3",
+    "sphinx>=7.4.7,<8",
+    "sphinx-copybutton>=0.5.2,<0.6",
+    "sphinx-design>=0.6.1,<0.7",
+    "sphinx-github-changelog>=1.7.1,<2",
+    "sphinx-notfound-page>=1.1.0,<2",
+    "sphinxcontrib-apidoc>=0.6.0,<0.7",
+    "sphinxcontrib-external-links>=0.1.1,<0.2",
+    "sphinxcontrib-jquery>=4.1,<5",
+    "sphinxcontrib-programoutput>=0.17,<0.18",
+]
+lint = ["ruff>=0.12.11,<0.13"]
+test = [
+    "coverage[toml]>=7.10.6,<8",
+    "moto[ec2, ecs, iam, s3, ssm]>=5.1.11,<6",
+    "pytest>=8.4.1,<9",
+    "pytest-cov>=6.2.1,<7",
+    "pytest-mock>=3.14.1,<4",
+    "pytest-order>=1.3.0,<2",
+    "pytest-subprocess>=1.5.3,<2",
+    "pytest-sugar>=1.1.1,<2",
+    "pytest-xdist[psutil]>=3.8.0,<4",
+    "testfixtures>=8.3.0,<9",
+    "tomli-w>=1.2.0,<2",
+]
+types = [
+    "mypy-boto3>=1.40.0,<2",
+    "boto3-stubs[acm, awslambda, cloudformation, cloudfront, cognito-idp, dynamodb, ec2, ecr, ecs, iam, kms, lambda, route53, s3, ssm, sts]>=1.40.20,<2",
+]
+
+[tool.uv]
+default-groups = "all"
+
+[tool.uv.build-backend]
+module-name = ["runway"]
+module-root = ""
 
 [tool.coverage.report]
 exclude_lines = [
