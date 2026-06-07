@@ -84,9 +84,7 @@ class TestBucket:
             assert bucket.create(ACL="private")
         stubber.assert_no_pending_responses()
 
-    def test_create_exists(
-        self, caplog: pytest.LogCaptureFixture, runway_context: MockRunwayContext
-    ) -> None:
+    def test_create_exists(self, caplog: pytest.LogCaptureFixture, runway_context: MockRunwayContext) -> None:
         """Test create with exists=True."""
         caplog.set_level(logging.DEBUG, logger="runway.core.providers.aws.s3.bucket")
         stubber = runway_context.add_stubber("s3", region="us-west-2")
@@ -103,9 +101,7 @@ class TestBucket:
         stubber.assert_no_pending_responses()
         assert "bucket already exists" in "\n".join(caplog.messages)
 
-    def test_create_forbidden(
-        self, caplog: pytest.LogCaptureFixture, runway_context: MockRunwayContext
-    ) -> None:
+    def test_create_forbidden(self, caplog: pytest.LogCaptureFixture, runway_context: MockRunwayContext) -> None:
         """Test create with forbidden=True."""
         caplog.set_level(logging.DEBUG, logger="runway.core.providers.aws.s3.bucket")
         stubber = runway_context.add_stubber("s3", region="us-west-2")
@@ -183,16 +179,12 @@ class TestBucket:
         stubber = runway_context.add_stubber("s3")
         bucket = Bucket(runway_context, "test-bucket")
 
-        stubber.add_response(
-            "get_bucket_versioning", {"Status": "Enabled"}, {"Bucket": "test-bucket"}
-        )
+        stubber.add_response("get_bucket_versioning", {"Status": "Enabled"}, {"Bucket": "test-bucket"})
 
         with stubber:
             bucket.enable_versioning()
         stubber.assert_no_pending_responses()
-        assert (
-            'did not modify versioning policy for bucket "test-bucket"; already enabled'
-        ) in caplog.messages
+        assert ('did not modify versioning policy for bucket "test-bucket"; already enabled') in caplog.messages
 
     @pytest.mark.parametrize(
         "forbidden, not_found, expected",
@@ -239,10 +231,7 @@ class TestBucket:
         bucket = Bucket(MagicMock(), uri[5:])
         assert bucket.format_bucket_path_uri() == uri
         assert bucket.format_bucket_path_uri(key="test.txt") == f"{uri}/test.txt"
-        assert (
-            bucket.format_bucket_path_uri(key="test.txt", prefix="prefix")
-            == f"{uri}/prefix/test.txt"
-        )
+        assert bucket.format_bucket_path_uri(key="test.txt", prefix="prefix") == f"{uri}/prefix/test.txt"
         assert bucket.format_bucket_path_uri(prefix="prefix") == f"{uri}/prefix"
 
     def test_get_versioning(self, runway_context: MockRunwayContext) -> None:
@@ -274,9 +263,7 @@ class TestBucket:
             assert bucket.head.metadata.http_status_code == HTTPStatus.OK
         stubber.assert_no_pending_responses()
 
-    def test_head_clienterror(
-        self, caplog: pytest.LogCaptureFixture, runway_context: MockRunwayContext
-    ) -> None:
+    def test_head_clienterror(self, caplog: pytest.LogCaptureFixture, runway_context: MockRunwayContext) -> None:
         """Test head with ClientError."""
         caplog.set_level(logging.DEBUG, logger="runway.core.providers.aws.s3.bucket")
         stubber = runway_context.add_stubber("s3")
@@ -309,18 +296,14 @@ class TestBucket:
         mocker.patch.object(Bucket, "head", response)
         assert Bucket(runway_context, "test-bucket").not_found is expected
 
-    def test_sync_from_local(
-        self, mocker: MockerFixture, runway_context: MockRunwayContext
-    ) -> None:
+    def test_sync_from_local(self, mocker: MockerFixture, runway_context: MockRunwayContext) -> None:
         """Test sync_from_local."""
         mock_handler = MagicMock()
         mock_handler_class = mocker.patch(f"{MODULE}.S3SyncHandler", return_value=mock_handler)
         runway_context.add_stubber("s3")
         src_directory = "/test/"
         obj = Bucket(runway_context, "test-bucket")
-        assert not obj.sync_from_local(  # type: ignore[func-returns-value]
-            src_directory, delete=True, exclude=["something"], prefix="prefix"
-        )
+        assert not obj.sync_from_local(src_directory, delete=True, exclude=["something"], prefix="prefix")
         mock_handler_class.assert_called_once_with(
             context=runway_context,
             delete=True,
@@ -340,7 +323,7 @@ class TestBucket:
         runway_context.add_stubber("s3")
         dest_directory = "/test/"
         obj = Bucket(runway_context, "test-bucket")
-        assert not obj.sync_to_local(dest_directory, follow_symlinks=True, include=["something"])  # type: ignore[func-returns-value]
+        assert not obj.sync_to_local(dest_directory, follow_symlinks=True, include=["something"])
         mock_handler_class.assert_called_once_with(
             context=runway_context,
             delete=False,

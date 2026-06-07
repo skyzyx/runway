@@ -128,7 +128,7 @@ class TestParametersDataModel:
     def test_field_defaults(self) -> None:
         """Test field defaults."""
         kwargs = {"dest": "test-dest", "src": "test-src"}
-        obj = ParametersDataModel(**kwargs)  # type: ignore[arg-type]
+        obj = ParametersDataModel(**kwargs)
         assert obj.dest == kwargs["dest"]
         assert obj.src == kwargs["src"]
         assert not obj.delete

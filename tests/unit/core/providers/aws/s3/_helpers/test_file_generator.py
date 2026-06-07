@@ -90,7 +90,7 @@ def test_is_special_file_fifo(tmp_path: Path) -> None:
     """Test is_special_file."""
     tmp_file = tmp_path / "foo"
     # method only exists on linux systems
-    os.mknod(tmp_file, 0o600 | stat.S_IFIFO)  # type: ignore
+    os.mknod(tmp_file, 0o600 | stat.S_IFIFO)
     assert is_special_file(tmp_file)
 
 
@@ -142,9 +142,7 @@ class TestFileGenerator:
                 src_type="local",
             )
         ]
-        mock_list_files.assert_called_once_with(
-            formatted_path["src"]["path"], formatted_path["dir_op"]
-        )
+        mock_list_files.assert_called_once_with(formatted_path["src"]["path"], formatted_path["dir_op"])
         mock_list_objects.assert_not_called()
         mock_find_dest_path_comp_key.assert_called_once_with(formatted_path, f"{src}test.txt")
 
@@ -170,14 +168,12 @@ class TestFileGenerator:
                 dest_type="local",
                 last_update=extra_info["LastModified"],
                 operation_name="operation",
-                response_data=extra_info,  # type: ignore
+                response_data=extra_info,
                 size=extra_info["Size"],
                 src_type="s3",
             )
         ]
-        mock_list_objects.assert_called_once_with(
-            formatted_path["src"]["path"], formatted_path["dir_op"]
-        )
+        mock_list_objects.assert_called_once_with(formatted_path["src"]["path"], formatted_path["dir_op"])
         mock_list_files.assert_not_called()
         mock_find_dest_path_comp_key.assert_called_once_with(formatted_path, f"{src}test.txt")
 
@@ -214,9 +210,7 @@ class TestFileGenerator:
         obj = FileGenerator(self.client, "", request_parameters={"ListObjectsV2": params})
         result = list(obj.list_objects("bucket/", dir_op=True))
         mock_class.assert_called_once_with(self.client)
-        mock_list_objects.assert_called_once_with(
-            bucket="bucket", prefix="", page_size=None, extra_args=params
-        )
+        mock_list_objects.assert_called_once_with(bucket="bucket", prefix="", page_size=None, extra_args=params)
         assert result == [mock_list_objects.return_value[0]]
 
     def test_list_objects_delete(self, mocker: MockerFixture) -> None:
@@ -233,9 +227,7 @@ class TestFileGenerator:
         obj = FileGenerator(self.client, "delete", request_parameters={"ListObjectsV2": params})
         result = list(obj.list_objects("bucket/prefix", dir_op=True))
         mock_class.assert_called_once_with(self.client)
-        mock_list_objects.assert_called_once_with(
-            bucket="bucket", prefix="prefix", page_size=None, extra_args=params
-        )
+        mock_list_objects.assert_called_once_with(bucket="bucket", prefix="prefix", page_size=None, extra_args=params)
         assert result == mock_list_objects.return_value
 
     def test_list_objects_incorrect_dir_opt(self, mocker: MockerFixture) -> None:
@@ -251,9 +243,7 @@ class TestFileGenerator:
         obj = FileGenerator(self.client, "")
         result = list(obj.list_objects("bucket/", dir_op=False))
         mock_class.assert_called_once_with(self.client)
-        mock_list_objects.assert_called_once_with(
-            bucket="bucket", prefix="", page_size=None, extra_args={}
-        )
+        mock_list_objects.assert_called_once_with(bucket="bucket", prefix="", page_size=None, extra_args={})
         assert not result
 
     def test_list_objects_single(self) -> None:
@@ -320,9 +310,7 @@ class TestFileGenerator:
         )
         mock_get_file_stat.assert_called_once_with(tmp_path)
 
-    def test_safely_get_file_stats_handle_os_error(
-        self, mocker: MockerFixture, tmp_path: Path
-    ) -> None:
+    def test_safely_get_file_stats_handle_os_error(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test safely_get_file_stats."""
         mocker.patch(f"{MODULE}.get_file_stat", side_effect=OSError)
         mock_triggers_warning = mocker.patch.object(FileGenerator, "triggers_warning")
@@ -330,9 +318,7 @@ class TestFileGenerator:
         assert not obj.safely_get_file_stats(tmp_path)
         mock_triggers_warning.assert_called_once_with(tmp_path)
 
-    def test_safely_get_file_stats_no_last_update(
-        self, mocker: MockerFixture, tmp_path: Path
-    ) -> None:
+    def test_safely_get_file_stats_no_last_update(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test safely_get_file_stats."""
         mock_create_warning = mocker.patch(f"{MODULE}.create_warning", return_value="warning")
         mocker.patch(f"{MODULE}.get_file_stat", return_value=(15, None))
@@ -350,9 +336,7 @@ class TestFileGenerator:
 
     def test_should_ignore_file(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test should_ignore_file."""
-        mock_triggers_warning = mocker.patch.object(
-            FileGenerator, "triggers_warning", return_value=False
-        )
+        mock_triggers_warning = mocker.patch.object(FileGenerator, "triggers_warning", return_value=False)
         assert not FileGenerator(self.client, "", follow_symlinks=True).should_ignore_file(tmp_path)
         mock_triggers_warning.assert_called_once_with(tmp_path)
 
@@ -364,9 +348,7 @@ class TestFileGenerator:
         tmp_symlink.symlink_to(real_path)
         assert FileGenerator(self.client, "", follow_symlinks=False).should_ignore_file(tmp_symlink)
 
-    def test_should_ignore_file_triggers_warning(
-        self, mocker: MockerFixture, tmp_path: Path
-    ) -> None:
+    def test_should_ignore_file_triggers_warning(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test should_ignore_file."""
         mocker.patch.object(FileGenerator, "triggers_warning", return_value=True)
         assert FileGenerator(self.client, "", follow_symlinks=True).should_ignore_file(tmp_path)
@@ -434,7 +416,7 @@ class TestFileStats:
             "dest_type": "s3",
             "last_update": NOW,
             "operation_name": "test",
-            "response_data": None,  # type: ignore
+            "response_data": None,
             "size": 13,
             "src_type": "local",
         }

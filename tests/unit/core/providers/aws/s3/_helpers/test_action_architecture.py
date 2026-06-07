@@ -58,9 +58,7 @@ class TestActionArchitecture:
             "file_not_at_dest_sync_strategy": mock_missing.return_value,
             "file_not_at_src_sync_strategy": mock_never.return_value,
         }
-        self.botocore_session.emit.assert_called_once_with(
-            "choosing-s3-sync-strategy", params=self.parameters
-        )
+        self.botocore_session.emit.assert_called_once_with("choosing-s3-sync-strategy", params=self.parameters)
 
     def test_choose_sync_strategies_add_another(self, mocker: MockerFixture) -> None:
         """Test choose_sync_strategies."""
@@ -157,15 +155,9 @@ class TestActionArchitecture:
         )
         mocker.patch(f"{MODULE}.FileInfoBuilder", return_value=mock_file_info_builder)
         mock_filter_inst = Mock(call=Mock(return_value="Filter.call()"))
-        mock_filter_class = mocker.patch(
-            f"{MODULE}.Filter", parse_params=Mock(return_value=mock_filter_inst)
-        )
+        mock_filter_class = mocker.patch(f"{MODULE}.Filter", parse_params=Mock(return_value=mock_filter_inst))
         mock_s3_transfer_handler = Mock(
-            call=Mock(
-                return_value=Mock(
-                    num_tasks_failed=num_tasks_failed, num_tasks_warned=num_tasks_warned
-                )
-            )
+            call=Mock(return_value=Mock(num_tasks_failed=num_tasks_failed, num_tasks_warned=num_tasks_warned))
         )
         mocker.patch(
             f"{MODULE}.S3TransferHandlerFactory",
@@ -177,9 +169,7 @@ class TestActionArchitecture:
         assert self.action.run() == expected
         mock_file_generator.call.assert_called_once_with(files)
         mock_file_generator_rev.call.assert_called_once_with(rev_files)
-        mock_filter_class.parse_params.assert_has_calls(
-            [call(self.parameters), call(self.parameters)]
-        )
+        mock_filter_class.parse_params.assert_has_calls([call(self.parameters), call(self.parameters)])
         mock_filter_inst.call.assert_has_calls(
             [
                 call(mock_file_generator.call.return_value),
@@ -190,9 +180,7 @@ class TestActionArchitecture:
             mock_filter_inst.call.return_value, mock_filter_inst.call.return_value
         )
         mock_file_info_builder.call.assert_called_once_with(mock_comparator.call.return_value)
-        mock_s3_transfer_handler.call.assert_called_once_with(
-            mock_file_info_builder.call.return_value
-        )
+        mock_s3_transfer_handler.call.assert_called_once_with(mock_file_info_builder.call.return_value)
 
     def test_run_not_implimented(self, mocker: MockerFixture) -> None:
         """Test run NotImplimented."""
@@ -201,7 +189,7 @@ class TestActionArchitecture:
             "choose_sync_strategies",
             return_value={"sync_strategy": "test"},
         )
-        self.action.action = "invalid"  # type: ignore[assignment]
+        self.action.action = "invalid"
         self.parameters.paths_type = "locals3"
         with pytest.raises(NotImplementedError):
             self.action.run()

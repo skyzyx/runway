@@ -22,11 +22,9 @@ MODULE = "runway.core"
 class TestRunway:
     """Test runway.core.Runway."""
 
-    def test___init___(
-        self, runway_config: MockRunwayConfig, runway_context: MockRunwayContext
-    ) -> None:
+    def test___init___(self, runway_config: MockRunwayConfig, runway_context: MockRunwayContext) -> None:
         """Test __init__ default values."""
-        result = Runway(runway_config, runway_context)  # type: ignore
+        result = Runway(runway_config, runway_context)
 
         assert result.deployments == runway_config.deployments
         assert result.future == runway_config.future
@@ -45,7 +43,7 @@ class TestRunway:
         monkeypatch.setattr(MODULE + ".__version__", "0.1.0-dev1")
         runway_config.runway_version = SpecifierSet(">=1.10")
         caplog.set_level(logging.WARNING, logger=MODULE)
-        assert Runway(runway_config, runway_context)  # type: ignore
+        assert Runway(runway_config, runway_context)
         assert "shallow clone of the repo" in "\n".join(caplog.messages)
 
     def test___init___unsupported_version(
@@ -58,7 +56,7 @@ class TestRunway:
         monkeypatch.setattr(MODULE + ".__version__", "1.3")
         runway_config.runway_version = SpecifierSet(">=1.10")
         with pytest.raises(SystemExit) as excinfo:
-            assert not Runway(runway_config, runway_context)  # type: ignore
+            assert not Runway(runway_config, runway_context)
         assert excinfo.value.code == 1
 
     def test_deploy(
@@ -70,9 +68,9 @@ class TestRunway:
         """Test deploy."""
         mock_deployment = mocker.patch(f"{MODULE}.components.Deployment")
         deployments = MagicMock()
-        obj = Runway(runway_config, runway_context)  # type: ignore
+        obj = Runway(runway_config, runway_context)
 
-        assert not obj.deploy()  # type: ignore[func-returns-value]
+        assert not obj.deploy()
         assert runway_context.command == "deploy"
         mock_deployment.run_list.assert_called_once_with(
             action="deploy",
@@ -81,7 +79,7 @@ class TestRunway:
             future=runway_config.future,
             variables=runway_config.variables,
         )
-        assert not obj.deploy(deployments)  # type: ignore[func-returns-value]
+        assert not obj.deploy(deployments)
         mock_deployment.run_list.assert_called_with(
             action="deploy",
             context=runway_context,
@@ -101,9 +99,9 @@ class TestRunway:
         mock_reverse = mocker.patch.object(Runway, "reverse_deployments")
         mock_reverse.return_value = "reversed"
         deployments = MagicMock()
-        obj = Runway(runway_config, runway_context)  # type: ignore
+        obj = Runway(runway_config, runway_context)
 
-        assert not obj.destroy(deployments)  # type: ignore[func-returns-value]
+        assert not obj.destroy(deployments)
         assert runway_context.command == "destroy"
         mock_deployment.run_list.assert_called_once_with(
             action="destroy",
@@ -113,7 +111,7 @@ class TestRunway:
             variables=runway_config.variables,
         )
         mock_reverse.assert_not_called()
-        assert not obj.destroy()  # type: ignore[func-returns-value]
+        assert not obj.destroy()
         mock_deployment.run_list.assert_called_with(
             action="destroy",
             context=runway_context,
@@ -122,7 +120,7 @@ class TestRunway:
             variables=runway_config.variables,
         )
         mock_reverse.assert_has_calls(
-            [  # type: ignore
+            [
                 call(runway_config.deployments),
                 call(runway_config.deployments),
             ]
@@ -139,9 +137,9 @@ class TestRunway:
         mock_deployment.return_value = mock_deployment
         mock_deployment.env_vars_config = {"key": "val"}
         runway_config.deployments = ["deployment_1"]
-        obj = Runway(runway_config, runway_context)  # type: ignore
+        obj = Runway(runway_config, runway_context)
 
-        assert obj.get_env_vars(runway_config.deployments) == {"key": "val"}  # type: ignore
+        assert obj.get_env_vars(runway_config.deployments) == {"key": "val"}
         mock_deployment.assert_called_once_with(
             context=runway_context,
             definition="deployment_1",
@@ -157,9 +155,9 @@ class TestRunway:
         """Test init."""
         mock_deployment = mocker.patch(f"{MODULE}.components.Deployment")
         deployments = MagicMock()
-        obj = Runway(runway_config, runway_context)  # type: ignore
+        obj = Runway(runway_config, runway_context)
 
-        assert not obj.init()  # type: ignore[func-returns-value]
+        assert not obj.init()
         assert runway_context.command == "init"
         mock_deployment.run_list.assert_called_once_with(
             action="init",
@@ -168,7 +166,7 @@ class TestRunway:
             future=runway_config.future,
             variables=runway_config.variables,
         )
-        assert not obj.init(deployments)  # type: ignore[func-returns-value]
+        assert not obj.init(deployments)
         mock_deployment.run_list.assert_called_with(
             action="init",
             context=runway_context,
@@ -186,9 +184,9 @@ class TestRunway:
         """Test plan."""
         mock_deployment = mocker.patch(f"{MODULE}.components.Deployment")
         deployments = MagicMock()
-        obj = Runway(runway_config, runway_context)  # type: ignore
+        obj = Runway(runway_config, runway_context)
 
-        assert not obj.plan()  # type: ignore[func-returns-value]
+        assert not obj.plan()
         assert runway_context.command == "plan"
         mock_deployment.run_list.assert_called_once_with(
             action="plan",
@@ -197,7 +195,7 @@ class TestRunway:
             future=runway_config.future,
             variables=runway_config.variables,
         )
-        assert not obj.plan(deployments)  # type: ignore[func-returns-value]
+        assert not obj.plan(deployments)
         mock_deployment.run_list.assert_called_with(
             action="plan",
             context=runway_context,

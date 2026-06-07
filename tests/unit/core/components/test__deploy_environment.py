@@ -112,9 +112,7 @@ class TestDeployEnvironment:
         assert obj.branch_name is None
         mock_git.Repo.assert_called_once_with(str(Path.cwd()), search_parent_directories=True)
 
-    def test_branch_name_no_git(
-        self, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_branch_name_no_git(self, mocker: MockerFixture, caplog: pytest.LogCaptureFixture) -> None:
         """Test branch_name git ImportError."""
         caplog.set_level(logging.DEBUG, logger="runway.core.components")
         mocker.patch(f"{MODULE}.git", object)
@@ -125,9 +123,7 @@ class TestDeployEnvironment:
             "failed to import git; ensure git is your path and executable to read the branch name"
         ) in caplog.messages
 
-    def test_branch_name_type_error(
-        self, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_branch_name_type_error(self, mocker: MockerFixture, caplog: pytest.LogCaptureFixture) -> None:
         """Test branch_name handle TypeError."""
         caplog.set_level(logging.WARNING, logger="runway")
         mock_git = mocker.patch(f"{MODULE}.git")
@@ -147,7 +143,7 @@ class TestDeployEnvironment:
 
         obj.ci = True
         assert obj.ci
-        assert obj.vars["CI"] == "1"  # type: ignore[unreachable]
+        assert obj.vars["CI"] == "1"
 
         obj.ci = False
         assert not obj.ci
@@ -161,7 +157,7 @@ class TestDeployEnvironment:
 
         obj.debug = True
         assert obj.debug
-        assert obj.vars["DEBUG"] == "1"  # type: ignore[unreachable]
+        assert obj.vars["DEBUG"] == "1"
 
         obj.debug = False
         assert not obj.debug
@@ -174,7 +170,7 @@ class TestDeployEnvironment:
         assert not obj.ignore_git_branch
         assert obj.name == "first"
 
-        obj._DeployEnvironment__name = "second"  # type: ignore
+        obj._DeployEnvironment__name = "second"
         obj.ignore_git_branch = False
         assert obj.name == "first"
         assert not obj.ignore_git_branch
@@ -184,7 +180,7 @@ class TestDeployEnvironment:
         assert obj.ignore_git_branch
 
         # delete attr before setting new val to force AttributeError
-        del obj.name  # type: ignore[unreachable]
+        del obj.name
         obj.ignore_git_branch = False
         assert obj.name == "second"
 
@@ -234,11 +230,11 @@ class TestDeployEnvironment:
         assert obj.name == "test"
         assert obj.name_derived_from == "explicit"
 
-        obj.name = "test2"  # type: ignore
+        obj.name = "test2"
         assert obj.name == "test2"
 
         del obj.name
-        obj.name = "test3"  # type: ignore
+        obj.name = "test3"
         assert obj.name == "test3"
 
     @pytest.mark.parametrize(
@@ -250,9 +246,7 @@ class TestDeployEnvironment:
             ("invalid", {"CI": "1"}, "invalid"),
         ],
     )
-    def test_name_from_branch(
-        self, branch: str, environ: dict[str, str], expected: str, mocker: MockerFixture
-    ) -> None:
+    def test_name_from_branch(self, branch: str, environ: dict[str, str], expected: str, mocker: MockerFixture) -> None:
         """Test name from branch."""
         mock_prompt = MagicMock(return_value="user_value")
         mocker.patch(f"{MODULE}.click.prompt", mock_prompt)
@@ -271,9 +265,7 @@ class TestDeployEnvironment:
         "root_dir, expected",
         [(Path.cwd() / "ENV-dev", "dev"), (Path.cwd() / "common", "common")],
     )
-    def test_name_from_directory(
-        self, root_dir: Path, expected: str, mocker: MockerFixture
-    ) -> None:
+    def test_name_from_directory(self, root_dir: Path, expected: str, mocker: MockerFixture) -> None:
         """Test name from directory."""
         mocker.patch.object(DeployEnvironment, "branch_name", None)
         obj = DeployEnvironment(ignore_git_branch=True, root_dir=root_dir)
@@ -288,7 +280,7 @@ class TestDeployEnvironment:
 
         obj.verbose = True
         assert obj.verbose
-        assert obj.vars["VERBOSE"] == "1"  # type: ignore[unreachable]
+        assert obj.vars["VERBOSE"] == "1"
 
         obj.verbose = False
         assert not obj.verbose

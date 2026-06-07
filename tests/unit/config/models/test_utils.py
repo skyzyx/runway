@@ -43,7 +43,7 @@ def test_resolve_path_field(provided: Path | None) -> None:
         assert not resolve_path_field(provided)
     else:
         result = resolve_path_field(provided)
-        assert result.is_absolute()  # type: ignore
+        assert result.is_absolute()
         assert result == provided.resolve()
 
 
@@ -62,9 +62,7 @@ def test_validate_string_is_lookup(provided: Any) -> None:
     assert validate_string_is_lookup(provided) == provided
 
 
-@pytest.mark.parametrize(
-    "provided", ["fail", "${fail", "fail}", "fail.${env fail}", "${env fail}.fail"]
-)
+@pytest.mark.parametrize("provided", ["fail", "${fail", "fail}", "fail.${env fail}", "${env fail}.fail"])
 def test_validate_string_is_lookup_raises(provided: str) -> None:
     """Test validate_string_is_lookup."""
     with pytest.raises(ValueError) as excinfo:  # noqa: PT011

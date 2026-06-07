@@ -24,15 +24,15 @@ class TestCfnginConfigDefinitionModel:
         dict_hook = {"name": {"path": "something"}}
         list_hook = [{"path": "something"}]
         assert (
-            CfnginConfigDefinitionModel.model_validate(
-                {"namespace": "test", field: dict_hook}
-            ).model_dump(exclude_unset=True)[field]
+            CfnginConfigDefinitionModel.model_validate({"namespace": "test", field: dict_hook}).model_dump(
+                exclude_unset=True
+            )[field]
             == list_hook
         )
         assert (
-            CfnginConfigDefinitionModel.model_validate(
-                {"namespace": "test", field: list_hook}
-            ).model_dump(exclude_unset=True)[field]
+            CfnginConfigDefinitionModel.model_validate({"namespace": "test", field: list_hook}).model_dump(
+                exclude_unset=True
+            )[field]
             == list_hook
         )
 
@@ -43,14 +43,14 @@ class TestCfnginConfigDefinitionModel:
         assert (
             CfnginConfigDefinitionModel(
                 namespace="test",
-                stacks=dict_stack,  # type: ignore
+                stacks=dict_stack,
             ).model_dump(exclude_unset=True)["stacks"]
             == list_stack
         )
         assert (
             CfnginConfigDefinitionModel(
                 namespace="test",
-                stacks=list_stack,  # type: ignore
+                stacks=list_stack,
             ).model_dump(exclude_unset=True)["stacks"]
             == list_stack
         )
@@ -59,7 +59,7 @@ class TestCfnginConfigDefinitionModel:
         """Test extra fields."""
         assert (
             CfnginConfigDefinitionModel(
-                common="something",  # type: ignore
+                common="something",
                 namespace="test",
             ).namespace
             == "test"
@@ -90,7 +90,7 @@ class TestCfnginConfigDefinitionModel:
     def test_parse_file(self, tmp_path: Path) -> None:
         """Test parse_file."""
         config_yml = tmp_path / "config.yml"
-        config_yml.write_text(yaml.dump({"namespace": "test"}))  # type: ignore[arg-type]
+        config_yml.write_text(yaml.dump({"namespace": "test"}))
 
         obj = CfnginConfigDefinitionModel.parse_file(config_yml)
         assert obj.namespace == "test"
@@ -104,8 +104,8 @@ class TestCfnginConfigDefinitionModel:
         """Test _resolve_path_fields."""
         obj = CfnginConfigDefinitionModel(
             namespace="test",
-            cfngin_cache_dir="./cache",  # type: ignore
-            sys_path="./something",  # type: ignore
+            cfngin_cache_dir="./cache",
+            sys_path="./something",
         )
         assert obj.cfngin_cache_dir
         assert obj.cfngin_cache_dir.is_absolute()
@@ -130,9 +130,7 @@ class TestCfnginConfigDefinitionModel:
 
     def test_validate_unique_stack_names_invalid(self) -> None:
         """Test _validate_unique_stack_names."""
-        with pytest.raises(
-            ValidationError, match="stacks\n  Value error, Duplicate stack stack0 found at index 0"
-        ):
+        with pytest.raises(ValidationError, match="stacks\n  Value error, Duplicate stack stack0 found at index 0"):
             CfnginConfigDefinitionModel.model_validate(
                 {
                     "namespace": "test",
@@ -151,7 +149,7 @@ class TestCfnginHookDefinitionModel:
         """Test extra fields."""
         with pytest.raises(ValidationError, match="invalid\n  Extra inputs are not permitted"):
             CfnginHookDefinitionModel(
-                invalid="something",  # type: ignore
+                invalid="something",
                 path="something",
             )
 
@@ -178,7 +176,7 @@ class TestCfnginStackDefinitionModel:
         with pytest.raises(ValidationError, match="invalid\n  Extra inputs are not permitted"):
             CfnginStackDefinitionModel(
                 class_path="something",
-                invalid="something",  # type: ignore
+                invalid="something",
                 name="stack-name",
             )
 
@@ -204,9 +202,7 @@ class TestCfnginStackDefinitionModel:
 
     def test_required_fields(self) -> None:
         """Test required fields."""
-        with pytest.raises(
-            ValidationError, match="Value error, either class_path or template_path must be defined"
-        ):
+        with pytest.raises(ValidationError, match="Value error, either class_path or template_path must be defined"):
             CfnginStackDefinitionModel.model_validate({})
 
     @pytest.mark.skipif(
@@ -218,11 +214,11 @@ class TestCfnginStackDefinitionModel:
         """Test _resolve_path_fields."""
         obj = CfnginStackDefinitionModel(
             name="test-stack",
-            stack_policy_path="./policy.json",  # type: ignore
-            template_path="./template.yml",  # type: ignore
+            stack_policy_path="./policy.json",
+            template_path="./template.yml",
         )
-        assert obj.stack_policy_path.is_absolute()  # type: ignore
-        assert obj.template_path.is_absolute()  # type: ignore
+        assert obj.stack_policy_path.is_absolute()
+        assert obj.template_path.is_absolute()
 
     def test_required_fields_w_class_path(self) -> None:
         """Test required fields."""
@@ -238,25 +234,21 @@ class TestCfnginStackDefinitionModel:
             CfnginStackDefinitionModel(
                 class_path="something",
                 name="stack-name",
-                template_path="./something.yml",  # type: ignore
+                template_path="./something.yml",
             )
 
     @pytest.mark.parametrize("enabled, locked", [(True, True), (False, True), (False, False)])
     def test_validate_class_or_template(self, enabled: bool, locked: bool) -> None:
         """Test _validate_class_or_template."""
-        assert CfnginStackDefinitionModel(
-            class_path="something", enabled=enabled, locked=locked, name="test-stack"
-        )
+        assert CfnginStackDefinitionModel(class_path="something", enabled=enabled, locked=locked, name="test-stack")
         assert CfnginStackDefinitionModel(
             enabled=enabled,
             locked=locked,
             name="test-stack",
-            template_path="./something.yml",  # type: ignore
+            template_path="./something.yml",
         )
 
     def test_validate_class_or_template_invalid(self) -> None:
         """Test _validate_class_or_template invalid."""
-        with pytest.raises(
-            ValidationError, match="Value error, either class_path or template_path must be defined"
-        ):
+        with pytest.raises(ValidationError, match="Value error, either class_path or template_path must be defined"):
             CfnginStackDefinitionModel(enabled=True, locked=False, name="stack-name")

@@ -31,25 +31,25 @@ class TestRunwayModuleDefinition:
         ]
         obj.child_modules = new_modules
         assert obj._data.parallel[0] == new_modules[0]
-        assert obj._data.parallel[1].model_dump() == new_modules[1].data  # type: ignore
+        assert obj._data.parallel[1].model_dump() == new_modules[1].data
 
     def test_child_modules_setter_not_list(self) -> None:
         """Test child_modules.setter not a list."""
         obj = RunwayModuleDefinition.parse_obj({"path": "./"})
         with pytest.raises(TypeError):
-            obj.child_modules = "invalid"  # type: ignore
+            obj.child_modules = "invalid"
         with pytest.raises(TypeError):
-            obj.child_modules = {"key": "val"}  # type: ignore
+            obj.child_modules = {"key": "val"}
         with pytest.raises(TypeError):
-            obj.child_modules = None  # type: ignore
+            obj.child_modules = None
 
     def test_child_modules_setter_invalid_list_item(self) -> None:
         """Test child_modules.setter when list item is now supported."""
         obj = RunwayModuleDefinition.parse_obj({"path": "./"})
         with pytest.raises(TypeError):
-            obj.child_modules = [  # type: ignore[assignment]
+            obj.child_modules = [
                 RunwayModuleDefinitionModel(path="./"),
-                "invalid",  # type: ignore
+                "invalid",
             ]
 
     @pytest.mark.parametrize(
@@ -140,6 +140,6 @@ class TestRunwayModuleDefinition:
             }
         )
         obj = RunwayModuleDefinition(data)
-        assert not obj.reverse()  # type: ignore[func-returns-value]
+        assert not obj.reverse()
         assert obj._data.parallel != data.parallel
         assert obj._data.parallel == [data.parallel[1], data.parallel[0]]

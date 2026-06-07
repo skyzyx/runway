@@ -17,7 +17,7 @@ class BadObject(ConfigProperty):
 
     """
 
-    name: str = ("invalid",)  # type: ignore
+    name: str = ("invalid",)
 
 
 class GoodObject(ConfigProperty):
@@ -54,7 +54,7 @@ class TestConfigProperty:
 
     def test_getitem(self) -> None:
         """Test __getitem__."""
-        assert GoodObject(name="test")["name"] == "test"  # type: ignore[index]
+        assert GoodObject(name="test")["name"] == "test"
 
     def test_setitem(self) -> None:
         """Test __setitem__."""
@@ -75,7 +75,7 @@ class TestConfigProperty:
     def test_validate_assignment(self) -> None:
         """Test Config.validate_assignment."""
         with pytest.raises(ValidationError) as excinfo:
-            GoodObject(name="test").name = ("invalid",)  # type: ignore
+            GoodObject(name="test").name = ("invalid",)
         errors = excinfo.value.errors()
         assert len(errors) == 1
         assert errors[0]["loc"] == ("name",)

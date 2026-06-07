@@ -34,30 +34,28 @@ class TestRunwayConfigDefinitionModel:
         }
         obj = RunwayConfigDefinitionModel.model_validate(data)
         # this also adds coverage for __getitem__
-        assert obj["deployments"][0]["name"] == "deployment_1"  # type: ignore[index]
-        assert obj["deployments"][1]["name"] == "test-name"  # type: ignore[index]
+        assert obj["deployments"][0]["name"] == "deployment_1"
+        assert obj["deployments"][1]["name"] == "test-name"
 
     def test_convert_runway_version(self) -> None:
         """Test _convert_runway_version."""
         assert RunwayConfigDefinitionModel(  # handle string
-            runway_version=">1.11.0"  # type: ignore
+            runway_version=">1.11.0"
         ).runway_version == SpecifierSet(">1.11.0", prereleases=True)
         assert RunwayConfigDefinitionModel(  # handle exact version
-            runway_version="1.11.0"  # type: ignore
+            runway_version="1.11.0"
         ).runway_version == SpecifierSet("==1.11.0", prereleases=True)
         assert RunwayConfigDefinitionModel(  # handle SpecifierSet
-            runway_version=SpecifierSet(">1.11.0")  # type: ignore
+            runway_version=SpecifierSet(">1.11.0")
         ).runway_version == SpecifierSet(">1.11.0", prereleases=True)
         assert RunwayConfigDefinitionModel(  # handle SpecifierSet
-            runway_version=SpecifierSet(">1.11.0", prereleases=True)  # type: ignore
+            runway_version=SpecifierSet(">1.11.0", prereleases=True)
         ).runway_version == SpecifierSet(">1.11.0", prereleases=True)
 
     def test_convert_runway_version_invalid(self) -> None:
         """Test _convert_runway_version invalid specifier set."""
-        with pytest.raises(
-            ValidationError, match="Value error, =latest is not a valid version specifier set"
-        ):
-            RunwayConfigDefinitionModel(runway_version="=latest")  # type: ignore
+        with pytest.raises(ValidationError, match="Value error, =latest is not a valid version specifier set"):
+            RunwayConfigDefinitionModel(runway_version="=latest")
 
     def test_extra(self) -> None:
         """Test extra fields."""
@@ -85,7 +83,7 @@ class TestRunwayConfigDefinitionModel:
             ]
         }
         runway_yml = tmp_path / "runway.yml"
-        runway_yml.write_text(yaml.dump(data))  # type: ignore[arg-type]
+        runway_yml.write_text(yaml.dump(data))
 
         obj = RunwayConfigDefinitionModel.parse_file(runway_yml)
         assert obj.deployments[0].modules[0].name == "sampleapp.cfn"
@@ -97,7 +95,7 @@ class TestRunwayDeploymentDefinitionModel:
     def test_convert_simple_module(self) -> None:
         """Test _convert_simple_module."""
         obj = RunwayDeploymentDefinitionModel(
-            modules=["sampleapp.cfn", {"path": "./"}],  # type: ignore
+            modules=["sampleapp.cfn", {"path": "./"}],
             regions=["us-east-1"],
         )
         assert obj.modules[0].path == "sampleapp.cfn"
@@ -106,9 +104,7 @@ class TestRunwayDeploymentDefinitionModel:
     def test_extra(self) -> None:
         """Test extra fields."""
         with pytest.raises(ValidationError, match="invalid\n  Extra inputs are not permitted"):
-            RunwayDeploymentDefinitionModel.model_validate(
-                {"invalid": "val", "regions": ["us-east-1"]}
-            )
+            RunwayDeploymentDefinitionModel.model_validate({"invalid": "val", "regions": ["us-east-1"]})
 
     def test_field_defaults(self) -> None:
         """Test field default values."""
@@ -150,29 +146,25 @@ class TestRunwayDeploymentDefinitionModel:
 
         data[field] = "${var something}"
         obj = RunwayDeploymentDefinitionModel.model_validate(data)
-        assert obj[field] == data[field]  # type: ignore[index]
+        assert obj[field] == data[field]
 
     def test_validate_regions(self) -> None:
         """Test _validate_regions."""
         with pytest.raises(ValidationError):
             RunwayDeploymentDefinitionModel(modules=[])
         with pytest.raises(ValidationError):
-            RunwayDeploymentDefinitionModel(
-                modules=[], parallel_regions=["us-east-1"], regions=["us-east-1"]
-            )
+            RunwayDeploymentDefinitionModel(modules=[], parallel_regions=["us-east-1"], regions=["us-east-1"])
         with pytest.raises(ValidationError):
             RunwayDeploymentDefinitionModel(
                 modules=[],
                 parallel_regions=["us-east-1"],
-                regions={"parallel": ["us-east-1"]},  # type: ignore
+                regions={"parallel": ["us-east-1"]},
             )
         with pytest.raises(
             ValidationError,
             match="Value error, unable to validate parallel_regions/regions - both are defined as strings",
         ):
-            RunwayDeploymentDefinitionModel(
-                modules=[], parallel_regions="something", regions="something"
-            )
+            RunwayDeploymentDefinitionModel(modules=[], parallel_regions="something", regions="something")
 
         obj0 = RunwayDeploymentDefinitionModel(modules=[], regions=["us-east-1"])
         assert obj0.regions == ["us-east-1"]
@@ -184,7 +176,7 @@ class TestRunwayDeploymentDefinitionModel:
 
         obj2 = RunwayDeploymentDefinitionModel(
             modules=[],
-            regions={"parallel": ["us-east-1"]},  # type: ignore
+            regions={"parallel": ["us-east-1"]},
         )
         assert obj2.regions == []
         assert obj2.parallel_regions == ["us-east-1"]

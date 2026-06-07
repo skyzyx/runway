@@ -17,14 +17,11 @@ class TestRunwayModuleDefinitionModel:
         """Test _validate_name."""
         assert RunwayModuleDefinitionModel().name == "runway"
         assert RunwayModuleDefinitionModel(name="test-name").name == "test-name"
-        assert (
-            RunwayModuleDefinitionModel(parallel=[{"path": "./"}]).name  # type: ignore
-            == "parallel_parent"
-        )
+        assert RunwayModuleDefinitionModel(parallel=[{"path": "./"}]).name == "parallel_parent"
         assert (
             RunwayModuleDefinitionModel(
                 name="something",
-                parallel=[{"path": "./"}],  # type: ignore
+                parallel=[{"path": "./"}],
             ).name
             == "something"
         )
@@ -38,21 +35,19 @@ class TestRunwayModuleDefinitionModel:
         ):
             RunwayModuleDefinitionModel(
                 path=Path.cwd(),
-                parallel=["./"],  # type: ignore
+                parallel=["./"],
             )
 
         assert RunwayModuleDefinitionModel().parallel == []
-        assert RunwayModuleDefinitionModel(parallel=["./"]).parallel == [  # type: ignore
-            RunwayModuleDefinitionModel(path="./")
+        assert RunwayModuleDefinitionModel(parallel=["./"]).parallel == [RunwayModuleDefinitionModel(path="./")]
+        assert RunwayModuleDefinitionModel(parallel=[{"name": "test", "path": "./"}]).parallel == [
+            RunwayModuleDefinitionModel(name="test", path="./")
         ]
-        assert RunwayModuleDefinitionModel(
-            parallel=[{"name": "test", "path": "./"}]  # type: ignore
-        ).parallel == [RunwayModuleDefinitionModel(name="test", path="./")]
 
     def test__validate_path(self) -> None:
         """Test _validate_path."""
         assert RunwayModuleDefinitionModel().path == Path.cwd()
-        assert not RunwayModuleDefinitionModel(parallel=[{"path": "./"}]).path  # type: ignore
+        assert not RunwayModuleDefinitionModel(parallel=[{"path": "./"}]).path
         defined_path = Path("./sampleapp.cfn")
         assert RunwayModuleDefinitionModel(path=defined_path).path == defined_path
 
@@ -68,7 +63,7 @@ class TestRunwayModuleDefinitionModel:
 
         data[field] = "${var something}"
         obj = RunwayModuleDefinitionModel.model_validate(data)
-        assert obj[field] == data[field]  # type: ignore[index]
+        assert obj[field] == data[field]
 
     def test_extra(self) -> None:
         """Test extra fields."""

@@ -44,9 +44,7 @@ class TestRunwayTerraformBackendConfigDataModel:
         assert RunwayTerraformBackendConfigDataModel(bucket="test")
         assert RunwayTerraformBackendConfigDataModel(dynamodb_table="test")
         assert RunwayTerraformBackendConfigDataModel(bucket="test", dynamodb_table="test")
-        assert RunwayTerraformBackendConfigDataModel(
-            bucket="test", dynamodb_table="test", workspace_key_prefix="state"
-        )
+        assert RunwayTerraformBackendConfigDataModel(bucket="test", dynamodb_table="test", workspace_key_prefix="state")
         assert not RunwayTerraformBackendConfigDataModel(region="us-east-1")
         assert not RunwayTerraformBackendConfigDataModel()
 
@@ -114,10 +112,8 @@ class TestRunwayTerraformModuleOptionsDataModel:
             "terraform_write_auto_tfvars": True,
         }
         obj = RunwayTerraformModuleOptionsDataModel.model_validate(data)
-        assert obj.args.init == data["args"]["init"]  # type: ignore
-        assert (
-            obj.backend_config.bucket == data["terraform_backend_config"]["bucket"]  # type: ignore
-        )
+        assert obj.args.init == data["args"]["init"]
+        assert obj.backend_config.bucket == data["terraform_backend_config"]["bucket"]
         assert obj.version == data["terraform_version"]
         assert obj.workspace == data["terraform_workspace"]
         assert obj.write_auto_tfvars == data["terraform_write_auto_tfvars"]

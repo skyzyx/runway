@@ -181,7 +181,7 @@ class TestDeleteCopySourceObjectSubscriber:
         stubber.add_response("delete_object", {}, {"Bucket": self.bucket, "Key": self.key})
         future = Mock(meta=self.meta)
         with stubber:
-            assert not DeleteCopySourceObjectSubscriber(client).on_done(future)  # type: ignore[func-returns-value]
+            assert not DeleteCopySourceObjectSubscriber(client).on_done(future)
         future.set_exception.assert_not_called()
 
     def test_on_done_delete_request_payer(self) -> None:
@@ -202,7 +202,7 @@ class TestDeleteCopySourceObjectSubscriber:
             )
         )
         with stubber:
-            assert not DeleteCopySourceObjectSubscriber(client).on_done(future)  # type: ignore[func-returns-value]
+            assert not DeleteCopySourceObjectSubscriber(client).on_done(future)
         future.set_exception.assert_not_called()
 
     def test_on_done_exception(self) -> None:
@@ -212,7 +212,7 @@ class TestDeleteCopySourceObjectSubscriber:
         stubber.add_client_error("delete_object")
         future = Mock(meta=self.meta)
         with stubber:
-            assert not DeleteCopySourceObjectSubscriber(client).on_done(future)  # type: ignore[func-returns-value]
+            assert not DeleteCopySourceObjectSubscriber(client).on_done(future)
         future.set_exception.assert_called_once()
         assert isinstance(future.set_exception.call_args[0][0], ClientError)
 
@@ -224,9 +224,7 @@ class TestDeleteSourceFileSubscriber:
         """Test on_done."""
         tmp_file = tmp_path / "test.txt"
         tmp_file.write_text("data")
-        future = Mock(
-            meta=FakeTransferFutureMeta(call_args=FakeTransferFutureCallArgs(fileobj=str(tmp_file)))
-        )
+        future = Mock(meta=FakeTransferFutureMeta(call_args=FakeTransferFutureCallArgs(fileobj=str(tmp_file))))
         DeleteSourceFileSubscriber().on_done(future)
         assert not tmp_file.exists()
         future.set_exception.assert_not_called()
@@ -234,9 +232,7 @@ class TestDeleteSourceFileSubscriber:
     def test_on_done_exception(self, tmp_path: Path) -> None:
         """Test on_done."""
         tmp_file = tmp_path / "test.txt"
-        future = Mock(
-            meta=FakeTransferFutureMeta(call_args=FakeTransferFutureCallArgs(fileobj=str(tmp_file)))
-        )
+        future = Mock(meta=FakeTransferFutureMeta(call_args=FakeTransferFutureCallArgs(fileobj=str(tmp_file))))
         DeleteSourceFileSubscriber().on_done(future)
         assert not tmp_file.exists()
         future.set_exception.assert_called_once()
@@ -259,7 +255,7 @@ class TestDeleteSourceObjectSubscriber:
         stubber.add_response("delete_object", {}, {"Bucket": self.bucket, "Key": self.key})
         future = Mock(meta=self.meta)
         with stubber:
-            assert not DeleteSourceObjectSubscriber(client).on_done(future)  # type: ignore[func-returns-value]
+            assert not DeleteSourceObjectSubscriber(client).on_done(future)
         future.set_exception.assert_not_called()
 
     def test_on_done_delete_request_payer(self) -> None:
@@ -281,7 +277,7 @@ class TestDeleteSourceObjectSubscriber:
             )
         )
         with stubber:
-            assert not DeleteSourceObjectSubscriber(client).on_done(future)  # type: ignore[func-returns-value]
+            assert not DeleteSourceObjectSubscriber(client).on_done(future)
         future.set_exception.assert_not_called()
 
     def test_on_done_exception(self) -> None:
@@ -291,7 +287,7 @@ class TestDeleteSourceObjectSubscriber:
         stubber.add_client_error("delete_object")
         future = Mock(meta=self.meta)
         with stubber:
-            assert not DeleteSourceObjectSubscriber(client).on_done(future)  # type: ignore[func-returns-value]
+            assert not DeleteSourceObjectSubscriber(client).on_done(future)
         future.set_exception.assert_called_once()
         assert isinstance(future.set_exception.call_args[0][0], ClientError)
 
@@ -302,9 +298,9 @@ class TestDeleteSourceSubscriber:
     def test_on_done(self) -> None:
         """Test on_done."""
         future = Mock()
-        assert not DeleteSourceSubscriber().on_done(future)  # type: ignore[func-returns-value]
+        assert not DeleteSourceSubscriber().on_done(future)
         assert isinstance(future.set_exception.call_args[0][0], NotImplementedError)
-        assert str(future.set_exception.call_args[0][0]) == "_delete_source()"  # type: ignore
+        assert str(future.set_exception.call_args[0][0]) == "_delete_source()"
 
 
 class TestDirectoryCreatorSubscriber:
@@ -313,12 +309,8 @@ class TestDirectoryCreatorSubscriber:
     def test_on_queued(self, tmp_path: Path) -> None:
         """Test on_queued."""
         tmp_dir = tmp_path / "test_dir"
-        future = Mock(
-            meta=FakeTransferFutureMeta(
-                call_args=FakeTransferFutureCallArgs(fileobj=tmp_dir / "test.txt")
-            )
-        )
-        assert not DirectoryCreatorSubscriber().on_queued(future)  # type: ignore
+        future = Mock(meta=FakeTransferFutureMeta(call_args=FakeTransferFutureCallArgs(fileobj=tmp_dir / "test.txt")))
+        assert not DirectoryCreatorSubscriber().on_queued(future)
         assert tmp_dir.is_dir()
         future.set_exception.assert_not_called()
 
@@ -326,12 +318,8 @@ class TestDirectoryCreatorSubscriber:
         """Test on_queued."""
         tmp_dir = tmp_path / "test_dir"
         tmp_dir.mkdir()
-        future = Mock(
-            meta=FakeTransferFutureMeta(
-                call_args=FakeTransferFutureCallArgs(fileobj=tmp_dir / "test.txt")
-            )
-        )
-        assert not DirectoryCreatorSubscriber().on_queued(future)  # type: ignore
+        future = Mock(meta=FakeTransferFutureMeta(call_args=FakeTransferFutureCallArgs(fileobj=tmp_dir / "test.txt")))
+        assert not DirectoryCreatorSubscriber().on_queued(future)
         assert tmp_dir.is_dir()
         future.set_exception.assert_not_called()
 
@@ -340,25 +328,17 @@ class TestDirectoryCreatorSubscriber:
     ) -> None:
         """Test on_queued."""
         tmp_dir = tmp_path / "test_dir"
-        future = Mock(
-            meta=FakeTransferFutureMeta(
-                call_args=FakeTransferFutureCallArgs(fileobj=tmp_dir / "test.txt")
-            )
-        )
+        future = Mock(meta=FakeTransferFutureMeta(call_args=FakeTransferFutureCallArgs(fileobj=tmp_dir / "test.txt")))
         exc = OSError()
         exc.errno = errno.EEXIST  # cspell: disable-line
         mocker.patch("pathlib.Path.mkdir", side_effect=exc)
-        assert not DirectoryCreatorSubscriber().on_queued(future)  # type: ignore[func-returns-value]
+        assert not DirectoryCreatorSubscriber().on_queued(future)
         assert not tmp_dir.exists()
 
     def test_on_queued_os_error(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test on_queued."""
         tmp_dir = tmp_path / "test_dir"
-        future = Mock(
-            meta=FakeTransferFutureMeta(
-                call_args=FakeTransferFutureCallArgs(fileobj=tmp_dir / "test.txt")
-            )
-        )
+        future = Mock(meta=FakeTransferFutureMeta(call_args=FakeTransferFutureCallArgs(fileobj=tmp_dir / "test.txt")))
         mocker.patch("pathlib.Path.mkdir", side_effect=OSError())
         with pytest.raises(CreateDirectoryError):
             DirectoryCreatorSubscriber().on_queued(future)
@@ -373,7 +353,7 @@ class TestNonSeekableStream:
         fileobj = BytesIO(b"foobar")
         assert seekable(fileobj)
         nonseekable_fileobj = NonSeekableStream(fileobj)
-        assert not seekable(nonseekable_fileobj)  # type: ignore[arg-type]
+        assert not seekable(nonseekable_fileobj)
         assert nonseekable_fileobj.read() == b"foobar"
 
     def test_can_specify_amount_for_nonseekable_stream(self) -> None:
@@ -403,7 +383,7 @@ class TestOnDoneFilteredSubscriber:
         subscriber = self.Subscriber()
         exception = Exception("my exception")
         future = FakeTransferFuture(exception=exception)
-        subscriber.on_done(future)  # type: ignore
+        subscriber.on_done(future)
         assert subscriber.on_failure_calls == [(future, exception)]
         assert not subscriber.on_success_calls
         assert isinstance(subscriber.on_success_calls, list)
@@ -412,7 +392,7 @@ class TestOnDoneFilteredSubscriber:
         """Test on_done."""
         subscriber = self.Subscriber()
         future = FakeTransferFuture("return-value")
-        subscriber.on_done(future)  # type: ignore
+        subscriber.on_done(future)
         assert subscriber.on_success_calls == [future]
         assert not subscriber.on_failure_calls
         assert isinstance(subscriber.on_failure_calls, list)
@@ -426,14 +406,10 @@ class TestProvideCopyContentTypeSubscriber:
     def test_on_queued(self, mocker: MockerFixture) -> None:
         """Test on_queued."""
         future = FakeTransferFuture(
-            meta=FakeTransferFutureMeta(
-                call_args=FakeTransferFutureCallArgs(copy_source={"Key": self.key})
-            )
+            meta=FakeTransferFutureMeta(call_args=FakeTransferFutureCallArgs(copy_source={"Key": self.key}))
         )
-        mock_guess_content_type = mocker.patch(
-            f"{MODULE}.guess_content_type", return_value="something"
-        )
-        assert not ProvideCopyContentTypeSubscriber().on_queued(future)  # type: ignore
+        mock_guess_content_type = mocker.patch(f"{MODULE}.guess_content_type", return_value="something")
+        assert not ProvideCopyContentTypeSubscriber().on_queued(future)
         mock_guess_content_type.assert_called_once_with(self.key)
         assert future.meta.call_args.extra_args.get("ContentType") == "something"
 
@@ -441,9 +417,7 @@ class TestProvideCopyContentTypeSubscriber:
 class TestProvideLastModifiedTimeSubscriber:
     """Test ProvideLastModifiedTimeSubscriber."""
 
-    desired_utime: ClassVar[datetime.datetime] = datetime.datetime(
-        2016, 1, 18, 7, 0, 0, tzinfo=tzlocal()
-    )
+    desired_utime: ClassVar[datetime.datetime] = datetime.datetime(2016, 1, 18, 7, 0, 0, tzinfo=tzlocal())
     result_queue: ClassVar[Queue[Any]] = Queue()
     subscriber: ClassVar[ProvideLastModifiedTimeSubscriber] = ProvideLastModifiedTimeSubscriber(
         desired_utime, result_queue
@@ -453,16 +427,12 @@ class TestProvideLastModifiedTimeSubscriber:
         """Test on_done."""
         tmp_file = tmp_path / "test.txt"
         tmp_file.touch()
-        future = FakeTransferFuture(
-            meta=FakeTransferFutureMeta(call_args=FakeTransferFutureCallArgs(fileobj=tmp_file))
-        )
+        future = FakeTransferFuture(meta=FakeTransferFutureMeta(call_args=FakeTransferFutureCallArgs(fileobj=tmp_file)))
         mock_create_warning = mocker.patch(f"{MODULE}.create_warning", return_value="warning")
         assert not ProvideLastModifiedTimeSubscriber(
             None,
-            self.result_queue,  # type: ignore
-        ).on_done(
-            future  # type: ignore
-        )
+            self.result_queue,
+        ).on_done(future)
         mock_create_warning.assert_called_once()
         assert mock_create_warning.call_args[0][0] == tmp_file
         assert "was unable to update the last modified time." in mock_create_warning.call_args[0][1]
@@ -472,10 +442,8 @@ class TestProvideLastModifiedTimeSubscriber:
         """Test on_done."""
         tmp_file = tmp_path / "test.txt"
         tmp_file.touch()
-        future = FakeTransferFuture(
-            meta=FakeTransferFutureMeta(call_args=FakeTransferFutureCallArgs(fileobj=tmp_file))
-        )
-        assert not self.subscriber.on_done(future)  # type: ignore
+        future = FakeTransferFuture(meta=FakeTransferFutureMeta(call_args=FakeTransferFutureCallArgs(fileobj=tmp_file)))
+        assert not self.subscriber.on_done(future)
         _, utime = get_file_stat(tmp_file)
         assert utime == self.desired_utime
 
@@ -488,7 +456,7 @@ class TestProvideSizeSubscriber:
         future = Mock(spec=TransferFuture)
         meta = Mock()
         future.meta = meta
-        assert not ProvideSizeSubscriber(10).on_queued(future)  # type: ignore[func-returns-value]
+        assert not ProvideSizeSubscriber(10).on_queued(future)
         meta.provide_transfer_size.assert_called_once_with(10)
 
 
@@ -500,7 +468,7 @@ class TestProvideUploadContentTypeSubscriber:
         future = FakeTransferFuture(
             meta=FakeTransferFutureMeta(call_args=FakeTransferFutureCallArgs(fileobj="test.txt"))
         )
-        assert not ProvideUploadContentTypeSubscriber().on_queued(future)  # type: ignore
+        assert not ProvideUploadContentTypeSubscriber().on_queued(future)
         assert future.meta.call_args.extra_args.get("ContentType") == "text/plain"
 
 
@@ -519,9 +487,7 @@ class TestRequestParamsMapper:
     def test_map_copy_object_params(self) -> None:
         """Test map_copy_object_params."""
         params: dict[str, str] = {}
-        assert not RequestParamsMapper.map_copy_object_params(  # type: ignore[func-returns-value]
-            params, {"metadata": "something", **self.params}
-        )
+        assert not RequestParamsMapper.map_copy_object_params(params, {"metadata": "something", **self.params})
         assert params == {
             "CopySourceSSECustomerAlgorithm": "AES256",
             "CopySourceSSECustomerKey": "my-sse-c-copy-source-key",
@@ -536,7 +502,7 @@ class TestRequestParamsMapper:
     def test_map_copy_object_params_metadata_directive(self) -> None:
         """Test map_copy_object_params."""
         params: dict[str, str] = {}
-        assert not RequestParamsMapper.map_copy_object_params(  # type: ignore[func-returns-value]
+        assert not RequestParamsMapper.map_copy_object_params(
             params, {"metadata_directive": "something", **self.params}
         )
         assert params == {
@@ -552,7 +518,7 @@ class TestRequestParamsMapper:
     def test_map_create_multipart_upload_params(self) -> None:
         """Test map_create_multipart_upload_params."""
         params: dict[str, str] = {}
-        assert not RequestParamsMapper.map_create_multipart_upload_params(params, self.params)  # type: ignore[func-returns-value]
+        assert not RequestParamsMapper.map_create_multipart_upload_params(params, self.params)
         assert params == {
             "SSECustomerAlgorithm": "AES256",
             "SSECustomerKey": "my-sse-c-key",
@@ -563,15 +529,13 @@ class TestRequestParamsMapper:
     def test_map_delete_object_params(self) -> None:
         """Test map_delete_object_params."""
         params: dict[str, Any] = {}
-        assert not RequestParamsMapper.map_delete_object_params(  # type: ignore[func-returns-value]
-            params, {"request_payer": "requester", **self.params}
-        )
+        assert not RequestParamsMapper.map_delete_object_params(params, {"request_payer": "requester", **self.params})
         assert params == {"RequestPayer": "requester"}
 
     def test_map_get_object_params(self) -> None:
         """Test map_get_object_params."""
         params: dict[str, str] = {}
-        assert not RequestParamsMapper.map_get_object_params(params, self.params)  # type: ignore[func-returns-value]
+        assert not RequestParamsMapper.map_get_object_params(params, self.params)
         assert params == {
             "SSECustomerAlgorithm": "AES256",
             "SSECustomerKey": "my-sse-c-key",
@@ -580,7 +544,7 @@ class TestRequestParamsMapper:
     def test_map_head_object_params(self) -> None:
         """Test map_head_object_params."""
         params: dict[str, str] = {}
-        assert not RequestParamsMapper.map_head_object_params(params, self.params)  # type: ignore[func-returns-value]
+        assert not RequestParamsMapper.map_head_object_params(params, self.params)
         assert params == {
             "SSECustomerAlgorithm": "AES256",
             "SSECustomerKey": "my-sse-c-key",
@@ -589,15 +553,13 @@ class TestRequestParamsMapper:
     def test_map_list_objects_v2_params(self) -> None:
         """Test map_list_objects_v2_params."""
         params: dict[str, Any] = {}
-        assert not RequestParamsMapper.map_list_objects_v2_params(  # type: ignore[func-returns-value]
-            params, {"request_payer": "requester", **self.params}
-        )
+        assert not RequestParamsMapper.map_list_objects_v2_params(params, {"request_payer": "requester", **self.params})
         assert params == {"RequestPayer": "requester"}
 
     def test_map_put_object_params(self) -> None:
         """Test map_put_object_params."""
         params: dict[str, str] = {}
-        assert not RequestParamsMapper.map_put_object_params(  # type: ignore[func-returns-value]
+        assert not RequestParamsMapper.map_put_object_params(
             params,
             {
                 "grants": [
@@ -626,24 +588,18 @@ class TestRequestParamsMapper:
         """Test map_put_object_params."""
         params: dict[str, str] = {}
         with pytest.raises(ValueError, match="grants should be of the form permission=principal"):
-            RequestParamsMapper.map_put_object_params(
-                params, {"grants": ["invalid"], **self.params}
-            )
+            RequestParamsMapper.map_put_object_params(params, {"grants": ["invalid"], **self.params})
 
     def test_map_put_object_params_raise_value_error_permission(self) -> None:
         """Test map_put_object_params."""
         params: dict[str, str] = {}
-        with pytest.raises(
-            ValueError, match="permission must be one of: read|readacl|writeacl|full"
-        ):
-            RequestParamsMapper.map_put_object_params(
-                params, {"grants": ["invalid=test-read"], **self.params}
-            )
+        with pytest.raises(ValueError, match="permission must be one of: read|readacl|writeacl|full"):
+            RequestParamsMapper.map_put_object_params(params, {"grants": ["invalid=test-read"], **self.params})
 
     def test_map_upload_part_params(self) -> None:
         """Test map_upload_part_params."""
         params: dict[str, str] = {}
-        assert not RequestParamsMapper.map_upload_part_params(params, self.params)  # type: ignore[func-returns-value]
+        assert not RequestParamsMapper.map_upload_part_params(params, self.params)
         assert params == {
             "SSECustomerAlgorithm": "AES256",
             "SSECustomerKey": "my-sse-c-key",
@@ -652,7 +608,7 @@ class TestRequestParamsMapper:
     def test_map_upload_part_copy_params(self) -> None:
         """Test map_upload_part_copy_params."""
         params: dict[str, str] = {}
-        assert not RequestParamsMapper.map_upload_part_copy_params(params, self.params)  # type: ignore[func-returns-value]
+        assert not RequestParamsMapper.map_upload_part_copy_params(params, self.params)
         assert params == {
             "CopySourceSSECustomerAlgorithm": "AES256",
             "CopySourceSSECustomerKey": "my-sse-c-copy-source-key",
@@ -694,17 +650,13 @@ class TestStdoutBytesWriter:
 def test_block_s3_object_lambda_raise_colon() -> None:
     """Test block_s3_object_lambda."""
     with pytest.raises(ValueError, match="S3 action does not support S3 Object Lambda resources"):
-        block_s3_object_lambda(
-            "arn:aws:s3-object-lambda:us-west-2:123456789012:accesspoint:my-accesspoint"
-        )
+        block_s3_object_lambda("arn:aws:s3-object-lambda:us-west-2:123456789012:accesspoint:my-accesspoint")
 
 
 def test_block_s3_object_lambda_raise_slash() -> None:
     """Test block_s3_object_lambda."""
     with pytest.raises(ValueError, match="S3 action does not support S3 Object Lambda resources"):
-        block_s3_object_lambda(
-            "arn:aws:s3-object-lambda:us-west-2:123456789012:accesspoint/my-accesspoint"
-        )
+        block_s3_object_lambda("arn:aws:s3-object-lambda:us-west-2:123456789012:accesspoint/my-accesspoint")
 
 
 def test_create_warning() -> None:
@@ -855,15 +807,11 @@ def test_get_file_stat(tmp_path: Path) -> None:
     tmp_file.write_text("foo")
     size, update_time = get_file_stat(tmp_file)
     assert size == 3
-    assert update_time, (
-        "just ensure that it has a truthy value, checking exact value is inconsistent",
-    )
+    assert update_time, ("just ensure that it has a truthy value, checking exact value is inconsistent",)
 
 
 @pytest.mark.parametrize("exc", [ValueError(), OSError(), OverflowError()])
-def test_get_file_stat_handle_timestamp_error(
-    exc: Exception, mocker: MockerFixture, tmp_path: Path
-) -> None:
+def test_get_file_stat_handle_timestamp_error(exc: Exception, mocker: MockerFixture, tmp_path: Path) -> None:
     """Test get_file_stat."""
     mocker.patch(f"{MODULE}.datetime", fromtimestamp=Mock(side_effect=exc))
     tmp_file = tmp_path / "test.txt"
@@ -890,9 +838,7 @@ def test_guess_content_type(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_guess_type.assert_called_with(tmp_file.name)
 
 
-def test_guess_content_type_handle_unicode_decode_error(
-    mocker: MockerFixture, tmp_path: Path
-) -> None:
+def test_guess_content_type_handle_unicode_decode_error(mocker: MockerFixture, tmp_path: Path) -> None:
     """Test guess_content_type."""
     mocker.patch(
         f"{MODULE}.mimetypes",
@@ -965,9 +911,7 @@ def test_relative_path_handle_value_error(mocker: MockerFixture, tmp_path: Path)
     "filename, start, expected",
     [("/tmp/foo/bar", "/tmp/foo", f".{os.sep}bar"), (None, "/foo", None)],
 )
-def test_relative_path_posix(
-    expected: str | None, filename: str | None, mocker: MockerFixture, start: str
-) -> None:
+def test_relative_path_posix(expected: str | None, filename: str | None, mocker: MockerFixture, start: str) -> None:
     """Test relative_path."""
     mocker.patch("os.path.relpath", posixpath.relpath)
     mocker.patch("os.path.split", posixpath.split)
@@ -978,9 +922,7 @@ def test_relative_path_posix(
     "filename, start, expected",
     [(None, "/foo", None), (r"C:\tmp\foo\bar", r"C:\tmp\foo", f".{os.sep}bar")],
 )
-def test_relative_path_windows(
-    expected: str | None, filename: str | None, mocker: MockerFixture, start: str
-) -> None:
+def test_relative_path_windows(expected: str | None, filename: str | None, mocker: MockerFixture, start: str) -> None:
     """Test relative_path."""
     mocker.patch("os.path.relpath", ntpath.relpath)
     mocker.patch("os.path.split", ntpath.split)
@@ -993,9 +935,9 @@ def test_set_file_utime(tmp_path: Path) -> None:
     tmp_file.touch()
     now = datetime.datetime.now(tzlocal())
     epoch_now = time.mktime(now.timetuple())
-    assert not set_file_utime(tmp_file, epoch_now)  # type: ignore[func-returns-value]
+    assert not set_file_utime(tmp_file, epoch_now)
     _, update_time = get_file_stat(tmp_file)
-    assert time.mktime(update_time.timetuple()) == epoch_now  # type: ignore
+    assert time.mktime(update_time.timetuple()) == epoch_now
 
 
 def test_set_file_utime_handle_errno_1(mocker: MockerFixture, tmp_path: Path) -> None:
@@ -1022,7 +964,7 @@ def test_set_file_utime_raise_os_error(mocker: MockerFixture, tmp_path: Path) ->
 def test_uni_print() -> None:
     """Test uni_print."""
     out_file = Mock()
-    assert not uni_print("test", out_file)  # type: ignore[func-returns-value]
+    assert not uni_print("test", out_file)
     out_file.write.assert_called_once_with("test")
     out_file.flush.assert_called_once_with()
 
@@ -1033,7 +975,7 @@ def test_uni_print_handle_unicode_encoding_error() -> None:
         encoding=None,
         write=Mock(side_effect=[UnicodeEncodeError("test", "test", 0, 0, "test"), None]),
     )
-    assert not uni_print("test", out_file)  # type: ignore[func-returns-value]
+    assert not uni_print("test", out_file)
     assert out_file.write.call_count == 2
     out_file.flush.assert_called_once_with()
 
@@ -1041,6 +983,6 @@ def test_uni_print_handle_unicode_encoding_error() -> None:
 def test_uni_print_no_out_file(mocker: MockerFixture) -> None:
     """Test uni_print."""
     out_file = mocker.patch("sys.stdout")
-    assert not uni_print("test")  # type: ignore[func-returns-value]
+    assert not uni_print("test")
     out_file.write.assert_called_once_with("test")
     out_file.flush.assert_called_once_with()

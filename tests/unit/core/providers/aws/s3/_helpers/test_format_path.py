@@ -30,19 +30,15 @@ class TestFormatPath:
             "identify_path_type",
             side_effect=[("local", src), ("s3", dest[:5])],
         )
-        mock_format_local_path = mocker.patch.object(
-            FormatPath, "format_local_path", return_value=(src, True)
-        )
-        mock_format_s3_path = mocker.patch.object(
-            FormatPath, "format_s3_path", return_value=(dest[:5], True)
-        )
+        mock_format_local_path = mocker.patch.object(FormatPath, "format_local_path", return_value=(src, True))
+        mock_format_s3_path = mocker.patch.object(FormatPath, "format_s3_path", return_value=(dest[:5], True))
         assert FormatPath.format(src, dest) == {
             "dest": {"path": dest[:5], "type": "s3"},
             "dir_op": True,
             "src": {"path": src, "type": "local"},
             "use_src_name": True,
         }
-        mock_identify_path_type.assert_has_calls([call(src), call(dest)])  # type: ignore
+        mock_identify_path_type.assert_has_calls([call(src), call(dest)])
         mock_format_local_path.assert_called_once_with(src)
         mock_format_s3_path.assert_called_once_with(dest[:5])
 

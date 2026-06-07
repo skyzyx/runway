@@ -33,9 +33,7 @@ class TestRunwayServerlessModuleOptionsDataModel:
         obj = RunwayServerlessModuleOptionsDataModel.model_validate(data)
         assert obj.args == data["args"]
         assert obj.extend_serverless_yml == data["extend_serverless_yml"]
-        assert obj.promotezip == RunwayServerlessPromotezipOptionDataModel(
-            **data["promotezip"]  # type: ignore
-        )
+        assert obj.promotezip == RunwayServerlessPromotezipOptionDataModel(**data["promotezip"])
         assert obj.skip_npm_ci == data["skip_npm_ci"]
 
 

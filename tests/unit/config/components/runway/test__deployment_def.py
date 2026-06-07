@@ -76,9 +76,7 @@ class TestRunwayDeploymentDefinition:
 
     def test_modules(self) -> None:
         """Test modules."""
-        result = RunwayDeploymentDefinition.parse_obj(
-            {"modules": ["test.cfn"], "regions": ["us-east-1"]}
-        ).modules
+        result = RunwayDeploymentDefinition.parse_obj({"modules": ["test.cfn"], "regions": ["us-east-1"]}).modules
         assert isinstance(result, list)
         assert len(result) == 1
         assert isinstance(result[0], RunwayModuleDefinition)
@@ -99,21 +97,19 @@ class TestRunwayDeploymentDefinition:
         """Test modules.setter not a list."""
         obj = RunwayDeploymentDefinition.parse_obj({"regions": ["us-east-1"]})
         with pytest.raises(TypeError):
-            obj.modules = "invalid"  # type: ignore
+            obj.modules = "invalid"
         with pytest.raises(TypeError):
-            obj.modules = {"key": "val"}  # type: ignore
+            obj.modules = {"key": "val"}
         with pytest.raises(TypeError):
-            obj.modules = None  # type: ignore
+            obj.modules = None
         with pytest.raises(TypeError):
-            obj.modules = [  # type: ignore[assignment]
-                RunwayDeploymentDefinitionModel(modules=[], name="test-01", regions=["us-east-1"])  # type: ignore
-            ]
+            obj.modules = [RunwayDeploymentDefinitionModel(modules=[], name="test-01", regions=["us-east-1"])]
 
     def test_models_setter_invalid_list_item(self) -> None:
         """Test modules.setter when list item is now supported."""
         obj = RunwayDeploymentDefinition.parse_obj({"regions": ["us-east-1"]})
         with pytest.raises(TypeError):
-            obj.modules = [RunwayModuleDefinitionModel(path="./"), "invalid"]  # type: ignore
+            obj.modules = [RunwayModuleDefinitionModel(path="./"), "invalid"]
 
     def test_parse_obj(self) -> None:
         """Test parse_obj."""
@@ -148,7 +144,7 @@ class TestRunwayDeploymentDefinition:
             }
         )
         obj = RunwayDeploymentDefinition(data)
-        assert not obj.reverse()  # type: ignore[func-returns-value]
+        assert not obj.reverse()
         assert obj._data.modules != data.modules
         assert obj._data.regions != data.regions
         assert obj.regions == ["us-west-2", "us-east-1"]
@@ -171,7 +167,7 @@ class TestRunwayDeploymentDefinition:
             }
         )
         obj = RunwayDeploymentDefinition(data)
-        assert not obj.reverse()  # type: ignore[func-returns-value]
+        assert not obj.reverse()
         assert obj._data.modules != data.modules
         invert_data: RunwayDeploymentDefinitionModel = data.model_copy(deep=True)
         for mod in invert_data.modules:
@@ -188,6 +184,6 @@ class TestRunwayDeploymentDefinition:
             }
         )
         obj = RunwayDeploymentDefinition(data)
-        assert not obj.reverse()  # type: ignore[func-returns-value]
+        assert not obj.reverse()
         assert obj._data.parallel_regions != data.parallel_regions
         assert obj.parallel_regions == ["us-west-2", "us-east-1"]

@@ -13,7 +13,7 @@ class TestBaseResponse:
     def test_init(self) -> None:
         """Test init and the attributes it sets."""
         data = {"Error": {"Code": "something"}, "ResponseMetadata": {"HostId": "id"}}
-        response = BaseResponse(**data.copy())  # type: ignore[arg-type]
+        response = BaseResponse(**data.copy())
 
         assert isinstance(response.error, ResponseError)
         assert response.error.code == data["Error"]["Code"]
@@ -63,7 +63,7 @@ class TestResponseMetadata:
             "RequestId": "request_id",
             "RetryAttempts": 5,
         }
-        metadata = ResponseMetadata(**data.copy())  # type: ignore[arg-type]
+        metadata = ResponseMetadata(**data.copy())
 
         assert metadata.host_id == data["HostId"]
         assert metadata.https_headers == data["HTTPHeaders"]

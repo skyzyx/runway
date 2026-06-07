@@ -177,7 +177,7 @@ class TestFileInfo:
             FileInfo(
                 "",
                 operation_name="copy",
-                response_data={  # type: ignore
+                response_data={
                     "Restore": 'ongoing-request="false"',
                     **build_object_data(storage_class=storage_class),
                 },

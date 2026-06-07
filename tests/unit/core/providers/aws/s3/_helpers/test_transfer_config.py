@@ -28,10 +28,7 @@ class TestRuntimeConfig:
 
     def test_build_config_human_readable_sizes_converted_to_bytes(self) -> None:
         """Test build_config."""
-        assert (
-            RuntimeConfig.build_config(multipart_threshold="10MB")["multipart_threshold"]
-            == 10 * 1024 * 1024
-        )
+        assert RuntimeConfig.build_config(multipart_threshold="10MB")["multipart_threshold"] == 10 * 1024 * 1024
 
     def test_build_config_max_bandwidth_as_bits_per_second(self) -> None:
         """Test build_config."""
@@ -97,7 +94,7 @@ def test_create_transfer_config_from_runtime_config() -> None:
         "multipart_chunksize": 2,
         "multipart_threshold": 1,
     }
-    result = create_transfer_config_from_runtime_config(runtime_config)  # type: ignore
+    result = create_transfer_config_from_runtime_config(runtime_config)
     assert isinstance(result, TransferConfig)
     assert result.max_bandwidth == runtime_config["max_bandwidth"]
     assert result.max_request_concurrency == runtime_config["max_concurrent_requests"]

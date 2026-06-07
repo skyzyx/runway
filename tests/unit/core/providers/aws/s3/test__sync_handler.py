@@ -21,9 +21,7 @@ class TestS3SyncHandler:
     def test_client(self, runway_context: MockRunwayContext) -> None:
         """Test client."""
         runway_context.add_stubber("s3")
-        assert S3SyncHandler(
-            runway_context, dest="", src=""
-        ).client == runway_context.get_session().client("s3")
+        assert S3SyncHandler(runway_context, dest="", src="").client == runway_context.get_session().client("s3")
 
     def test_run(self, mocker: MockerFixture, runway_context: MockRunwayContext) -> None:
         """Test run."""
@@ -31,7 +29,7 @@ class TestS3SyncHandler:
         mock_action = mocker.patch(f"{MODULE}.ActionArchitecture")
         transfer_config = mocker.patch.object(S3SyncHandler, "transfer_config", {"key": "val"})
         obj = S3SyncHandler(runway_context, dest="", src="")
-        assert not obj.run()  # type: ignore[func-returns-value]
+        assert not obj.run()
         mock_register_sync_strategies.assert_called_once_with(obj._botocore_session)
         mock_action.assert_called_once_with(
             session=obj._session,
@@ -42,17 +40,13 @@ class TestS3SyncHandler:
         )
         mock_action().run.assert_called_once_with()
 
-    def test_transfer_config(
-        self, mocker: MockerFixture, runway_context: MockRunwayContext
-    ) -> None:
+    def test_transfer_config(self, mocker: MockerFixture, runway_context: MockRunwayContext) -> None:
         """Test transfer_config."""
-        mock_runtime_config = mocker.patch(
-            f"{MODULE}.RuntimeConfig", build_config=Mock(return_value="success")
-        )
+        mock_runtime_config = mocker.patch(f"{MODULE}.RuntimeConfig", build_config=Mock(return_value="success"))
         config = {"key": "val"}
         scoped_config = Mock(get=Mock(return_value=config))
         obj = S3SyncHandler(runway_context, dest="", src="")
-        obj._botocore_session.get_scoped_config = Mock(return_value=scoped_config)  # type: ignore[method-assign]
+        obj._botocore_session.get_scoped_config = Mock(return_value=scoped_config)
         assert obj.transfer_config == mock_runtime_config.build_config.return_value
         obj._botocore_session.get_scoped_config.assert_called_once_with()
         scoped_config.get.assert_called_once_with("s3", {})

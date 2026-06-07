@@ -33,9 +33,7 @@ class TestCfnginPackageSourcesDefinitionModel:
             "local": [{"source": "something"}],
             "s3": [{"bucket": "bucket", "key": "something"}],
         }
-        obj: CfnginPackageSourcesDefinitionModel = (
-            CfnginPackageSourcesDefinitionModel.model_validate(data)
-        )
+        obj: CfnginPackageSourcesDefinitionModel = CfnginPackageSourcesDefinitionModel.model_validate(data)
         assert isinstance(obj.git[0], GitCfnginPackageSourceDefinitionModel)
         assert isinstance(obj.local[0], LocalCfnginPackageSourceDefinitionModel)
         assert isinstance(obj.s3[0], S3CfnginPackageSourceDefinitionModel)
@@ -48,7 +46,7 @@ class TestGitCfnginPackageSourceDefinitionModel:
         """Test extra fields."""
         with pytest.raises(ValidationError, match="invalid\n  Extra inputs are not permitted"):
             GitCfnginPackageSourceDefinitionModel(
-                invalid="something",  # type: ignore
+                invalid="something",
                 uri="something",
             )
 
@@ -78,9 +76,7 @@ class TestGitCfnginPackageSourceDefinitionModel:
     def test_validate_one_ref(self, ref: dict[str, str]) -> None:
         """Test _validate_one_ref."""
         data = {"uri": "something", ref["field"]: ref["value"]}
-        assert (
-            GitCfnginPackageSourceDefinitionModel.model_validate(data)[ref["field"]] == ref["value"]  # type: ignore[index]
-        )
+        assert GitCfnginPackageSourceDefinitionModel.model_validate(data)[ref["field"]] == ref["value"]
 
     @pytest.mark.parametrize(
         "refs",
@@ -121,7 +117,7 @@ class TestLocalCfnginPackageSourceDefinitionModel:
         """Test extra fields."""
         with pytest.raises(ValidationError, match="invalid\n  Extra inputs are not permitted"):
             LocalCfnginPackageSourceDefinitionModel(
-                invalid="something",  # type: ignore
+                invalid="something",
                 source="something",
             )
 
@@ -147,7 +143,7 @@ class TestS3CfnginPackageSourceDefinitionModel:
             S3CfnginPackageSourceDefinitionModel(
                 bucket="something",
                 key="something",
-                invalid="something",  # type: ignore
+                invalid="something",
             )
 
     def test_required_fields(self) -> None:

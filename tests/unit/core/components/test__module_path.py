@@ -245,16 +245,9 @@ class TestModulePath:
         elif test["expected"]["source"] == "local":
             assert obj.module_root == deploy_environment.root_dir / test["expected"]["location"]
         else:
-            assert (
-                obj.module_root
-                == ModulePath.REMOTE_SOURCE_HANDLERS[obj.source].return_value.fetch.return_value  # type: ignore
-            )
-            ModulePath.REMOTE_SOURCE_HANDLERS[obj.source].assert_called_once_with(  # type: ignore
-                **obj.metadata
-            )
-            ModulePath.REMOTE_SOURCE_HANDLERS[
-                obj.source
-            ].return_value.fetch.assert_called_once_with()  # type: ignore
+            assert obj.module_root == ModulePath.REMOTE_SOURCE_HANDLERS[obj.source].return_value.fetch.return_value
+            ModulePath.REMOTE_SOURCE_HANDLERS[obj.source].assert_called_once_with(**obj.metadata)
+            ModulePath.REMOTE_SOURCE_HANDLERS[obj.source].return_value.fetch.assert_called_once_with()
 
     @pytest.mark.parametrize("test", deepcopy(TESTS))
     def test_source(
@@ -298,38 +291,28 @@ class TestModulePath:
 
     def test_parse_obj_path(self, deploy_environment: DeployEnvironment, tmp_path: Path) -> None:
         """Test parse_obj Path."""
-        obj = ModulePath.parse_obj(
-            tmp_path, cache_dir=tmp_path, deploy_environment=deploy_environment
-        )
+        obj = ModulePath.parse_obj(tmp_path, cache_dir=tmp_path, deploy_environment=deploy_environment)
         assert obj.definition == tmp_path
         assert obj.env == deploy_environment
 
-    def test_parse_obj_runway_config(
-        self, deploy_environment: DeployEnvironment, tmp_path: Path
-    ) -> None:
+    def test_parse_obj_runway_config(self, deploy_environment: DeployEnvironment, tmp_path: Path) -> None:
         """Test parse_obj Runway config objects."""
         model = RunwayModuleDefinitionModel(path=tmp_path)
-        obj0 = ModulePath.parse_obj(
-            model, cache_dir=tmp_path, deploy_environment=deploy_environment
-        )
+        obj0 = ModulePath.parse_obj(model, cache_dir=tmp_path, deploy_environment=deploy_environment)
         assert obj0.definition == model.path
         assert obj0.env == deploy_environment
         module = RunwayModuleDefinition(model)
-        obj1 = ModulePath.parse_obj(
-            module, cache_dir=tmp_path, deploy_environment=deploy_environment
-        )
+        obj1 = ModulePath.parse_obj(module, cache_dir=tmp_path, deploy_environment=deploy_environment)
         assert obj1.definition == model.path
         assert obj1.env == deploy_environment
 
     def test_parse_obj_str(self, deploy_environment: DeployEnvironment, tmp_path: Path) -> None:
         """Test parse_obj str."""
-        obj = ModulePath.parse_obj(
-            "./test", cache_dir=tmp_path, deploy_environment=deploy_environment
-        )
+        obj = ModulePath.parse_obj("./test", cache_dir=tmp_path, deploy_environment=deploy_environment)
         assert obj.definition == "./test"
         assert obj.env == deploy_environment
 
     def test_parse_obj_type_error(self, tmp_path: Path) -> None:
         """Test parse_obj TypeError."""
         with pytest.raises(TypeError):
-            assert not ModulePath.parse_obj({}, cache_dir=tmp_path)  # type: ignore
+            assert not ModulePath.parse_obj({}, cache_dir=tmp_path)

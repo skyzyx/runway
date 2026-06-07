@@ -82,8 +82,8 @@ class BaseResultPrinterTest:
             transfer_type=None,
             src=None,
             dest=None,
-            bytes_transferred=None,  # type: ignore
-            total_transfer_size=None,  # type: ignore
+            bytes_transferred=None,
+            total_transfer_size=None,
             timestamp=0,
         )
 
@@ -115,15 +115,13 @@ class BaseResultSubscriberTest:
 
     def get_success_transfer_future(self, result: str) -> TransferFuture:
         """Create a success transfer future."""
-        return self._get_transfer_future(result=result)  # type: ignore
+        return self._get_transfer_future(result=result)
 
     def get_failed_transfer_future(self, exception: Exception) -> TransferFuture:
         """Create a failed transfer future."""
-        return self._get_transfer_future(exception=exception)  # type: ignore
+        return self._get_transfer_future(exception=exception)
 
-    def _get_transfer_future(
-        self, result: Any | None = None, exception: Exception | None = None
-    ) -> FakeTransferFuture:
+    def _get_transfer_future(self, result: Any | None = None, exception: Exception | None = None) -> FakeTransferFuture:
         call_args = self._get_transfer_future_call_args()
         meta = FakeTransferFutureMeta(size=self.size, call_args=call_args)
         return FakeTransferFuture(result=result, exception=exception, meta=meta)
@@ -204,9 +202,7 @@ class TestUploadResultSubscriber(BaseResultSubscriberTest):
         self.result_subscriber.on_done(self.future)
         result = self.get_queued_result()
         self.assert_result_queue_is_empty()
-        assert result == SuccessResult(
-            transfer_type=self.transfer_type, src=self.src, dest=self.dest
-        )
+        assert result == SuccessResult(transfer_type=self.transfer_type, src=self.src, dest=self.dest)
 
     def test_on_done_unexpected_cancelled(self) -> None:
         """Test on_queued progress."""
@@ -268,9 +264,9 @@ class TestBaseResultHandler(BaseResultSubscriberTest):
     def test_on_progress(self, mocker: MockerFixture) -> None:
         """Test on_progress."""
         mocker.patch.object(BaseResultSubscriber, "_get_src_dest", return_value=(None, None))
-        assert not self.result_subscriber.on_queued(self.future)  # type: ignore[func-returns-value]
+        assert not self.result_subscriber.on_queued(self.future)
         assert isinstance(self.get_queued_result(), QueuedResult)
-        assert not self.result_subscriber.on_progress(self.future, 13)  # type: ignore[func-returns-value]
+        assert not self.result_subscriber.on_progress(self.future, 13)
         result = self.get_queued_result()
         assert isinstance(result, ProgressResult)
         assert result.bytes_transferred == 13
@@ -311,7 +307,7 @@ class TestCommandResultRecorder:
         """Test error."""
         with self.command_result_recorder:
             raise Exception("test exception")
-        assert self.command_result_recorder.get_command_result() == CommandResult(  # type: ignore[unreachable]
+        assert self.command_result_recorder.get_command_result() == CommandResult(
             num_tasks_failed=1, num_tasks_warned=0
         )
 
@@ -349,9 +345,7 @@ class TestCommandResultRecorder:
                     total_transfer_size=self.total_transfer_size,
                 )
             )
-            self.result_queue.put(
-                SuccessResult(transfer_type=self.transfer_type, src=self.src, dest=self.dest)
-            )
+            self.result_queue.put(SuccessResult(transfer_type=self.transfer_type, src=self.src, dest=self.dest))
         result = self.command_result_recorder.get_command_result()
         assert result.num_tasks_failed == 0
         assert result.num_tasks_warned == 0
@@ -393,9 +387,7 @@ class TestCopyResultSubscriber(TestUploadResultSubscriber):
         self.result_subscriber = CopyResultSubscriber(self.result_queue)
 
     def _get_transfer_future_call_args(self) -> FakeTransferFutureCallArgs:
-        return FakeTransferFutureCallArgs(
-            copy_source=self.copy_source, key=self.key, bucket=self.bucket
-        )
+        return FakeTransferFutureCallArgs(copy_source=self.copy_source, key=self.key, bucket=self.bucket)
 
     def test_on_queued_transfer_type_override(self) -> None:
         """Test on_queued."""
@@ -479,9 +471,7 @@ class TestNoProgressResultPrinter(BaseResultPrinterTest):
         assert caplog.messages == ["upload: file to s3://mybucket/test-key"]
         assert self.out_file.getvalue() == ""
 
-    def test_final_total_does_not_try_to_clear_empty_progress(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_final_total_does_not_try_to_clear_empty_progress(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test final total does not try to clear empty progress."""
         caplog.set_level(LogLevels.INFO, "runway.core.providers.aws.s3")
         transfer_type = "upload"
@@ -577,9 +567,7 @@ class TestOnlyShowErrorsResultPrinter(BaseResultPrinterTest):
         assert caplog.messages == ["warning: my warning"]
         assert not self.error_file.getvalue()
 
-    def test_final_total_does_not_try_to_clear_empty_progress(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_final_total_does_not_try_to_clear_empty_progress(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test final total does not try to clear empty progress."""
         caplog.set_level(LogLevels.INFO, "runway.core.providers.aws.s3")
         transfer_type = "upload"
@@ -619,9 +607,7 @@ class TestResultPrinter(BaseResultPrinterTest):
     def test_dry_run_unicode(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test dry run."""
         caplog.set_level(LogLevels.NOTICE, "runway.core.providers.aws.s3")
-        result = DryRunResult(
-            transfer_type="upload", src="s3://mybucket/\u2713", dest="./local/file"
-        )
+        result = DryRunResult(transfer_type="upload", src="s3://mybucket/\u2713", dest="./local/file")
         self.result_printer(result)
         assert caplog.messages == [f"(dryrun) upload: {result.src} to {result.dest}"]
 
@@ -668,9 +654,7 @@ class TestResultPrinter(BaseResultPrinterTest):
         self.result_printer(failure_result)
         assert caplog.messages == [f"upload failed: file to {dest} my exception"]
 
-    def test_failure_but_no_expected_files_transferred_provided(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_failure_but_no_expected_files_transferred_provided(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test failure."""
         caplog.set_level(LogLevels.ERROR, "runway.core.providers.aws.s3")
         shared_file = self.out_file
@@ -738,14 +722,10 @@ class TestResultPrinter(BaseResultPrinterTest):
             exception=Exception("my exception"),
         )
         self.result_printer(failure_result)
-        assert self.out_file.getvalue() == (
-            "Completed 1 file(s) with ~0 file(s) remaining (calculating...)\r"
-        )
+        assert self.out_file.getvalue() == ("Completed 1 file(s) with ~0 file(s) remaining (calculating...)\r")
         assert caplog.messages == [f"delete failed: {src} my exception"]
 
-    def test_failure_for_delete_with_files_remaining(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_failure_for_delete_with_files_remaining(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test failure."""
         caplog.set_level(LogLevels.ERROR, "runway.core.providers.aws.s3")
         shared_file = self.out_file
@@ -766,9 +746,7 @@ class TestResultPrinter(BaseResultPrinterTest):
             exception=Exception("my exception"),
         )
         self.result_printer(failure_result)
-        assert self.out_file.getvalue() == (
-            "Completed 1 file(s) with ~3 file(s) remaining (calculating...)\r"
-        )
+        assert self.out_file.getvalue() == ("Completed 1 file(s) with ~3 file(s) remaining (calculating...)\r")
         assert caplog.messages == [f"delete failed: {src} my exception"]
 
     def test_failure_unicode(self, caplog: pytest.LogCaptureFixture) -> None:
@@ -853,18 +831,14 @@ class TestResultPrinter(BaseResultPrinterTest):
         )
         assert caplog.messages == [f"upload failed: file to {dest} my exception"]
 
-    def test_final_total_does_not_print_out_newline_for_no_transfers(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_final_total_does_not_print_out_newline_for_no_transfers(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test final total."""
         caplog.set_level(LogLevels.NOTICE, "runway.core.providers.aws.s3")
         self.result_recorder.final_expected_files_transferred = 0
         self.result_printer(FinalTotalSubmissionsResult(0))
         assert not self.out_file.getvalue()
 
-    def test_final_total_notification_with_no_more_expected_progress(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_final_total_notification_with_no_more_expected_progress(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test final total."""
         caplog.set_level(LogLevels.NOTICE, "runway.core.providers.aws.s3")
         transfer_type = "upload"
@@ -907,10 +881,7 @@ class TestResultPrinter(BaseResultPrinterTest):
         self.result_recorder.files_transferred = 1
         progress_result = self.get_progress_result()
         self.result_printer(progress_result)
-        assert (
-            self.out_file.getvalue()
-            == "Completed 1.0 MiB/20.0 MiB (0 Bytes/s) with 3 file(s) remaining\r"
-        )
+        assert self.out_file.getvalue() == "Completed 1.0 MiB/20.0 MiB (0 Bytes/s) with 3 file(s) remaining\r"
 
     def test_get_progress_result_no_expected_transfer_bytes(self) -> None:
         """Test get_progress_result."""
@@ -931,10 +902,7 @@ class TestResultPrinter(BaseResultPrinterTest):
         self.result_recorder.files_transferred = 1
         progress_result = self.get_progress_result()
         self.result_printer(progress_result)
-        assert (
-            self.out_file.getvalue()
-            == "Completed 1 file(s) with ~3 file(s) remaining (calculating...)\r"
-        )
+        assert self.out_file.getvalue() == "Completed 1 file(s) with ~3 file(s) remaining (calculating...)\r"
 
     def test_get_progress_result_still_calculating_totals(self) -> None:
         """Test get_progress_result."""
@@ -960,10 +928,7 @@ class TestResultPrinter(BaseResultPrinterTest):
         self.result_recorder.bytes_transferred = mb
         self.result_recorder.files_transferred = 1
         self.result_printer(progress_result)
-        assert (
-            self.out_file.getvalue()
-            == "Completed 1.0 MiB/20.0 MiB (0 Bytes/s) with 3 file(s) remaining\r"
-        )
+        assert self.out_file.getvalue() == "Completed 1.0 MiB/20.0 MiB (0 Bytes/s) with 3 file(s) remaining\r"
         self.result_recorder.bytes_transferred += mb
         self.result_printer(progress_result)
         assert self.out_file.getvalue() == (
@@ -982,10 +947,7 @@ class TestResultPrinter(BaseResultPrinterTest):
         self.result_recorder.bytes_transfer_speed = 1024 * 7
         progress_result = self.get_progress_result()
         self.result_printer(progress_result)
-        assert (
-            self.out_file.getvalue()
-            == "Completed 1.0 MiB/20.0 MiB (7.0 KiB/s) with 3 file(s) remaining\r"
-        )
+        assert self.out_file.getvalue() == "Completed 1.0 MiB/20.0 MiB (7.0 KiB/s) with 3 file(s) remaining\r"
 
     def test_init_no_error_file(self, mocker: MockerFixture) -> None:
         """Test __init__ no error_file."""
@@ -1012,9 +974,7 @@ class TestResultPrinter(BaseResultPrinterTest):
         self.result_printer(success_result)
         assert caplog.messages == [f"upload: file to {dest}"]
 
-    def test_success_but_no_expected_files_transferred_provided(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_success_but_no_expected_files_transferred_provided(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test success but no expected files transferred provided."""
         caplog.set_level(LogLevels.NOTICE, "runway.core.providers.aws.s3")
         transfer_type = "upload"
@@ -1045,9 +1005,7 @@ class TestResultPrinter(BaseResultPrinterTest):
         self.result_printer(success_result)
         assert caplog.messages == [f"delete: {src}"]
 
-    def test_success_delete_but_no_expected_files_transferred_provided(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_success_delete_but_no_expected_files_transferred_provided(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test success delete but no expected files transferred provided."""
         caplog.set_level(LogLevels.NOTICE, "runway.core.providers.aws.s3")
         transfer_type = "delete"
@@ -1056,10 +1014,7 @@ class TestResultPrinter(BaseResultPrinterTest):
         self.result_recorder.files_transferred = 1
         success_result = SuccessResult(transfer_type=transfer_type, src=src, dest=None)
         self.result_printer(success_result)
-        assert (
-            self.out_file.getvalue()
-            == "Completed 1 file(s) with ~0 file(s) remaining (calculating...)\r"
-        )
+        assert self.out_file.getvalue() == "Completed 1 file(s) with ~0 file(s) remaining (calculating...)\r"
         assert caplog.messages == [f"delete: {src}"]
 
     def test_success_delete_with_files_remaining(self, caplog: pytest.LogCaptureFixture) -> None:
@@ -1071,10 +1026,7 @@ class TestResultPrinter(BaseResultPrinterTest):
         self.result_recorder.files_transferred = 1
         success_result = SuccessResult(transfer_type=transfer_type, src=src, dest=None)
         self.result_printer(success_result)
-        assert (
-            self.out_file.getvalue()
-            == "Completed 1 file(s) with ~3 file(s) remaining (calculating...)\r"
-        )
+        assert self.out_file.getvalue() == "Completed 1 file(s) with ~3 file(s) remaining (calculating...)\r"
         assert caplog.messages == [f"delete: {src}"]
 
     def test_success_unicode_src(self, caplog: pytest.LogCaptureFixture) -> None:
@@ -1093,9 +1045,7 @@ class TestResultPrinter(BaseResultPrinterTest):
         self.result_recorder.final_expected_files_transferred = 1
         self.result_recorder.expected_files_transferred = 1
         self.result_recorder.files_transferred = 1
-        result = SuccessResult(
-            transfer_type="upload", src="/tmp/\u2713", dest="s3://mybucket/test-key"
-        )
+        result = SuccessResult(transfer_type="upload", src="/tmp/\u2713", dest="s3://mybucket/test-key")
         self.result_printer(result)
         assert caplog.messages == [f"upload: {result.src} to {result.dest}"]
 
@@ -1142,7 +1092,7 @@ class TestResultPrinter(BaseResultPrinterTest):
 
     def test_unknown_result_object(self) -> None:
         """Test unknown result object."""
-        self.result_printer(object())  # type: ignore[arg-type]
+        self.result_printer(object())
         assert self.out_file.getvalue() == ""
         assert self.error_file.getvalue() == ""
 
@@ -1206,7 +1156,7 @@ class TestResultProcessor:
         mock_process_result = mocker.patch.object(ResultProcessor, "_process_result")
         self.result_queue.put(error_result)
         self.result_queue.put(ShutdownThreadRequest())
-        assert not self.result_processor.run()  # type: ignore[func-returns-value]
+        assert not self.result_processor.run()
         mock_process_result.assert_called_once_with(error_result)
         assert not self.result_processor._result_handlers_enabled
 
@@ -1217,7 +1167,7 @@ class TestResultProcessor:
         q_result = QueuedResult(total_transfer_size=0)
         self.result_queue.put(q_result)
         self.result_queue.put(ShutdownThreadRequest())
-        assert not result_processor.run()  # type: ignore[func-returns-value]
+        assert not result_processor.run()
         mock_handler.assert_called_once_with(q_result)
 
 
@@ -1238,20 +1188,20 @@ class TestResultRecorder:
     def test_record_error_result(self) -> None:
         """Test _record_error_result."""
         assert self.result_recorder.errors == 0
-        assert not self.result_recorder(ErrorResult(exception=Exception()))  # type: ignore[func-returns-value]
+        assert not self.result_recorder(ErrorResult(exception=Exception()))
         assert self.result_recorder.errors == 1
 
     def test_record_final_expected_files(self) -> None:
         """Test _record_final_expected_files."""
         assert not self.result_recorder.final_expected_files_transferred
-        assert not self.result_recorder(FinalTotalSubmissionsResult(total_submissions=13))  # type: ignore[func-returns-value]
+        assert not self.result_recorder(FinalTotalSubmissionsResult(total_submissions=13))
         assert self.result_recorder.final_expected_files_transferred == 13
 
     def test_record_progress_result_start_time(self, mocker: MockerFixture) -> None:
         """Test _record_progress_result set start_time."""
         mock_time = mocker.patch("time.time", return_value=time.time())
         assert not self.result_recorder.start_time
-        assert not self.result_recorder(  # type: ignore[func-returns-value]
+        assert not self.result_recorder(
             ProgressResult(total_transfer_size=13, timestamp=time.time(), bytes_transferred=0)
         )
         assert self.result_recorder.start_time == mock_time.return_value
@@ -1261,7 +1211,7 @@ class TestResultRecorder:
         now = time.time()
         self.result_recorder.start_time = EPOCH_TIME.timestamp()
         assert self.result_recorder.bytes_transferred == 0
-        assert not self.result_recorder(  # type: ignore[func-returns-value]
+        assert not self.result_recorder(
             ProgressResult(
                 total_transfer_size=13,
                 timestamp=now,
@@ -1269,9 +1219,7 @@ class TestResultRecorder:
                 transfer_type="upload",
             )
         )
-        assert self.result_recorder.bytes_transfer_speed == 1 / (
-            now - self.result_recorder.start_time
-        )
+        assert self.result_recorder.bytes_transfer_speed == 1 / (now - self.result_recorder.start_time)
 
     def test_record_progress_result_unknown_ongoing_transfer_size(self) -> None:
         """Test _record_progress_result unknown ongoing transfer size."""
@@ -1279,7 +1227,7 @@ class TestResultRecorder:
         assert self.result_recorder.expected_bytes_transferred == 0
         assert not self.result_recorder(
             ProgressResult(
-                total_transfer_size=None,  # type: ignore
+                total_transfer_size=None,
                 timestamp=now,
                 bytes_transferred=1,
                 transfer_type="upload",
@@ -1288,7 +1236,7 @@ class TestResultRecorder:
         assert self.result_recorder.expected_bytes_transferred == 1
         assert not self.result_recorder(
             ProgressResult(
-                total_transfer_size=None,  # type: ignore
+                total_transfer_size=None,
                 timestamp=now,
                 bytes_transferred=1,
                 transfer_type="upload",
@@ -1306,13 +1254,13 @@ class TestUploadStreamResultSubscriber(BaseResultSubscriberTest):
         """Run before each test method if run to return the class instance attrs to default."""
         super().setup_method()
         self.dest = "s3://" + self.bucket + "/" + self.key
-        self.src = None  # type: ignore
+        self.src = None
         self.result_subscriber = UploadStreamResultSubscriber(self.result_queue)
         self.transfer_type = "upload"
 
     def test_on_queued(self) -> None:
         """Test on_queued."""
-        assert not self.result_subscriber.on_queued(self.future)  # type: ignore[func-returns-value]
+        assert not self.result_subscriber.on_queued(self.future)
         result = self.get_queued_result()
         self.assert_result_queue_is_empty()
         assert result == QueuedResult(

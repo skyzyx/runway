@@ -20,7 +20,7 @@ class TestRunwayVariablesDefinition:
     def test_init_autofind_file(self, cd_tmp_path: Path, filename: str) -> None:
         """Test init autofind file."""
         data = {"key": "val"}
-        (cd_tmp_path / filename).write_text(yaml.dump(data))  # type: ignore[arg-type]
+        (cd_tmp_path / filename).write_text(yaml.dump(data))
         (cd_tmp_path / "runway.yml").touch()
         assert RunwayVariablesDefinition.parse_obj({"sys_path": cd_tmp_path})["key"] == "val"
 
@@ -28,7 +28,7 @@ class TestRunwayVariablesDefinition:
         """Test init with file_path."""
         data = {"key": "val"}
         file_path = cd_tmp_path / "anything.yml"
-        file_path.write_text(yaml.dump(data))  # type: ignore[arg-type]
+        file_path.write_text(yaml.dump(data))
         (cd_tmp_path / "runway.yml").touch()
         assert RunwayVariablesDefinition.parse_obj({"file_path": file_path})["key"] == "val"
 
