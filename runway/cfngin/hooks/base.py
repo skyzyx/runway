@@ -348,7 +348,7 @@ class HookDestroyAction(HookDeployAction):
     path.
     """
 
-    def run(self, **kwargs: Any) -> Status:
+    def run(self, **kwargs: Any) -> Status:  # type: ignore[override]
         """Run the action for one stack.
 
         Routes to _destroy_stack instead of _launch_stack so the same

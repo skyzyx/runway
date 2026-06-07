@@ -152,7 +152,7 @@ def build(
 
     context_dict["hash"] = get_hash_of_files(
         root_path=Path(args.options.path),
-        directories=options.get("source_hashing", {"directories": None}).get("directories"),
+        directories=options.get("source_hashing", {"directories": None}).get("directories"),  # type: ignore[attr-defined]
     )
     LOGGER.debug("application hash: %s", context_dict["hash"])
 

@@ -32,7 +32,7 @@ class XrefLookup(LookupHandler[Any]):
     """Name that the Lookup is registered as."""
 
     @classmethod
-    def handle(cls, value: str, *_args: Any, provider: Provider, **_kwargs: Any) -> str:
+    def handle(cls, value: str, *_args: Any, provider: Provider, **_kwargs: Any) -> str:  # type: ignore[override]
         """Fetch an output from the designated, fully qualified stack.
 
         The `output` handler supports fetching outputs from stacks created

@@ -109,7 +109,7 @@ class TestCfnginConfig:
         """Test parse_file with file_path."""
         config_yml = tmp_path / "config.yml"
         data = {"namespace": "test"}
-        config_yml.write_text(yaml.dump(data))
+        config_yml.write_text(yaml.dump(data))  # type: ignore[arg-type]
         config = CfnginConfig.parse_file(file_path=config_yml)
         assert config.namespace == data["namespace"]
 
@@ -174,14 +174,14 @@ class TestCfnginConfig:
         mock_process_package_sources.return_value = data_str
 
         assert (
-            CfnginConfig.parse_raw(data_str, skip_package_sources=True, work_dir=tmp_path) == data
+            CfnginConfig.parse_raw(data_str, skip_package_sources=True, work_dir=tmp_path) == data  # type: ignore[arg-type]
         )
         mock_resolve_raw_data.assert_called_once_with(yaml.dump(data), parameters={})
         mock_parse_obj.assert_called_once_with(data)
         mock_process_package_sources.assert_not_called()
 
         assert (
-            CfnginConfig.parse_raw(data_str, parameters={"key": "val"}, work_dir=tmp_path) == data
+            CfnginConfig.parse_raw(data_str, parameters={"key": "val"}, work_dir=tmp_path) == data  # type: ignore[arg-type]
         )
         mock_resolve_raw_data.assert_called_with(
             yaml.dump(data),
@@ -224,7 +224,7 @@ class TestCfnginConfig:
         mock_source_processor.configs_to_merge = [other_config.resolve()]
         assert (
             CfnginConfig.process_package_sources(
-                raw_data, parameters={"key": "val"}, work_dir=tmp_path
+                raw_data, parameters={"key": "val"}, work_dir=tmp_path  # type: ignore[arg-type]
             )
             == "rendered"
         )

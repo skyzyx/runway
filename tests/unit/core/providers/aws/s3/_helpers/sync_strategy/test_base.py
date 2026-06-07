@@ -47,7 +47,7 @@ class TestBaseSync:
 
     def test_compare_time(self) -> None:
         """Test compare_time."""
-        obj: BaseSync[Any] = BaseSync()
+        obj: BaseSync[Any] = BaseSync()  # type: ignore[type-arg]
         now = datetime.datetime.now()
         future = now + datetime.timedelta(0, 15)
         kwargs: dict[str, Any] = {"src": "", "operation_name": "invalid"}
@@ -76,7 +76,7 @@ class TestBaseSync:
     @pytest.mark.parametrize("operation_name", ["copy", "upload"])
     def test_compare_time_copy_or_upload(self, operation_name: str) -> None:
         """Test compare_time."""
-        obj: BaseSync[Any] = BaseSync()
+        obj: BaseSync[Any] = BaseSync()  # type: ignore[type-arg]
         now = datetime.datetime.now()
         future = now + datetime.timedelta(0, 15)
         kwargs: dict[str, Any] = {"src": "", "operation_name": operation_name}
@@ -104,7 +104,7 @@ class TestBaseSync:
 
     def test_compare_time_download(self) -> None:
         """Test compare_time."""
-        obj: BaseSync[Any] = BaseSync()
+        obj: BaseSync[Any] = BaseSync()  # type: ignore[type-arg]
         now = datetime.datetime.now()
         future = now + datetime.timedelta(0, 15)
         kwargs: dict[str, Any] = {"src": "", "operation_name": "download"}
@@ -151,7 +151,7 @@ class TestBaseSync:
             "file_not_at_src",
         ]
         for sync_type in valid_sync_types:
-            strategy: BaseSync[Any] = BaseSync(sync_type)
+            strategy: BaseSync[Any] = BaseSync(sync_type)  # type: ignore[type-arg]
             assert strategy.sync_type == sync_type
 
         with pytest.raises(ValueError, match="Unknown sync_type"):
@@ -164,7 +164,7 @@ class TestBaseSync:
     def test_register_strategy(self) -> None:
         """Test register_strategy."""
         session = Mock()
-        obj: BaseSync[Any] = BaseSync()
+        obj: BaseSync[Any] = BaseSync()  # type: ignore[type-arg]
         obj.register_strategy(session)
         register_args = cast("Mock", session.register).call_args_list
         assert register_args[0][0][0] == "choosing-s3-sync-strategy"
@@ -174,7 +174,7 @@ class TestBaseSync:
         """Test use_sync_strategy."""
         assert BaseSync().use_sync_strategy({"invalid_sync_strategy": True}) is None  # type: ignore
         mocker.patch.object(BaseSync, "name", "something")
-        obj: BaseSync[Any] = BaseSync()
+        obj: BaseSync[Any] = BaseSync()  # type: ignore[type-arg]
         assert obj.use_sync_strategy({"something": True}) == obj  # type: ignore
 
 

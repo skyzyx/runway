@@ -78,7 +78,7 @@ def yaml_dump(dict_to_dump: dict[str, Any]) -> str:
 
     Uses safe_dump with block style for human-readable CloudFormation output.
     """
-    return yaml.safe_dump(dict_to_dump, default_flow_style=False)
+    return yaml.safe_dump(dict_to_dump, default_flow_style=False)  # type: ignore[return-value]
 
 
 def yaml_parse(yamlstr: str) -> dict[str, Any]:

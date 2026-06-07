@@ -65,7 +65,7 @@ class CfnginHookDefinitionModel(ConfigProperty):
     ] = True
 
 
-@staticmethod
+@staticmethod  # type: ignore[misc]
 def _stack_json_schema_extra(schema: JsonDict) -> None:
     """Process the schema after it has been generated.
 
@@ -216,7 +216,7 @@ class CfnginStackDefinitionModel(ConfigProperty):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_class_and_template(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _validate_class_and_template(cls, values: dict[str, Any]) -> dict[str, Any]:  # type: ignore[operator]
         """Validate class_path and template_path are not both provided."""
         if values.get("class_path") and values.get("template_path"):
             raise ValueError("only one of class_path or template_path can be defined")
@@ -224,7 +224,7 @@ class CfnginStackDefinitionModel(ConfigProperty):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_class_or_template(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _validate_class_or_template(cls, values: dict[str, Any]) -> dict[str, Any]:  # type: ignore[operator]
         """Ensure that either class_path or template_path is defined."""
         # if the Stack is disabled or locked, it is ok that these are missing
         required = values.get("enabled", True) and not values.get("locked", False)
@@ -399,7 +399,7 @@ class CfnginConfigDefinitionModel(ConfigProperty):
         return stacks
 
     @classmethod
-    def parse_file(  # pyright: ignore[reportIncompatibleMethodOverride]
+    def parse_file(  # pyright: ignore[reportIncompatibleMethodOverride]  # type: ignore[override]
         cls: type[Self], path: str | Path
     ) -> Self:
         """Parse a file."""

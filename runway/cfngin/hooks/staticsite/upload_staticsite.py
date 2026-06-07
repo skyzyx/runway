@@ -305,7 +305,7 @@ def get_content(extra_file: RunwayStaticSiteExtraFileDataModel) -> str | None:
                 return json.dumps(extra_file.content)
 
             if extra_file.content_type == "text/yaml":
-                return yaml.safe_dump(extra_file.content)
+                return yaml.safe_dump(extra_file.content)  # type: ignore[return-value]
 
             raise ValueError('"content_type" must be json or yaml if "content" is not a string')
 
@@ -468,7 +468,7 @@ def sync_extra_files(  # noqa: C901
             if extra_args:
                 s3_client.upload_file(
                     Bucket=bucket,
-                    ExtraArgs=extra_args,
+                    ExtraArgs=extra_args,  # type: ignore[arg-type]
                     Filename=str(extra_file.file),
                     Key=extra_file.name,
                 )

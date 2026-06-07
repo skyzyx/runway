@@ -107,7 +107,7 @@ class RunwayModuleDefinition(ConfigComponentDefinition[RunwayModuleDefinitionMod
         )
 
     @classmethod
-    def parse_obj(cls: type[Self], obj: object) -> Self:
+    def parse_obj(cls: type[Self], obj: object) -> Self:  # type: ignore[misc, valid-type]
         """Parse a python object into this class.
 
         Args:

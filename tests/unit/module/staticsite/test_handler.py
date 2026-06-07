@@ -162,7 +162,7 @@ class TestStaticSite:
             module_root=tmp_path,
             parameters={"namespace": "test", "staticsite_auth_at_edge": True},
         )
-        assert not obj.deploy()
+        assert not obj.deploy()  # type: ignore[func-returns-value]
         mock_setup_website_module.assert_called_once_with(command="deploy")
 
     def test_destroy(
@@ -177,7 +177,7 @@ class TestStaticSite:
             module_root=tmp_path,
             parameters={"namespace": "test", "staticsite_auth_at_edge": True},
         )
-        assert not obj.destroy()
+        assert not obj.destroy()  # type: ignore[func-returns-value]
         mock_setup_website_module.assert_called_once_with(command="destroy")
 
     def test_ensure_auth_at_edge_requirements_exit(
@@ -258,7 +258,7 @@ class TestStaticSite:
         """Test init."""
         caplog.set_level(logging.WARNING, logger=MODULE)
         obj = StaticSite(runway_context, module_root=tmp_path, parameters={"namespace": "test"})
-        assert not obj.init()
+        assert not obj.init()  # type: ignore[func-returns-value]
         assert f"init not currently supported for {StaticSite.__name__}" in caplog.messages
 
     def test_plan(
@@ -273,7 +273,7 @@ class TestStaticSite:
             module_root=tmp_path,
             parameters={"namespace": "test", "staticsite_auth_at_edge": True},
         )
-        assert not obj.plan()
+        assert not obj.plan()  # type: ignore[func-returns-value]
         mock_setup_website_module.assert_called_once_with(command="plan")
 
     @pytest.mark.parametrize("provided, expected", [("foo", "foo"), ("foo.bar", "foo-bar")])

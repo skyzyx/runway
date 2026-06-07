@@ -60,7 +60,7 @@ class TestRunwayModuleNpm:
     def test_check_for_npm(self, mocker: MockerFixture) -> None:
         """Test check_for_npm."""
         mock_which = mocker.patch(f"{MODULE}.which", return_value=True)
-        assert not RunwayModuleNpm.check_for_npm()
+        assert not RunwayModuleNpm.check_for_npm()  # type: ignore[func-returns-value]
         mock_which.assert_called_once_with("npm")
 
     def test_init_npm_not_found(
@@ -114,7 +114,7 @@ class TestRunwayModuleNpm:
         )
         mocker.patch.object(RunwayModuleNpm, "check_for_npm")
         mocker.patch.object(RunwayModuleNpm, "warn_on_boto_env_vars")
-        obj = RunwayModuleNpm(runway_context, module_root=tmp_path)
+        obj = RunwayModuleNpm(runway_context, module_root=tmp_path)  # type: ignore[var-annotated]
         obj.log_npm_command(["test"])
         assert "node command: success" in caplog.messages
         mock_format_npm_command_for_logging.assert_called_once_with(["test"])
@@ -209,7 +209,7 @@ class TestRunwayModuleNpm:
         caplog.set_level(logging.DEBUG, logger=MODULE)
         mocker.patch.object(RunwayModuleNpm, "check_for_npm")
         mocker.patch.object(RunwayModuleNpm, "warn_on_boto_env_vars")
-        obj = RunwayModuleNpm(context=runway_context, module_root=tmp_path)
+        obj = RunwayModuleNpm(context=runway_context, module_root=tmp_path)  # type: ignore[var-annotated]
 
         assert obj.package_json_missing()
         assert caplog.messages == ["module is missing package.json"]
@@ -253,7 +253,7 @@ class TestRunwayModule:
 
     def test___init___default(self, runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test __init__ default values."""
-        obj = RunwayModule(runway_context, module_root=tmp_path)
+        obj = RunwayModule(runway_context, module_root=tmp_path)  # type: ignore[var-annotated]
         assert not obj.explicitly_enabled
         assert obj.logger
         assert obj.name == tmp_path.name
@@ -292,7 +292,7 @@ class TestRunwayModule:
 
     def test_getitem(self, runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test __getitem__."""
-        obj = RunwayModule(runway_context, module_root=tmp_path)
+        obj = RunwayModule(runway_context, module_root=tmp_path)  # type: ignore[var-annotated]
         assert obj["path"] == tmp_path
 
     def test_init(self, runway_context: MockRunwayContext, tmp_path: Path) -> None:

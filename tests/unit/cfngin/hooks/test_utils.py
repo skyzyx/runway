@@ -20,7 +20,7 @@ from ..factories import mock_context, mock_provider
 if TYPE_CHECKING:
     from unittest.mock import MagicMock
 
-HOOK_QUEUE = queue.Queue()
+HOOK_QUEUE = queue.Queue()  # type: ignore[var-annotated]
 
 
 class TestHooks(unittest.TestCase):

@@ -318,7 +318,7 @@ class TestBucket:
         runway_context.add_stubber("s3")
         src_directory = "/test/"
         obj = Bucket(runway_context, "test-bucket")
-        assert not obj.sync_from_local(
+        assert not obj.sync_from_local(  # type: ignore[func-returns-value]
             src_directory, delete=True, exclude=["something"], prefix="prefix"
         )
         mock_handler_class.assert_called_once_with(
@@ -340,7 +340,7 @@ class TestBucket:
         runway_context.add_stubber("s3")
         dest_directory = "/test/"
         obj = Bucket(runway_context, "test-bucket")
-        assert not obj.sync_to_local(dest_directory, follow_symlinks=True, include=["something"])
+        assert not obj.sync_to_local(dest_directory, follow_symlinks=True, include=["something"])  # type: ignore[func-returns-value]
         mock_handler_class.assert_called_once_with(
             context=runway_context,
             delete=False,

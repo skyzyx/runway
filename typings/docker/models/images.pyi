@@ -95,7 +95,7 @@ class ImageCollection(Collection):
         auth_config: Optional[Dict[str, Any]] = ...,
         platform: Optional[str] = ...,
     ) -> List[Image]: ...
-    def pull(
+    def pull(  # type: ignore[misc]
         self,
         repository: Optional[str],
         tag: Optional[str] = ...,
@@ -124,7 +124,7 @@ class ImageCollection(Collection):
         decode: bool = ...,
         stream: Literal[True] = ...,
     ) -> Iterator[str]: ...
-    def push(
+    def push(  # type: ignore[misc]
         self,
         repository: Optional[str],
         tag: Optional[str] = ...,

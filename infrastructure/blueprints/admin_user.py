@@ -37,7 +37,7 @@ class AdminUser(Blueprint):
             PermissionsBoundary=self.variables["PermissionsBoundary"],
             UserName=self.username or NoValue,
         )
-        self.add_output(user.title, user.ref())
+        self.add_output(user.title, user.ref())  # type: ignore[arg-type]
         self.add_output(f"{user.title}Arn", user.get_att("Arn"))
         return user
 

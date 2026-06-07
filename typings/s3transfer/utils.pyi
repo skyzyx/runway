@@ -39,7 +39,7 @@ def invoke_progress_callbacks(
 ) -> None: ...
 def get_filtered_dict(original_dict: dict[_K, _V], whitelisted_keys: list[str]) -> dict[_K, _V]: ...
 
-_CopySource = TypedDict("_CopySource", Bucket=str, Key=str)
+_CopySource = TypedDict("_CopySource", Bucket=str, Key=str)  # type: ignore[misc]
 
 class CallArgs:
     bucket: str

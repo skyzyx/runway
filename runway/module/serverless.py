@@ -222,7 +222,7 @@ class Serverless(RunwayModuleNpm[ServerlessOptions]):
         tmp_file = self.path / f"{uuid.uuid4()}.tmp.serverless.yml"
 
         try:
-            tmp_file.write_text(yaml.safe_dump(final_yml))
+            tmp_file.write_text(yaml.safe_dump(final_yml))  # type: ignore[arg-type]
             self.logger.debug("created temporary Serverless config: %s", tmp_file)
             self.options.update_args("config", str(tmp_file.name))
             self.logger.debug(
@@ -477,8 +477,8 @@ class ServerlessArtifact:
         directories: list[dict[str, list[str] | str | None]] | None = []
         for detail in self.config.get("functions", {}).values():
             func_path = {"path": os.path.dirname(detail.get("handler"))}  # noqa: PTH120
-            if func_path not in directories:
-                directories.append(func_path)
+            if func_path not in directories:  # type: ignore[operator]
+                directories.append(func_path)  # type: ignore[union-attr]
         if isinstance(self.config["service"], dict):
             # handle sls<3.0.0 potential service property object notation
             return {self.config["service"]["name"]: get_hash_of_files(self.path, directories)}

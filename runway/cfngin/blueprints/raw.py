@@ -206,7 +206,7 @@ class RawTemplateBlueprint(Blueprint):
             # clear cached properties that rely on this property
             self._del_cached_property("parameter_definitions")
 
-        return self._rendered
+        return self._rendered  # type: ignore[return-value]
 
     @property
     def requires_change_set(self) -> bool:
@@ -227,7 +227,7 @@ class RawTemplateBlueprint(Blueprint):
         """
         if not self._version:
             self._version = hashlib.md5(self.rendered.encode()).hexdigest()[:8]  # noqa: S324
-        return self._version
+        return self._version  # type: ignore[return-value]
 
     def to_dict(self) -> dict[str, Any]:
         """Return the template as a python dictionary.

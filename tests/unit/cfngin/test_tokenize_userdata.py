@@ -30,9 +30,9 @@ class TestCfTokenize(unittest.TestCase):
         """
         user_data = ["field0", 'Ref("SshKey")', "field1", 'Fn::GetAtt("Blah", "Woot")']
         user_data_dump = yaml.dump(user_data)
-        parts = cf_tokenize(user_data_dump)
-        assert isinstance(parts[1], dict)
-        assert isinstance(parts[3], dict)
+        parts = cf_tokenize(user_data_dump)  # type: ignore[arg-type]
+        assert isinstance(parts[1], dict)  # type: ignore[unreachable]
+        assert isinstance(parts[3], dict)  # type: ignore[unreachable]
         assert parts[1]["Ref"] == "SshKey"  # type: ignore
         assert parts[3]["Fn::GetAtt"] == ["Blah", "Woot"]  # type: ignore
         assert len(parts) == 5

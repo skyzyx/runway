@@ -155,7 +155,7 @@ class RunwayModuleDefinitionModel(ConfigProperty):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_name(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _validate_name(cls, values: dict[str, Any]) -> dict[str, Any]:  # type: ignore[operator]
         """Validate module name."""
         if "name" in values:
             return values
@@ -169,7 +169,7 @@ class RunwayModuleDefinitionModel(ConfigProperty):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_path(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _validate_path(cls, values: dict[str, Any]) -> dict[str, Any]:  # type: ignore[operator]
         """Validate path and sets a default value if needed."""
         if not values.get("path") and not values.get("parallel"):
             values["path"] = Path.cwd()

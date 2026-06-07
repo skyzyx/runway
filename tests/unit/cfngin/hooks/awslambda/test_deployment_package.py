@@ -399,7 +399,7 @@ class TestDeploymentPackage:
         obj = DeploymentPackage(project)
         if should_exist:
             obj.archive_file.touch()
-        assert not obj.delete()
+        assert not obj.delete()  # type: ignore[func-returns-value]
         assert not obj.archive_file.exists()
         mock_del_cached_property.assert_called_once_with(
             "code_sha256", "exists", "md5_checksum", "object_version_id"
@@ -595,7 +595,7 @@ class TestDeploymentPackage:
             },
         )
         with stubber:
-            assert not obj.upload(build=build)
+            assert not obj.upload(build=build)  # type: ignore[func-returns-value]
             if build:
                 mock_build.assert_called_once_with()
             else:
@@ -970,7 +970,7 @@ class TestDeploymentPackageS3Object:
             },
         )
         with stubber:
-            assert not DeploymentPackageS3Object(project).update_tags()
+            assert not DeploymentPackageS3Object(project).update_tags()  # type: ignore[func-returns-value]
         mock_build_tag_set.assert_called_once_with(url_encoded=False)
         stubber.assert_no_pending_responses()
 
@@ -991,7 +991,7 @@ class TestDeploymentPackageS3Object:
         object_key = mocker.patch.object(DeploymentPackageS3Object, "object_key", "key")
         stubber = cast("Stubber", project.ctx.add_stubber("s3"))  # type: ignore
         with stubber:
-            assert not DeploymentPackageS3Object(project).update_tags()
+            assert not DeploymentPackageS3Object(project).update_tags()  # type: ignore[func-returns-value]
         mock_build_tag_set.assert_called_once_with(url_encoded=False)
         stubber.assert_no_pending_responses()
         assert (
@@ -1014,7 +1014,7 @@ class TestDeploymentPackageS3Object:
         object_key = mocker.patch.object(DeploymentPackageS3Object, "object_key", "key")
         mocker.patch.object(DeploymentPackageS3Object, "bucket", bucket)
         mock_update_tags = mocker.patch.object(DeploymentPackageS3Object, "update_tags")
-        assert not DeploymentPackageS3Object(project).upload(build=build)
+        assert not DeploymentPackageS3Object(project).upload(build=build)  # type: ignore[func-returns-value]
         assert (
             f"upload skipped; {bucket.format_bucket_path_uri(key=object_key)} already exists"
             in caplog.messages

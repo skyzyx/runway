@@ -88,9 +88,9 @@ class RunwayContext(BaseContext):
         """
         colorize = self.env.vars.get("RUNWAY_COLORIZE")  # explicitly enable/disable
         try:
-            if isinstance(colorize, bool):  # pyright: ignore[reportUnnecessaryIsInstance]
+            if isinstance(colorize, bool):  # pyright: ignore[reportUnnecessaryIsInstance]  # type: ignore[unreachable]
                 # catch False
-                return not colorize
+                return not colorize  # type: ignore[unreachable]
             if colorize and isinstance(colorize, str):  # type: ignore
                 return not str2bool(colorize)
         except ValueError:

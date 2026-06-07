@@ -298,7 +298,7 @@ def select_modules_using_tags(
         modules_to_run: list[RunwayModuleDefinition] = []
         for module in deployment.modules:
             if module.child_modules:
-                module.child_modules = [
+                module.child_modules = [  # type: ignore[assignment]
                     c for c in module.child_modules if all(t in c.tags for t in tags)
                 ]
                 if module.child_modules:
@@ -356,7 +356,7 @@ def select_modules_by_name(
                     modules_to_run.append(module)
                 else:
                     # Otherwise, filter child modules by name
-                    module.child_modules = [
+                    module.child_modules = [  # type: ignore[assignment]
                         c
                         for c in module.child_modules
                         if _module_name_matches(c.name, module_names)

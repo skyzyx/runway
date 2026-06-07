@@ -243,27 +243,27 @@ class TestTerraform:
 
         obj = Terraform(runway_context, module_root=tmp_path)
         assert not obj[action]()
-        obj.handle_backend.assert_called_once_with()
-        obj.cleanup_dot_terraform.assert_not_called()
-        obj.handle_parameters.assert_not_called()
-        obj.auto_tfvars.exists.assert_called_once_with()
-        obj.auto_tfvars.unlink.assert_called_once_with()
+        obj.handle_backend.assert_called_once_with()  # type: ignore[attr-defined]
+        obj.cleanup_dot_terraform.assert_not_called()  # type: ignore[attr-defined]
+        obj.handle_parameters.assert_not_called()  # type: ignore[attr-defined]
+        obj.auto_tfvars.exists.assert_called_once_with()  # type: ignore[attr-defined]
+        obj.auto_tfvars.unlink.assert_called_once_with()  # type: ignore[attr-defined]
         caplog.clear()
 
         # module is run; workspace matches
-        obj.auto_tfvars.exists.return_value = False
+        obj.auto_tfvars.exists.return_value = False  # type: ignore[attr-defined]
         mocker.patch.object(obj, "skip", False)
         assert not obj[action]()
-        obj.cleanup_dot_terraform.assert_called_once_with()
-        obj.handle_parameters.assert_called_once_with()
-        obj.terraform_init.assert_called_once_with()
-        obj.terraform_workspace_list.assert_not_called()
-        obj.terraform_workspace_select.assert_not_called()
-        obj.terraform_workspace_new.assert_not_called()
-        obj.terraform_get.assert_called_once_with()
+        obj.cleanup_dot_terraform.assert_called_once_with()  # type: ignore[attr-defined]
+        obj.handle_parameters.assert_called_once_with()  # type: ignore[attr-defined]
+        obj.terraform_init.assert_called_once_with()  # type: ignore[attr-defined]
+        obj.terraform_workspace_list.assert_not_called()  # type: ignore[attr-defined]
+        obj.terraform_workspace_select.assert_not_called()  # type: ignore[attr-defined]
+        obj.terraform_workspace_new.assert_not_called()  # type: ignore[attr-defined]
+        obj.terraform_get.assert_called_once_with()  # type: ignore[attr-defined]
         obj["terraform_" + command].assert_called_once_with()
-        assert obj.auto_tfvars.exists.call_count == 2
-        assert obj.auto_tfvars.unlink.call_count == 1
+        assert obj.auto_tfvars.exists.call_count == 2  # type: ignore[attr-defined]
+        assert obj.auto_tfvars.unlink.call_count == 1  # type: ignore[attr-defined]
         logs = "\n".join(caplog.messages)
         assert "init (in progress)" in logs
         assert "init (complete)" in logs
@@ -275,16 +275,16 @@ class TestTerraform:
         # module is run; switch to workspace
         mocker.patch.object(Terraform, "current_workspace", "default")
         assert not obj[action]()
-        obj.terraform_workspace_list.assert_called_once_with()
-        obj.terraform_workspace_select.assert_called_once_with("test")
-        obj.terraform_workspace_new.assert_not_called()
+        obj.terraform_workspace_list.assert_called_once_with()  # type: ignore[attr-defined]
+        obj.terraform_workspace_select.assert_called_once_with("test")  # type: ignore[attr-defined]
+        obj.terraform_workspace_new.assert_not_called()  # type: ignore[attr-defined]
         logs = "\n".join(caplog.messages)
         assert "re-running init after workspace change..." in logs
 
         # module is run; create workspace
         mocker.patch.object(Terraform, "terraform_workspace_list", MagicMock(return_value=""))
         assert not obj[action]()
-        obj.terraform_workspace_new.assert_called_once_with("test")
+        obj.terraform_workspace_new.assert_called_once_with("test")  # type: ignore[attr-defined]
 
     @pytest.mark.parametrize(
         "command, args_list, expected",
@@ -341,7 +341,7 @@ class TestTerraform:
             "get_full_configuration",
             mock_get_full_configuration,
         )
-        assert not obj.handle_backend()
+        assert not obj.handle_backend()  # type: ignore[func-returns-value]
         mock_get_full_configuration.assert_not_called()
         assert 'backed "unsupported" does not require special handling' in "\n".join(
             caplog.messages
@@ -358,7 +358,7 @@ class TestTerraform:
         caplog.set_level(LogLevels.INFO, logger=MODULE)
         obj = Terraform(runway_context, module_root=tmp_path)
         mocker.patch.object(obj, "tfenv", MagicMock(backend={"type": None}))
-        assert not obj.handle_backend()
+        assert not obj.handle_backend()  # type: ignore[func-returns-value]
         assert "unable to determine backend for module" in "\n".join(caplog.messages)
 
     def test_handle_backend_remote_name(
@@ -382,7 +382,7 @@ class TestTerraform:
             mock_get_full_configuration,
         )
 
-        assert not obj.handle_backend()
+        assert not obj.handle_backend()  # type: ignore[func-returns-value]
         mock_get_full_configuration.assert_called_once_with()
         assert "TF_WORKSPACE" not in obj.ctx.env.vars
         assert obj.required_workspace == "default"
@@ -409,7 +409,7 @@ class TestTerraform:
             mock_get_full_configuration,
         )
 
-        assert not obj.handle_backend()
+        assert not obj.handle_backend()  # type: ignore[func-returns-value]
         mock_get_full_configuration.assert_called_once_with()
         assert obj.ctx.env.vars["TF_WORKSPACE"] == obj.ctx.env.name
         assert 'set environment variable "TF_WORKSPACE" to avoid prompt' in "\n".join(
@@ -440,7 +440,7 @@ class TestTerraform:
             mock_get_full_configuration,
         )
 
-        assert not obj.handle_backend()
+        assert not obj.handle_backend()  # type: ignore[func-returns-value]
         mock_get_full_configuration.assert_called_once_with()
         assert '"workspaces" not defined in backend config' in "\n".join(caplog.messages)
 
@@ -457,10 +457,10 @@ class TestTerraform:
             obj, "auto_tfvars", MagicMock(exists=MagicMock(side_effect=[True, False]))
         )
 
-        assert not obj.handle_parameters()
+        assert not obj.handle_parameters()  # type: ignore[func-returns-value]
         mock_update_envvars.assert_not_called()
 
-        assert not obj.handle_parameters()
+        assert not obj.handle_parameters()  # type: ignore[func-returns-value]
         mock_update_envvars.assert_called_once_with(runway_context.env.vars, {})
         assert obj.ctx.env.vars == {"result": "success"}
 
@@ -568,7 +568,7 @@ class TestTerraform:
         mocker.patch.object(obj.ctx.env, "ci", True)
 
         expected_arg_list = ["env_file", "arg", "-auto-approve=true"]
-        assert not obj.terraform_apply()
+        assert not obj.terraform_apply()  # type: ignore[func-returns-value]
         mock_gen_command.assert_called_once_with("apply", expected_arg_list)
         mock_run_command.assert_called_once_with(
             ["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger
@@ -576,7 +576,7 @@ class TestTerraform:
 
         mocker.patch.object(obj.ctx.env, "ci", False)
         expected_arg_list[2] = "-auto-approve=false"
-        assert not obj.terraform_apply()
+        assert not obj.terraform_apply()  # type: ignore[func-returns-value]
         mock_gen_command.assert_called_with("apply", expected_arg_list)
         assert mock_run_command.call_count == 2
 
@@ -609,7 +609,7 @@ class TestTerraform:
         mocker.patch.object(obj, "env_file", ["env_file"])
 
         expected_options.append("env_file")
-        assert not obj.terraform_destroy()
+        assert not obj.terraform_destroy()  # type: ignore[func-returns-value]
         mock_gen_command.assert_called_once_with(expected_subcmd, expected_options)
         mock_run_command.assert_called_once_with(
             ["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger
@@ -628,7 +628,7 @@ class TestTerraform:
         mock_run_command = mocker.patch(f"{MODULE}.run_module_command")
         obj = Terraform(runway_context, module_root=tmp_path)
 
-        assert not obj.terraform_get()
+        assert not obj.terraform_get()  # type: ignore[func-returns-value]
         mock_gen_command.assert_called_once_with("get", ["-update=true"])
         mock_run_command.assert_called_once_with(
             ["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger
@@ -656,7 +656,7 @@ class TestTerraform:
             "region=us-east-1",
             "init_arg",
         ]
-        assert not obj.terraform_init()
+        assert not obj.terraform_init()  # type: ignore[func-returns-value]
         mock_gen_command.assert_called_once_with("init", expected_arg_list)
         mock_run_command.assert_called_once_with(
             ["mock_gen_command"],
@@ -667,7 +667,7 @@ class TestTerraform:
 
         mock_run_command.side_effect = subprocess.CalledProcessError(1, "")
         with pytest.raises(SystemExit) as excinfo:
-            assert obj.terraform_init()
+            assert obj.terraform_init()  # type: ignore[func-returns-value]
         assert excinfo.value.code == 1
 
     def test_terraform_plan(
@@ -682,7 +682,7 @@ class TestTerraform:
         obj = Terraform(runway_context, module_root=tmp_path, options=options)
         mocker.patch.object(obj, "env_file", ["env_file"])
 
-        assert not obj.terraform_plan()
+        assert not obj.terraform_plan()  # type: ignore[func-returns-value]
         mock_gen_command.assert_called_once_with("plan", ["env_file", "plan_arg"])
         mock_run_command.assert_called_once_with(
             ["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger
@@ -718,7 +718,7 @@ class TestTerraform:
         mock_run_command = mocker.patch(f"{MODULE}.run_module_command")
         obj = Terraform(runway_context, module_root=tmp_path)
 
-        assert not obj.terraform_workspace_new("name")
+        assert not obj.terraform_workspace_new("name")  # type: ignore[func-returns-value]
         mock_gen_command.assert_called_once_with(["workspace", "new"], ["name"])
         mock_run_command.assert_called_once_with(
             ["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger
@@ -740,7 +740,7 @@ class TestTerraform:
         obj = Terraform(runway_context, module_root=tmp_path)
 
         assert obj.current_workspace == "first-val"  # load cached value
-        assert not obj.terraform_workspace_select("name")
+        assert not obj.terraform_workspace_select("name")  # type: ignore[func-returns-value]
         mock_gen_command.assert_called_once_with(["workspace", "select"], ["name"])
         mock_run_command.assert_called_once_with(
             ["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger

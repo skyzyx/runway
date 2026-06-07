@@ -93,9 +93,9 @@ class TestConfigComponentDefinition:
     def test_get(self) -> None:
         """Test get."""
         obj = SampleConfigComponentDefinition.parse_obj({"name": "test"})
-        assert obj.get("name") == "test"
-        assert not obj.get("missing")
-        assert obj.get("missing", "default") == "default"
+        assert obj.get("name") == "test"  # type: ignore[func-returns-value]
+        assert not obj.get("missing")  # type: ignore[func-returns-value]
+        assert obj.get("missing", "default") == "default"  # type: ignore[func-returns-value]
 
     def test_getattr(self, runway_context: MockRunwayContext) -> None:
         """Test __getattr__."""
@@ -103,7 +103,7 @@ class TestConfigComponentDefinition:
             var_attr="${var ${env DEPLOY_ENVIRONMENT}.key}", var_attr_pre="${var key}"
         )
         obj = SampleConfigComponentDefinition(data)
-        assert not obj.resolve(runway_context, pre_process=True, variables=self.VARIABLES)
+        assert not obj.resolve(runway_context, pre_process=True, variables=self.VARIABLES)  # type: ignore[func-returns-value]
 
         assert obj.var_attr_pre == self.VARIABLES["key"]
         with pytest.raises(UnresolvedVariable):
@@ -145,7 +145,7 @@ class TestConfigComponentDefinition:
             var_attr="${var ${env DEPLOY_ENVIRONMENT}.key}", var_attr_pre="${var key}"
         )
         obj = SampleConfigComponentDefinition(data)
-        assert not obj.resolve(runway_context, variables=self.VARIABLES)
+        assert not obj.resolve(runway_context, variables=self.VARIABLES)  # type: ignore[func-returns-value]
 
         assert obj._vars["var_attr"].resolved
         assert obj.var_attr != data.var_attr
@@ -161,7 +161,7 @@ class TestConfigComponentDefinition:
             var_attr="${var ${env DEPLOY_ENVIRONMENT}.key}", var_attr_pre="${var key}"
         )
         obj = SampleConfigComponentDefinition(data)
-        assert not obj.resolve(runway_context, pre_process=True, variables=self.VARIABLES)
+        assert not obj.resolve(runway_context, pre_process=True, variables=self.VARIABLES)  # type: ignore[func-returns-value]
 
         assert not obj._vars["var_attr"].resolved
         with pytest.raises(UnresolvedVariable):
@@ -176,7 +176,7 @@ class TestConfigComponentDefinition:
         obj = SampleConfigComponentDefinition.parse_obj({})
         assert not obj._data.get("key")
         obj.key = "val"
-        assert obj._data["key"] == "val"
+        assert obj._data["key"] == "val"  # type: ignore[index]
         assert obj.key == "val"
 
     def test_setattr_property(self) -> None:
@@ -200,5 +200,5 @@ class TestConfigComponentDefinition:
         obj = SampleConfigComponentDefinition.parse_obj({})
         assert not obj._data.get("key")
         obj["key"] = "val"
-        assert obj._data["key"] == "val"
+        assert obj._data["key"] == "val"  # type: ignore[index]
         assert obj["key"] == "val"

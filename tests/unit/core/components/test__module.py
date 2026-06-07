@@ -144,7 +144,7 @@ class TestModule:
         runway_context.env.root_dir = cd_tmp_path
         mod_dir = cd_tmp_path / "sampleapp-01.cfn"
         mod_dir.mkdir()
-        (mod_dir / "runway.module.yml").write_text(yaml.dump({"test": "success"}))
+        (mod_dir / "runway.module.yml").write_text(yaml.dump({"test": "success"}))  # type: ignore[arg-type]
         deployment = fx_deployments.load("simple_module_options")
         mod = Module(
             context=runway_context,
@@ -313,8 +313,8 @@ class TestModule:
             context=runway_context,
             definition=fx_deployments.load("min_required").modules[0],
         )
-        assert mod.deploy()
-        mock_run.assert_called_once_with("deploy")
+        assert mod.deploy()  # type: ignore[func-returns-value]
+        mock_run.assert_called_once_with("deploy")  # type: ignore[unreachable]
 
     def test_deploy_async(
         self,
@@ -336,7 +336,7 @@ class TestModule:
             context=runway_context,
             definition=fx_deployments.load("simple_parallel_module").modules[0],
         )
-        assert not obj.deploy()
+        assert not obj.deploy()  # type: ignore[func-returns-value]
         assert (
             "parallel_parent:processing modules in parallel... (output "
             "will be interwoven)" in caplog.messages
@@ -370,7 +370,7 @@ class TestModule:
             context=runway_context,
             definition=fx_deployments.load("simple_parallel_module").modules[0],
         )
-        assert not mod.deploy()
+        assert not mod.deploy()  # type: ignore[func-returns-value]
         assert "parallel_parent:processing modules sequentially..." in caplog.messages
         mock_run.assert_has_calls([call("deploy"), call("deploy")])
 
@@ -390,9 +390,9 @@ class TestModule:
             context=runway_context,
             definition=fx_deployments.load("simple_parallel_module").modules[0],
         )
-        assert mod.destroy()
+        assert mod.destroy()  # type: ignore[func-returns-value]
 
-        if async_used:
+        if async_used:  # type: ignore[unreachable]
             mock_async.assert_called_once_with("destroy")
             mock_sync.assert_not_called()
         else:
@@ -413,8 +413,8 @@ class TestModule:
             context=runway_context,
             definition=fx_deployments.load("min_required").modules[0],
         )
-        assert mod.destroy()
-        mock_run.assert_called_once_with("destroy")
+        assert mod.destroy()  # type: ignore[func-returns-value]
+        mock_run.assert_called_once_with("destroy")  # type: ignore[unreachable]
         mock_async.assert_not_called()
         mock_sync.assert_not_called()
 
@@ -434,9 +434,9 @@ class TestModule:
             context=runway_context,
             definition=fx_deployments.load("simple_parallel_module").modules[0],
         )
-        assert mod.init()
+        assert mod.init()  # type: ignore[func-returns-value]
 
-        if async_used:
+        if async_used:  # type: ignore[unreachable]
             mock_async.assert_called_once_with("init")
             mock_sync.assert_not_called()
         else:
@@ -457,8 +457,8 @@ class TestModule:
             context=runway_context,
             definition=fx_deployments.load("min_required").modules[0],
         )
-        assert mod.init()
-        mock_run.assert_called_once_with("init")
+        assert mod.init()  # type: ignore[func-returns-value]
+        mock_run.assert_called_once_with("init")  # type: ignore[unreachable]
         mock_async.assert_not_called()
         mock_sync.assert_not_called()
 
@@ -480,9 +480,9 @@ class TestModule:
             context=runway_context,
             definition=fx_deployments.load("simple_parallel_module").modules[0],
         )
-        assert mod.plan()
+        assert mod.plan()  # type: ignore[func-returns-value]
 
-        if async_used:
+        if async_used:  # type: ignore[unreachable]
             assert (
                 "parallel_parent:processing of modules will be done in "
                 "parallel during deploy/destroy" in caplog.messages
@@ -509,8 +509,8 @@ class TestModule:
             context=runway_context,
             definition=fx_deployments.load("min_required").modules[0],
         )
-        assert mod.plan()
-        mock_run.assert_called_once_with("plan")
+        assert mod.plan()  # type: ignore[func-returns-value]
+        mock_run.assert_called_once_with("plan")  # type: ignore[unreachable]
         mock_async.assert_not_called()
         mock_sync.assert_not_called()
 
@@ -536,18 +536,18 @@ class TestModule:
             context=runway_context,
             definition=fx_deployments.load("min_required").modules[0],
         )
-        assert not mod.run("deploy")
+        assert not mod.run("deploy")  # type: ignore[func-returns-value]
         mock_change_dir.assert_not_called()
 
         mocker.patch.object(Module, "should_skip", False)
-        assert not mod.run("deploy")
+        assert not mod.run("deploy")  # type: ignore[func-returns-value]
         mock_change_dir.assert_called_once_with(tmp_path)
         mock_type.module_class.assert_called_once_with(mod.ctx, module_root=tmp_path, **mod.payload)
-        mock_inst["deploy"].assert_called_once_with()
+        mock_inst["deploy"].assert_called_once_with()  # type: ignore[index]
 
         del mock_inst.deploy
         with pytest.raises(SystemExit) as excinfo:
-            assert mod.run("deploy")
+            assert mod.run("deploy")  # type: ignore[func-returns-value]
         assert excinfo.value.code == 1
 
     def test_run_list(
@@ -558,7 +558,7 @@ class TestModule:
     ) -> None:
         """Test run_list."""
         mock_deploy = mocker.patch.object(Module, "deploy")
-        assert not Module.run_list(
+        assert not Module.run_list(  # type: ignore[func-returns-value]
             action="deploy",
             context=runway_context,
             modules=fx_deployments.load("simple_parallel_module").modules,

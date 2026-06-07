@@ -173,7 +173,7 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
                 f"hook path {hook_def.path} for hook with data_key {hook_def.data_key} "
                 "must be a subclass of AwsLambdaHook to use this lookup"
             )
-        return cast("AwsLambdaHook[Any]", kls(context, **hook_def.args))
+        return cast("AwsLambdaHook[Any]", kls(context, **hook_def.args))  # type: ignore[abstract]
 
     class Code(LookupHandler["CfnginContext"]):
         """Lookup for AwsLambdaHook responses.

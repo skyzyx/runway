@@ -72,7 +72,7 @@ class TestRunway:
         deployments = MagicMock()
         obj = Runway(runway_config, runway_context)  # type: ignore
 
-        assert not obj.deploy()
+        assert not obj.deploy()  # type: ignore[func-returns-value]
         assert runway_context.command == "deploy"
         mock_deployment.run_list.assert_called_once_with(
             action="deploy",
@@ -81,7 +81,7 @@ class TestRunway:
             future=runway_config.future,
             variables=runway_config.variables,
         )
-        assert not obj.deploy(deployments)
+        assert not obj.deploy(deployments)  # type: ignore[func-returns-value]
         mock_deployment.run_list.assert_called_with(
             action="deploy",
             context=runway_context,
@@ -103,7 +103,7 @@ class TestRunway:
         deployments = MagicMock()
         obj = Runway(runway_config, runway_context)  # type: ignore
 
-        assert not obj.destroy(deployments)
+        assert not obj.destroy(deployments)  # type: ignore[func-returns-value]
         assert runway_context.command == "destroy"
         mock_deployment.run_list.assert_called_once_with(
             action="destroy",
@@ -113,7 +113,7 @@ class TestRunway:
             variables=runway_config.variables,
         )
         mock_reverse.assert_not_called()
-        assert not obj.destroy()
+        assert not obj.destroy()  # type: ignore[func-returns-value]
         mock_deployment.run_list.assert_called_with(
             action="destroy",
             context=runway_context,
@@ -159,7 +159,7 @@ class TestRunway:
         deployments = MagicMock()
         obj = Runway(runway_config, runway_context)  # type: ignore
 
-        assert not obj.init()
+        assert not obj.init()  # type: ignore[func-returns-value]
         assert runway_context.command == "init"
         mock_deployment.run_list.assert_called_once_with(
             action="init",
@@ -168,7 +168,7 @@ class TestRunway:
             future=runway_config.future,
             variables=runway_config.variables,
         )
-        assert not obj.init(deployments)
+        assert not obj.init(deployments)  # type: ignore[func-returns-value]
         mock_deployment.run_list.assert_called_with(
             action="init",
             context=runway_context,
@@ -188,7 +188,7 @@ class TestRunway:
         deployments = MagicMock()
         obj = Runway(runway_config, runway_context)  # type: ignore
 
-        assert not obj.plan()
+        assert not obj.plan()  # type: ignore[func-returns-value]
         assert runway_context.command == "plan"
         mock_deployment.run_list.assert_called_once_with(
             action="plan",
@@ -197,7 +197,7 @@ class TestRunway:
             future=runway_config.future,
             variables=runway_config.variables,
         )
-        assert not obj.plan(deployments)
+        assert not obj.plan(deployments)  # type: ignore[func-returns-value]
         mock_deployment.run_list.assert_called_with(
             action="plan",
             context=runway_context,

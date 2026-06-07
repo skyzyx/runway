@@ -57,7 +57,7 @@ class TestCliInterfaceMixin:
         env = {"foo": "bar"}
         mock_list2cmdline = mocker.patch.object(self.Kls, "list2cmdline", return_value="success")
         mock_subprocess = mocker.patch(f"{MODULE}.subprocess.check_call", return_value=0)
-        assert not self.Kls(Mock(env=Mock(vars=env)), tmp_path)._run_command(
+        assert not self.Kls(Mock(env=Mock(vars=env)), tmp_path)._run_command(  # type: ignore[func-returns-value]
             ["foo", "bar"], suppress_output=False
         )
         mock_list2cmdline.assert_called_once_with(["foo", "bar"])
@@ -174,13 +174,13 @@ class TestDelCachedPropMixin:
         obj = self.Kls()
         # ensure suppression is working as expected
         assert obj.counter == 0
-        assert not obj._del_cached_property("test_prop")
+        assert not obj._del_cached_property("test_prop")  # type: ignore[func-returns-value]
         assert obj.test_prop == "foobar"
         assert obj.counter == 1
         # ensure value is cached and not being evaluated each call
         assert obj.test_prop == "foobar"
         assert obj.counter == 1
         # this would fail if the suppression was outside the loop
-        assert not obj._del_cached_property("invalid", "test_prop")
+        assert not obj._del_cached_property("invalid", "test_prop")  # type: ignore[func-returns-value]
         assert obj.test_prop == "foobar"
         assert obj.counter == 2

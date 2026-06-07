@@ -239,7 +239,7 @@ class ActionArchitecture:
             return_code = 1
         elif files[0].num_tasks_warned > 0:  # type: ignore
             return_code = 2
-        return return_code
+        return return_code  # type: ignore[return-value]
 
     @staticmethod
     def _get_file_generator_request_parameters_skeleton() -> dict[str, dict[str, Any]]:

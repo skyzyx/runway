@@ -169,7 +169,7 @@ class TestAction:
 
         obj.upload_disabled = True
         assert obj.upload_disabled
-        assert obj.upload_explicitly_disabled
+        assert obj.upload_explicitly_disabled  # type: ignore[unreachable]
 
     def test_upload_disabled_setter_raise_cfngin_bucket_required(
         self, cfngin_context: CfnginContext, mocker: MockerFixture
@@ -249,7 +249,7 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         provider.get_stack_status_reason.return_value = "reason"
         self.deploy_action.provider_builder = MockProviderBuilder(provider=provider)
         status = self.deploy_action._destroy_stack(
-            MockStack("vpc", in_progress_behavior="wait"),
+            MockStack("vpc", in_progress_behavior="wait"),  # type: ignore[arg-type]
             status=PENDING,  # type: ignore
         )
         provider.is_stack_being_destroyed.assert_called_once_with(provider.get_stack.return_value)
@@ -484,8 +484,8 @@ class TestLaunchStack(TestBuildAction):  # TODO (kyle): refactor tests to be pyt
         """Run before tests."""
         self.context = self._get_context()
         self.session = get_session(region=None)
-        self.provider = Provider(self.session, interactive=False, recreate_failed=False)
-        provider_builder = MockProviderBuilder(provider=self.provider)
+        self.provider = Provider(self.session, interactive=False, recreate_failed=False)  # type: ignore[assignment]
+        provider_builder = MockProviderBuilder(provider=self.provider)  # type: ignore[arg-type]
         self.deploy_action = deploy.Action(
             self.context,
             provider_builder=provider_builder,
@@ -610,7 +610,7 @@ class TestLaunchStack(TestBuildAction):  # TODO (kyle): refactor tests to be pyt
         and re-created rather than requiring manual intervention. This tests
         the full delete-then-create sequence.
         """
-        self.provider.recreate_failed = True
+        self.provider.recreate_failed = True  # type: ignore[attr-defined]
 
         # initial status should be PENDING
         assert self.step.status == PENDING

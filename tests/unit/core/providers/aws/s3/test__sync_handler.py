@@ -31,7 +31,7 @@ class TestS3SyncHandler:
         mock_action = mocker.patch(f"{MODULE}.ActionArchitecture")
         transfer_config = mocker.patch.object(S3SyncHandler, "transfer_config", {"key": "val"})
         obj = S3SyncHandler(runway_context, dest="", src="")
-        assert not obj.run()
+        assert not obj.run()  # type: ignore[func-returns-value]
         mock_register_sync_strategies.assert_called_once_with(obj._botocore_session)
         mock_action.assert_called_once_with(
             session=obj._session,
@@ -52,7 +52,7 @@ class TestS3SyncHandler:
         config = {"key": "val"}
         scoped_config = Mock(get=Mock(return_value=config))
         obj = S3SyncHandler(runway_context, dest="", src="")
-        obj._botocore_session.get_scoped_config = Mock(return_value=scoped_config)
+        obj._botocore_session.get_scoped_config = Mock(return_value=scoped_config)  # type: ignore[method-assign]
         assert obj.transfer_config == mock_runtime_config.build_config.return_value
         obj._botocore_session.get_scoped_config.assert_called_once_with()
         scoped_config.get.assert_called_once_with("s3", {})

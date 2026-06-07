@@ -68,7 +68,7 @@ class TestRunwayModuleDefinitionModel:
 
         data[field] = "${var something}"
         obj = RunwayModuleDefinitionModel.model_validate(data)
-        assert obj[field] == data[field]
+        assert obj[field] == data[field]  # type: ignore[index]
 
     def test_extra(self) -> None:
         """Test extra fields."""

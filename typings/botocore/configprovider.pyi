@@ -10,7 +10,7 @@ from botocore import utils
 is loaded.
 """
 logger = logging.getLogger(__name__)
-BOTOCORE_DEFAUT_SESSION_VARIABLES = {
+BOTOCORE_DEFAUT_SESSION_VARIABLES = {  # type: ignore[var-annotated]
     "profile": (None, ["AWS_DEFAULT_PROFILE", "AWS_PROFILE"], None, None),
     "region": ("region", "AWS_DEFAULT_REGION", None, None),
     "data_path": ("data_path", "AWS_DATA_PATH", None, None),

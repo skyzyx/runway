@@ -111,7 +111,7 @@ class TestCfnginBucket:
         bucket = mocker.patch.object(CfnginBucket, "bucket", "bucket")
         obj = CfnginBucket("test", cfngin_context)
         mock_template = mocker.patch.object(obj, "template")
-        assert not obj.create_template()
+        assert not obj.create_template()  # type: ignore[func-returns-value]
         mock_template.set_description.assert_called_once_with(obj.DESCRIPTION)
         mock_template.set_version.assert_called_once_with("2010-09-09")
         mock_template.add_resource.assert_called_once_with(bucket)

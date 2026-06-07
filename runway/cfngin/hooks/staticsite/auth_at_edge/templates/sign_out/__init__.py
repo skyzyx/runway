@@ -3,7 +3,7 @@
 import logging
 from urllib.parse import urlencode
 
-from shared import (
+from shared import (  # type: ignore[import-not-found]
     create_error_html,
     extract_and_parse_cookies,
     generate_cookie_headers,

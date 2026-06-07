@@ -189,7 +189,7 @@ class FileGenerator:
                 "last_update": extra_information.get("LastModified", EPOCH_TIME),
                 "operation_name": self.operation_name,
                 "response_data": None,
-                "size": extra_information.get("Size", 0),
+                "size": extra_information.get("Size", 0),  # type: ignore[typeddict-item]
                 "src": src_path,
                 "src_type": files["src"]["type"],
             }
@@ -395,5 +395,5 @@ class FileGenerator:
             raise ClientError(response, "HeadObject") from None
         response["Size"] = int(response.pop("ContentLength"))  # type: ignore
         last_update = parse(response["LastModified"])  # type: ignore
-        response["LastModified"] = last_update.astimezone(tzlocal())
+        response["LastModified"] = last_update.astimezone(tzlocal())  # type: ignore[union-attr]
         return s3_path, response

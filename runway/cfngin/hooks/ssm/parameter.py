@@ -275,12 +275,12 @@ class _Parameter(CfnginHookProtocol):
                     self.args.name,
                 )
                 return {
-                    "Tier": current_param.get("Tier", self.args.tier),
+                    "Tier": current_param.get("Tier", self.args.tier),  # type: ignore[typeddict-item]
                     "Version": current_param.get("Version", 0),
                 }
         else:
-            result: _PutParameterResultTypeDef = {
-                "Tier": current_param.get("Tier", self.args.tier),
+            result: _PutParameterResultTypeDef = {  # type: ignore[no-redef]
+                "Tier": current_param.get("Tier", self.args.tier),  # type: ignore[typeddict-item]
                 "Version": current_param.get("Version", 0),
             }
         LOGGER.info("put SSM Parameter %s", self.args.name)

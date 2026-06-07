@@ -65,7 +65,7 @@ class BaseSync:
 
     def register_strategy(self, session: Session) -> None:
         """Register the sync strategy class to the given session."""
-        session.register("choosing-s3-sync-strategy", self.use_sync_strategy)
+        session.register("choosing-s3-sync-strategy", self.use_sync_strategy)  # type: ignore[arg-type]
 
     def determine_should_sync(
         self, src_file: FileStats | None, dest_file: FileStats | None

@@ -20,8 +20,8 @@ try:  # will raise an import error if git is not in the current path
     import git
     from git.exc import InvalidGitRepositoryError
 except ImportError:  # cov: ignore
-    git = object
-    InvalidGitRepositoryError = AttributeError
+    git = object  # type: ignore[assignment]
+    InvalidGitRepositoryError = AttributeError  # type: ignore[assignment]
 
 if TYPE_CHECKING:
     from ..._logging import RunwayLogger
@@ -66,7 +66,7 @@ class DeployEnvironment(DelCachedPropMixin):
     def aws_credentials(self) -> EnvVarsAwsCredentialsTypeDef:
         """Get AWS credentials from environment variables."""
         return EnvVarsAwsCredentialsTypeDef(
-            **{name: self.vars[name] for name in AWS_ENV_VARS if self.vars.get(name)}
+            **{name: self.vars[name] for name in AWS_ENV_VARS if self.vars.get(name)}  # type: ignore[call-arg]
         )
 
     @property
@@ -93,7 +93,7 @@ class DeployEnvironment(DelCachedPropMixin):
     def branch_name(self) -> str | None:
         """Git branch name."""
         if isinstance(git, type):
-            LOGGER.debug(
+            LOGGER.debug(  # type: ignore[unreachable]
                 "failed to import git; ensure git is your path and "
                 "executable to read the branch name"
             )

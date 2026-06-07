@@ -34,7 +34,7 @@ class TestAwsLambdaHook:
 
     def test___init__(self, cfngin_context: CfnginContext) -> None:
         """Test __init__."""
-        obj: AwsLambdaHook[Any] = AwsLambdaHook(cfngin_context)
+        obj: AwsLambdaHook[Any] = AwsLambdaHook(cfngin_context)  # type: ignore[abstract]
         assert not obj.BUILD_LAYER  # class var
         assert obj.ctx  # only one attribute is currently set by this base class
         assert not hasattr(obj, "attrs"), "should be set by subclasses not by the parent"
@@ -60,7 +60,7 @@ class TestAwsLambdaHook:
             ),
         )
         deployment_package.bucket.name = "test-bucket"
-        assert AwsLambdaHook(Mock()).build_response("deploy") == AwsLambdaHookDeployResponse(
+        assert AwsLambdaHook(Mock()).build_response("deploy") == AwsLambdaHookDeployResponse(  # type: ignore[abstract]
             bucket_name=deployment_package.bucket.name,
             code_sha256=deployment_package.code_sha256,
             license="license",
@@ -71,7 +71,7 @@ class TestAwsLambdaHook:
 
     def test_build_response_destroy(self) -> None:
         """Test build_response."""
-        assert not AwsLambdaHook(Mock()).build_response("destroy")
+        assert not AwsLambdaHook(Mock()).build_response("destroy")  # type: ignore[abstract]
 
     def test_build_response_plan(self, mocker: MockerFixture) -> None:
         """Test build_response."""
@@ -94,7 +94,7 @@ class TestAwsLambdaHook:
             ),
         )
         deployment_package.bucket.name = "test-bucket"
-        assert AwsLambdaHook(Mock()).build_response("plan") == AwsLambdaHookDeployResponse(
+        assert AwsLambdaHook(Mock()).build_response("plan") == AwsLambdaHookDeployResponse(  # type: ignore[abstract]
             bucket_name=deployment_package.bucket.name,
             code_sha256=deployment_package.code_sha256,
             object_key=deployment_package.object_key,
@@ -124,12 +124,12 @@ class TestAwsLambdaHook:
             f"{MODULE}.AwsLambdaHookDeployResponse",
             side_effect=[FileNotFoundError, "success"],
         )
-        assert AwsLambdaHook(Mock()).build_response("plan") == "success"
+        assert AwsLambdaHook(Mock()).build_response("plan") == "success"  # type: ignore[abstract]
 
     def test_deployment_package(self) -> None:
         """Test deployment_package."""
         with pytest.raises(NotImplementedError):
-            assert AwsLambdaHook(Mock()).deployment_package
+            assert AwsLambdaHook(Mock()).deployment_package  # type: ignore[abstract]
 
     def test_plan(self, mocker: MockerFixture) -> None:
         """Test plan."""
@@ -137,38 +137,38 @@ class TestAwsLambdaHook:
         build_response = mocker.patch.object(
             AwsLambdaHook, "build_response", return_value=response_obj
         )
-        assert AwsLambdaHook(Mock()).plan() == response_obj.model_dump.return_value
+        assert AwsLambdaHook(Mock()).plan() == response_obj.model_dump.return_value  # type: ignore[abstract]
         build_response.assert_called_once_with("plan")
         response_obj.model_dump.assert_called_once_with(by_alias=True)
 
     def test_post_deploy(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test post_deploy."""
         caplog.set_level(logging.WARNING, logger=MODULE)
-        assert AwsLambdaHook(Mock()).post_deploy()
+        assert AwsLambdaHook(Mock()).post_deploy()  # type: ignore[abstract]
         assert f"post_deploy not implimented for {AwsLambdaHook.__name__}" in caplog.messages
 
     def test_post_destroy(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test post_destroy."""
         caplog.set_level(logging.WARNING, logger=MODULE)
-        assert AwsLambdaHook(Mock()).post_destroy()
+        assert AwsLambdaHook(Mock()).post_destroy()  # type: ignore[abstract]
         assert f"post_destroy not implimented for {AwsLambdaHook.__name__}" in caplog.messages
 
     def test_pre_deploy(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test pre_deploy."""
         caplog.set_level(logging.WARNING, logger=MODULE)
-        assert AwsLambdaHook(Mock()).pre_deploy()
+        assert AwsLambdaHook(Mock()).pre_deploy()  # type: ignore[abstract]
         assert f"pre_deploy not implimented for {AwsLambdaHook.__name__}" in caplog.messages
 
     def test_pre_destroy(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test pre_destroy."""
         caplog.set_level(logging.WARNING, logger=MODULE)
-        assert AwsLambdaHook(Mock()).pre_destroy()
+        assert AwsLambdaHook(Mock()).pre_destroy()  # type: ignore[abstract]
         assert f"pre_destroy not implimented for {AwsLambdaHook.__name__}" in caplog.messages
 
     def test_project(self) -> None:
         """Test project."""
         with pytest.raises(NotImplementedError):
-            assert AwsLambdaHook(Mock()).project
+            assert AwsLambdaHook(Mock()).project  # type: ignore[abstract]
 
 
 class TestProject:
@@ -233,7 +233,7 @@ class TestProject:
 
     def test_cleanup(self) -> None:
         """Test cleanup. Should do nothing."""
-        assert not Project(Mock(), Mock()).cleanup()
+        assert not Project(Mock(), Mock()).cleanup()  # type: ignore[func-returns-value]
 
     def test_compatible_architectures(self, tmp_path: Path) -> None:
         """Test compatible_architectures."""
@@ -242,7 +242,7 @@ class TestProject:
             Mock(),
         ).compatible_architectures
         assert Project(
-            Mock(compatible_architectures=["foobar"]), Mock
+            Mock(compatible_architectures=["foobar"]), Mock  # type: ignore[arg-type]
         ).compatible_architectures == ["foobar"]
 
     def test_compatible_runtimes(self, mocker: MockerFixture, tmp_path: Path) -> None:
@@ -277,7 +277,7 @@ class TestProject:
     def test_install_dependencies(self) -> None:
         """Test install_dependencies."""
         with pytest.raises(NotImplementedError):
-            assert Project(Mock(), Mock()).install_dependencies()
+            assert Project(Mock(), Mock()).install_dependencies()  # type: ignore[func-returns-value]
 
     def test_license(self, tmp_path: Path) -> None:
         """Test license."""

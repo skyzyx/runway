@@ -47,7 +47,7 @@ class TestRunwayModuleDefinition:
         """Test child_modules.setter when list item is now supported."""
         obj = RunwayModuleDefinition.parse_obj({"path": "./"})
         with pytest.raises(TypeError):
-            obj.child_modules = [
+            obj.child_modules = [  # type: ignore[assignment]
                 RunwayModuleDefinitionModel(path="./"),
                 "invalid",  # type: ignore
             ]
@@ -140,6 +140,6 @@ class TestRunwayModuleDefinition:
             }
         )
         obj = RunwayModuleDefinition(data)
-        assert not obj.reverse()
+        assert not obj.reverse()  # type: ignore[func-returns-value]
         assert obj._data.parallel != data.parallel
         assert obj._data.parallel == [data.parallel[1], data.parallel[0]]

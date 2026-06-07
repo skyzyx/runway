@@ -38,7 +38,7 @@ def test_delete_ecr_images() -> None:
     )
 
     with stubber:
-        assert not delete_ecr_images(client, image_ids=image_ids, repository_name=repo_name)
+        assert not delete_ecr_images(client, image_ids=image_ids, repository_name=repo_name)  # type: ignore[func-returns-value]
 
 
 def test_delete_ecr_images_failures() -> None:

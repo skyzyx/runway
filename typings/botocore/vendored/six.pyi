@@ -10,7 +10,7 @@ import struct
 import sys
 import types
 
-import StringIO
+import StringIO  # type: ignore[import-not-found]
 
 """Utilities for writing code that runs on Python 2 and 3"""
 __author__ = "Benjamin Peterson <benjamin@python.org>"
@@ -80,7 +80,7 @@ _importer = _SixMetaPathImporter(__name__)
 class _MovedItems(_LazyModule):
     """Lazy loading of moved objects"""
 
-    __path__ = ...
+    __path__ = ...  # type: ignore[assignment]
 
 _moved_attributes = [
     MovedAttribute("cStringIO", "cStringIO", "io", "StringIO"),
@@ -257,7 +257,7 @@ _urllib_robotparser_moved_attributes = [
 class Module_six_moves_urllib(types.ModuleType):
     """Create a six.moves.urllib namespace that resembles the Python 3 namespace"""
 
-    __path__ = ...
+    __path__ = ...  # type: ignore[assignment]
     parse = ...
     error = ...
     request = ...
@@ -287,7 +287,7 @@ else:
     _func_code = "func_code"
     _func_defaults = "func_defaults"
     _func_globals = "func_globals"
-next = advance_iterator
+next = advance_iterator  # type: ignore[name-defined]
 if PY3:
     def get_unbound_function(unbound): ...
     create_bound_method = types.MethodType

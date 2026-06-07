@@ -100,7 +100,7 @@ class MockBoto3Session:
         key = f"{service_name}.{region or self.region_name}"
         client = cast(
             "BaseClient",
-            boto3.client(
+            boto3.client(  # type: ignore[call-overload]
                 service_name,  # pyright: ignore[reportCallIssue, reportArgumentType]
                 region_name=region or self.region_name,
             ),
@@ -114,7 +114,7 @@ class MockBoto3Session:
         kwargs.setdefault("region_name", self.region_name)
         resource = cast(
             "ServiceResource",
-            boto3.resource(
+            boto3.resource(  # type: ignore[call-overload]
                 service_name,  # pyright: ignore[reportCallIssue, reportArgumentType]
                 **kwargs,
             ),

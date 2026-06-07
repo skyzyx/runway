@@ -85,7 +85,7 @@ def test_ensure_s3_bucket() -> None:
     stubber = Stubber(s3_client)
     stubber.add_response("head_bucket", {}, {"Bucket": "test-bucket"})
     with stubber:
-        assert not ensure_s3_bucket(s3_client, "test-bucket")
+        assert not ensure_s3_bucket(s3_client, "test-bucket")  # type: ignore[func-returns-value]
     stubber.assert_no_pending_responses()
 
 
@@ -101,7 +101,7 @@ def test_ensure_s3_bucket_forbidden(caplog: pytest.LogCaptureFixture) -> None:
     stubber = Stubber(s3_client)
     stubber.add_client_error("head_bucket", service_message="Forbidden")
     with stubber, pytest.raises(ClientError, match="Forbidden"):
-        assert ensure_s3_bucket(s3_client, "test-bucket")
+        assert ensure_s3_bucket(s3_client, "test-bucket")  # type: ignore[func-returns-value]
     stubber.assert_no_pending_responses()
     assert (
         "Access denied for bucket test-bucket. Did you remember to use a globally unique name?"
@@ -132,7 +132,7 @@ def test_ensure_s3_bucket_not_found(mocker: MockerFixture) -> None:
         },
     )
     with stubber:
-        assert not ensure_s3_bucket(s3_client, "test-bucket", "us-east-1")
+        assert not ensure_s3_bucket(s3_client, "test-bucket", "us-east-1")  # type: ignore[func-returns-value]
     stubber.assert_no_pending_responses()
     mock_s3_bucket_location_constraint.assert_called_once_with("us-east-1")
 
@@ -147,7 +147,7 @@ def test_ensure_s3_bucket_not_found_not_create() -> None:
     stubber = Stubber(s3_client)
     stubber.add_client_error("head_bucket", service_message="Not Found")
     with stubber, pytest.raises(ClientError, match="Not Found"):
-        assert not ensure_s3_bucket(s3_client, "test-bucket", create=False)
+        assert not ensure_s3_bucket(s3_client, "test-bucket", create=False)  # type: ignore[func-returns-value]
     stubber.assert_no_pending_responses()
 
 
@@ -167,7 +167,7 @@ def test_ensure_s3_bucket_not_found_persist_graph() -> None:
         {"Bucket": "test-bucket", "VersioningConfiguration": {"Status": "Enabled"}},
     )
     with stubber:
-        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)
+        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)  # type: ignore[func-returns-value]
     stubber.assert_no_pending_responses()
 
 
@@ -183,7 +183,7 @@ def test_ensure_s3_bucket_persist_graph(caplog: pytest.LogCaptureFixture) -> Non
     stubber.add_response("head_bucket", {}, {"Bucket": "test-bucket"})
     stubber.add_response("get_bucket_versioning", {"Status": "Enabled"}, {"Bucket": "test-bucket"})
     with stubber:
-        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)
+        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)  # type: ignore[func-returns-value]
     stubber.assert_no_pending_responses()
     assert not caplog.messages
 
@@ -204,7 +204,7 @@ def test_ensure_s3_bucket_persist_graph_mfa_delete(caplog: pytest.LogCaptureFixt
         {"Bucket": "test-bucket"},
     )
     with stubber:
-        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)
+        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)  # type: ignore[func-returns-value]
     stubber.assert_no_pending_responses()
     assert (
         'MFADelete must be disabled on bucket "test-bucket" when using persistent '
@@ -230,7 +230,7 @@ def test_ensure_s3_bucket_persist_graph_versioning_not_enabled(
     stubber.add_response("head_bucket", {}, {"Bucket": "test-bucket"})
     stubber.add_response("get_bucket_versioning", versioning_response, {"Bucket": "test-bucket"})
     with stubber:
-        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)
+        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)  # type: ignore[func-returns-value]
     stubber.assert_no_pending_responses()
     assert "it is recommended to enable versioning when using persistent graphs" in "\n".join(
         caplog.messages
@@ -249,7 +249,7 @@ def test_ensure_s3_bucket_raise_client_error(caplog: pytest.LogCaptureFixture) -
     stubber = Stubber(s3_client)
     stubber.add_client_error("head_bucket")
     with stubber, pytest.raises(ClientError):
-        assert not ensure_s3_bucket(s3_client, "test-bucket")
+        assert not ensure_s3_bucket(s3_client, "test-bucket")  # type: ignore[func-returns-value]
     stubber.assert_no_pending_responses()
     assert 'error creating bucket "test-bucket"' in caplog.messages
 
@@ -501,7 +501,7 @@ Outputs:
         """
         path = self.tmp_path / "my_directory"
         with tarfile.open(self.tmp_path / self.tar_file, "r") as tar:
-            assert safe_tar_extract(tar, path) is None
+            assert safe_tar_extract(tar, path) is None  # type: ignore[func-returns-value]
 
     def test_safe_tar_extract_path_traversal(self) -> None:
         """Test when a tar file tries to go outside the specified area.
@@ -566,7 +566,7 @@ Outputs:
             for i in [cast("dict[str, Any]", {}), {"tag": "foo"}, {"commit": "1234"}]:
                 assert (
                     sp.determine_git_ls_remote_ref(
-                        GitCfnginPackageSourceDefinitionModel(uri="git@foo", **i)
+                        GitCfnginPackageSourceDefinitionModel(uri="git@foo", **i)  # type: ignore[arg-type]
                     )
                     == "HEAD"
                 )
@@ -587,7 +587,7 @@ Outputs:
             ]
             for i in bad_configs:
                 with pytest.raises(ValidationError):
-                    sp.determine_git_ref(GitCfnginPackageSourceDefinitionModel(**i))
+                    sp.determine_git_ref(GitCfnginPackageSourceDefinitionModel(**i))  # type: ignore[arg-type]
 
             assert (
                 sp.determine_git_ref(

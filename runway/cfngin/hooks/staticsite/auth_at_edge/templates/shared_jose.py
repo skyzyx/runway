@@ -7,7 +7,7 @@ import logging
 import re
 from urllib import request
 
-from jose import jwt
+from jose import jwt  # type: ignore[import-untyped]
 
 LOGGER = logging.getLogger(__name__)
 

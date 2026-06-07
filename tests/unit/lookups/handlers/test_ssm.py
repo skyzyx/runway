@@ -183,7 +183,7 @@ class TestSsmLookup:
 
                 stubber.add_response(
                     "get_parameter",
-                    get_parameter_response(name, dumped_value),
+                    get_parameter_response(name, dumped_value),  # type: ignore[arg-type]
                     get_parameter_request(name),
                 )
 

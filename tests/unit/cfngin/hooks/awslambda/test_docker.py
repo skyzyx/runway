@@ -301,12 +301,12 @@ class TestDockerDependencyInstaller:
             DockerDependencyInstaller, "run_command", return_value=["foo"]
         )
         obj = DockerDependencyInstaller(Mock(), client=Mock())
-        assert not obj.install()
+        assert not obj.install()  # type: ignore[func-returns-value]
         run_command.assert_has_calls(
             [
-                call(pre_install_commands[0]),
-                call(install_commands[0]),
-                call(post_install_commands[0]),
+                call(pre_install_commands[0]),  # type: ignore[index]
+                call(install_commands[0]),  # type: ignore[index]
+                call(post_install_commands[0]),  # type: ignore[index]
             ]
         )
 

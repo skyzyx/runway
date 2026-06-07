@@ -13,6 +13,7 @@
 # @config-manager:start kg-single
 .session-id
 kirograph.db
+kirograph.lock
 orama.json
 token-savings.jsonl
 vec.db

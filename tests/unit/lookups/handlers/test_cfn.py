@@ -138,7 +138,7 @@ class TestCfnLookup:
         mock_context.get_session.return_value = mock_session
         mock_session.client.return_value = mock_session
         mocker.patch.object(CfnLookup, "get_stack_output", MagicMock())
-        CfnLookup.get_stack_output.side_effect = exception
+        CfnLookup.get_stack_output.side_effect = exception  # type: ignore[attr-defined]
 
         raw_query = "test-stack.output1"
         query = OutputQuery(*raw_query.split("."))
@@ -163,7 +163,7 @@ class TestCfnLookup:
 
         mock_context.get_session.assert_called_once()
         mock_session.client.assert_called_once_with("cloudformation")
-        CfnLookup.get_stack_output.assert_called_once_with(mock_session, query)
+        CfnLookup.get_stack_output.assert_called_once_with(mock_session, query)  # type: ignore[attr-defined]
 
     @pytest.mark.parametrize(
         "exception, default",
@@ -306,7 +306,7 @@ class TestCfnLookup:
     ) -> None:
         """Test should_use_provider with falsy cases."""
         caplog.set_level(logging.DEBUG, logger="runway.lookups.handlers.cfn")
-        assert not CfnLookup.should_use_provider(args, provider)
+        assert not CfnLookup.should_use_provider(args, provider)  # type: ignore[arg-type]
         if provider:
             assert "not using provider; requested region does not match" in caplog.messages
             assert "using provider" not in caplog.messages
@@ -326,7 +326,7 @@ class TestCfnLookup:
     ) -> None:
         """Test should_use_provider with truthy cases."""
         caplog.set_level(logging.DEBUG, logger="runway.lookups.handlers.cfn")
-        assert CfnLookup.should_use_provider(args, provider)
+        assert CfnLookup.should_use_provider(args, provider)  # type: ignore[arg-type]
         assert "using provider" in caplog.messages
 
 

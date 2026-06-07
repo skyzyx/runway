@@ -85,7 +85,7 @@ class TestBaseAction(unittest.TestCase):
             context=mock_context("mynamespace"),
             provider_builder=MockProviderBuilder(provider=Provider(get_session("us-east-1"))),
         )
-        assert not action.ensure_cfn_bucket()
+        assert not action.ensure_cfn_bucket()  # type: ignore[func-returns-value]
         mock_ensure_s3_bucket.assert_called_once_with(
             action.s3_conn, action.bucket_name, None, create=False
         )
@@ -109,7 +109,7 @@ class TestBaseAction(unittest.TestCase):
             provider_builder=MockProviderBuilder(provider=Provider(get_session("us-east-1"))),
         )
         with pytest.raises(CfnginBucketNotFound):
-            assert action.ensure_cfn_bucket()
+            assert action.ensure_cfn_bucket()  # type: ignore[func-returns-value]
         mock_ensure_s3_bucket.assert_called_once_with(
             action.s3_conn, action.bucket_name, None, create=False
         )

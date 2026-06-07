@@ -212,7 +212,7 @@ class TestCFNginContext:
     def test_lock_persistent_graph_no_graph(self, mocker: MockerFixture) -> None:
         """Test lock_persistent_graph no graph."""
         mocker.patch.object(CfnginContext, "persistent_graph", None)
-        assert CfnginContext().lock_persistent_graph("123") is None
+        assert CfnginContext().lock_persistent_graph("123") is None  # type: ignore[func-returns-value]
 
     def test_lock_persistent_graph_no_such_key(self, mocker: MockerFixture) -> None:
         """Test lock_persistent_graph NoSuchKey."""
@@ -249,7 +249,7 @@ class TestCFNginContext:
             },
         )
         with stubber:
-            assert not obj.lock_persistent_graph("123")
+            assert not obj.lock_persistent_graph("123")  # type: ignore[func-returns-value]
 
     def test_mappings(self) -> None:
         """Test mappings."""
@@ -463,7 +463,7 @@ class TestCFNginContext:
         stubber = Stubber(obj.s3_client)
         stubber.add_response("delete_object", {}, obj.persistent_graph_location)
         with stubber:
-            assert not obj.put_persistent_graph("123")
+            assert not obj.put_persistent_graph("123")  # type: ignore[func-returns-value]
 
     def test_put_persistent_graph_lock_code_mismatch(self, mocker: MockerFixture) -> None:
         """Test put_persistent_graph lock code mismatch."""
@@ -495,7 +495,7 @@ class TestCFNginContext:
     def test_put_persistent_graph_no_graph(self, mocker: MockerFixture) -> None:
         """Test put_persistent_graph n persistent_graph."""
         mocker.patch.object(CfnginContext, "persistent_graph", False)
-        assert not CfnginContext().put_persistent_graph("123")
+        assert not CfnginContext().put_persistent_graph("123")  # type: ignore[func-returns-value]
 
     def test_put_persistent_graph(self, mocker: MockerFixture) -> None:
         """Test put_persistent_graph."""
@@ -522,7 +522,7 @@ class TestCFNginContext:
             },
         )
         with stubber:
-            assert not obj.put_persistent_graph("123")
+            assert not obj.put_persistent_graph("123")  # type: ignore[func-returns-value]
 
     def test_s3_bucket_verified_no_bucket(self, mocker: MockerFixture) -> None:
         """Test s3_bucket_verified no bucket."""

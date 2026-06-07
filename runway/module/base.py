@@ -79,7 +79,7 @@ class RunwayModule(Generic[_ModuleOptionsTypeVar]):
         self.explicitly_enabled = explicitly_enabled
         self.logger = logger
         self.name = name or module_root.name
-        self.options = options or {}
+        self.options = options or {}  # type: ignore[assignment]
         self.parameters = parameters or {}
         self.path = module_root
         self.region = context.env.aws_region

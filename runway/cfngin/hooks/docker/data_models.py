@@ -59,7 +59,7 @@ class ElasticContainerRegistry(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _set_defaults(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _set_defaults(cls, values: dict[str, Any]) -> dict[str, Any]:  # type: ignore[operator]
         """Set default values based on other values.
 
         Derives public/private state and resolves account_id/region from the

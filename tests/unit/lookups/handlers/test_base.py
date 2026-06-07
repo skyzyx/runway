@@ -80,7 +80,7 @@ class TestLookupHandler:
         if isinstance(expected, str):
             assert LookupHandler.format_results(value, transform="str") == expected
         else:  # value should be returned "as is"
-            assert LookupHandler.format_results(value, transform="str") == value
+            assert LookupHandler.format_results(value, transform="str") == value  # type: ignore[unreachable]
 
     def test_load_no_parser(self) -> None:
         """Test load with no parser."""

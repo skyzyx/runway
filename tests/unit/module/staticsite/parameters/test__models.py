@@ -38,7 +38,7 @@ class TestRunwayStaticSiteCustomErrorResponseDataModel:
             "ResponseCode": 404,
             "ResponsePagePath": "./errors/404.html",
         }
-        obj = RunwayStaticSiteCustomErrorResponseDataModel(**data)
+        obj = RunwayStaticSiteCustomErrorResponseDataModel(**data)  # type: ignore[arg-type]
         assert obj.ErrorCachingMinTTL == data["ErrorCachingMinTTL"]
         assert obj.ErrorCode == data["ErrorCode"]
         assert obj.ResponseCode == data["ResponseCode"]

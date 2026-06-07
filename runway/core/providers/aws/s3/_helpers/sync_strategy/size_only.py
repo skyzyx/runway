@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__.replace("._", "."))
 class SizeOnlySync(BaseSync):
     """Only check size when determining if file should sync."""
 
-    NAME: ClassVar[Literal["size_only"]] = "size_only"
+    NAME: ClassVar[Literal["size_only"]] = "size_only"  # type: ignore[assignment]
 
     def determine_should_sync(
         self, src_file: FileStats | None, dest_file: FileStats | None

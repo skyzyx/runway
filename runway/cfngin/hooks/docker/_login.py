@@ -57,7 +57,7 @@ class LoginArgs(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _set_ecr(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _set_ecr(cls, values: dict[str, Any]) -> dict[str, Any]:  # type: ignore[operator]
         """Set the value of ``ecr``.
 
         Eagerly constructs the ElasticContainerRegistry model so that

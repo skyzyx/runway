@@ -239,7 +239,7 @@ class RunwayDeploymentDefinitionModel(ConfigProperty):
 
     @model_validator(mode="before")
     @classmethod
-    def _convert_simple_module(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _convert_simple_module(cls, values: dict[str, Any]) -> dict[str, Any]:  # type: ignore[operator]
         """Convert simple modules to dicts."""
         modules = values.get("modules", [])
         result: list[dict[str, Any]] = []
@@ -253,7 +253,7 @@ class RunwayDeploymentDefinitionModel(ConfigProperty):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_regions(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _validate_regions(cls, values: dict[str, Any]) -> dict[str, Any]:  # type: ignore[operator]
         """Validate & simplify regions."""
         raw_regions: str | list[str] = values.get("regions", [])
         parallel_regions = values.get("parallel_regions", [])
@@ -402,7 +402,7 @@ class RunwayConfigDefinitionModel(ConfigProperty):
 
     @model_validator(mode="before")
     @classmethod
-    def _add_deployment_names(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _add_deployment_names(cls, values: dict[str, Any]) -> dict[str, Any]:  # type: ignore[operator]
         """Add names to deployments that are missing them."""
         deployments = values.get("deployments", [])
         for i, deployment in enumerate(deployments):
@@ -417,7 +417,7 @@ class RunwayConfigDefinitionModel(ConfigProperty):
         return str(runway_version)
 
     @classmethod
-    def parse_file(  # pyright: ignore[reportIncompatibleMethodOverride]
+    def parse_file(  # pyright: ignore[reportIncompatibleMethodOverride]  # type: ignore[override]
         cls: type[Self], path: str | Path
     ) -> Self:
         """Parse a file."""

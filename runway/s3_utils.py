@@ -14,7 +14,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Iterator, Sequence  # type: ignore[misc]
 
     from mypy_boto3_s3.client import S3Client
     from mypy_boto3_s3.service_resource import S3ServiceResource

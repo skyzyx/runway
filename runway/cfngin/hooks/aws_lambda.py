@@ -416,7 +416,7 @@ def dockerized_pip(  # noqa: C901, PLR0912
 
     # 'stream' creates a blocking generator that allows for real-time logs.
     # this loop ends when the container 'auto_remove's itself.
-    for log in container.logs(stdout=True, stderr=True, stream=True, tail=0):
+    for log in container.logs(stdout=True, stderr=True, stream=True, tail=0):  # type: ignore[union-attr]
         # without strip there are a bunch blank lines in the output
         LOGGER.info(log.decode().strip())
 

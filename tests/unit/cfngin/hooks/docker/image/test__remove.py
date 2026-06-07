@@ -60,7 +60,7 @@ def test_remove(
         [call(force=True, image=f"{args.repo}:{tag}", noprune=False) for tag in args.tags]
     )
     assert docker_hook_data.image is None
-    mock_update_context.assert_called_once_with(cfngin_context)
+    mock_update_context.assert_called_once_with(cfngin_context)  # type: ignore[unreachable]
 
 
 def test_remove_image_not_found(

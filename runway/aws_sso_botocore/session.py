@@ -22,5 +22,5 @@ class Session(BotocoreSession):
     def _create_credential_resolver(self):
         """Replace the parent method with one that includes AWS SSO support."""
         return create_credential_resolver(
-            self, region_name=self._last_client_region_used
+            self, region_name=self._last_client_region_used  # type: ignore[attr-defined]
         )

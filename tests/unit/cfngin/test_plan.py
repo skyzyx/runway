@@ -67,7 +67,7 @@ class TestStep(unittest.TestCase):
         self.step.submit()
         assert self.step.status == SUBMITTED
         assert self.step.submitted
-        assert not self.step.completed
+        assert not self.step.completed  # type: ignore[unreachable]
 
         self.step.complete()
         assert self.step.status == COMPLETE
@@ -284,7 +284,7 @@ class TestPlan(unittest.TestCase):
         to reflect the final state.
         """
         context = CfnginContext(config=self.config)
-        context.put_persistent_graph = mock.MagicMock()
+        context.put_persistent_graph = mock.MagicMock()  # type: ignore[method-assign]
         vpc = Stack(definition=generate_definition("vpc", 1), context=context)
         bastion = Stack(
             definition=generate_definition("bastion", 1, requires=[vpc.name]),
@@ -334,7 +334,7 @@ class TestPlan(unittest.TestCase):
         normally and no S3 write is attempted.
         """
         context = CfnginContext(config=self.config)
-        context.put_persistent_graph = mock.MagicMock()
+        context.put_persistent_graph = mock.MagicMock()  # type: ignore[method-assign]
         vpc = Stack(definition=generate_definition("vpc", 1), context=context)
         bastion = Stack(
             definition=generate_definition("bastion", 1, requires=[vpc.name]),

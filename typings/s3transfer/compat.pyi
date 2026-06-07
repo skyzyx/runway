@@ -3,7 +3,7 @@
 import socket
 import sys
 
-from botocore.compat import six
+from botocore.compat import six  # type: ignore[attr-defined]
 
 if sys.platform.startswith("win"):
     def rename_file(current_filename, new_filename): ...

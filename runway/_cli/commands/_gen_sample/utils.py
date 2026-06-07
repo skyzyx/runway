@@ -60,7 +60,7 @@ def write_tfstate_template(
     """
     LOGGER.debug('writing TfState as a YAML template to "%s"', dest)
     dest.write_text(
-        to_yaml(
+        to_yaml(  # type: ignore[arg-type]
             TfState("test", CfnginContext(environment={"namespace": "test"})).to_json(
                 {"BucketDeletionPolicy": bucket_deletion_policy}
             )

@@ -868,7 +868,7 @@ class Provider(BaseProvider):
 
         """
         event: dict[str, str] | StackEventTypeDef = (
-            self.get_event_by_resource_status(stack_name, "DELETE_FAILED", chronological=True) or {}
+            self.get_event_by_resource_status(stack_name, "DELETE_FAILED", chronological=True) or {}  # type: ignore[typeddict-item]
         )
         return event.get("ResourceStatusReason")
 
@@ -953,7 +953,7 @@ class Provider(BaseProvider):
             or self.get_event_by_resource_status(
                 stack_name, "ROLLBACK_IN_PROGRESS", chronological=True
             )
-            or {}
+            or {}  # type: ignore[typeddict-item]
         )
         return event.get("ResourceStatusReason")
 
@@ -1647,8 +1647,8 @@ class Provider(BaseProvider):
         parameters = self.params_as_dict(stack.get("Parameters", []))
 
         # handle yaml templates
-        if isinstance(template, str):
-            template = parse_cloudformation_template(template)
+        if isinstance(template, str):  # type: ignore[unreachable]
+            template = parse_cloudformation_template(template)  # type: ignore[unreachable]
 
         return json.dumps(template, cls=JsonEncoder), parameters
 

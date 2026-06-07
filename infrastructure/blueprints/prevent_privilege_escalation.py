@@ -223,5 +223,5 @@ class AdminPreventPrivilegeEscalation(Blueprint):
                 Version="2012-10-17",
             ),
         )
-        self.add_output(policy.title, self.POLICY_NAME)
+        self.add_output(policy.title, self.POLICY_NAME)  # type: ignore[arg-type]
         self.add_output(f"{policy.title}Arn", policy.ref())

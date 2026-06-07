@@ -48,9 +48,9 @@ class Module:
         self,
         context: RunwayContext,
         definition: RunwayModuleDefinition,
-        deployment: RunwayDeploymentDefinition = None,
-        future: RunwayFutureDefinitionModel = None,
-        variables: RunwayVariablesDefinition = None,
+        deployment: RunwayDeploymentDefinition = None,  # type: ignore[assignment]
+        future: RunwayFutureDefinitionModel = None,  # type: ignore[assignment]
+        variables: RunwayVariablesDefinition = None,  # type: ignore[assignment]
     ) -> None:
         """Instantiate class.
 
@@ -292,7 +292,7 @@ class Module:
         context: RunwayContext,
         modules: list[RunwayModuleDefinition],
         variables: RunwayVariablesDefinition,
-        deployment: RunwayDeploymentDefinition = None,
+        deployment: RunwayDeploymentDefinition = None,  # type: ignore[assignment]
         future: RunwayFutureDefinitionModel | None = None,
     ) -> None:
         """Run a list of modules.
@@ -311,7 +311,7 @@ class Module:
                 context=context,
                 definition=module,
                 deployment=deployment,
-                future=future,
+                future=future,  # type: ignore[arg-type]
                 variables=variables,
             )[action]()
 
@@ -372,7 +372,7 @@ def validate_environment(
         logger.debug("checking if any(%s in %s)", env_def, accepted_values)
         result = any(val in env_def for val in accepted_values)
     else:
-        logger.warning('skipped; unsupported type for environments "%s"', type(env_def))
+        logger.warning('skipped; unsupported type for environments "%s"', type(env_def))  # type: ignore[unreachable]
         return False
 
     if not result:

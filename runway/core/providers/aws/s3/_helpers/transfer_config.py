@@ -96,7 +96,7 @@ class RuntimeConfig:
         for attr in cls.HUMAN_READABLE_SIZES:
             value = runtime_config.get(attr)
             if isinstance(value, str):
-                runtime_config[attr] = human_readable_to_bytes(value)
+                runtime_config[attr] = human_readable_to_bytes(value)  # type: ignore[literal-required]
 
     @classmethod
     def _convert_human_readable_rates(cls, runtime_config: TransferConfigDict) -> None:
@@ -109,7 +109,7 @@ class RuntimeConfig:
                         "as a rate in terms of bytes per seconds "
                         "(e.g. 10MB/s or 800KB/s)"
                     )
-                runtime_config[attr] = human_readable_to_bytes(value[:-2])
+                runtime_config[attr] = human_readable_to_bytes(value[:-2])  # type: ignore[literal-required]
 
     @classmethod
     def _validate_config(cls, runtime_config: TransferConfigDict) -> None:
@@ -117,11 +117,11 @@ class RuntimeConfig:
             value = runtime_config.get(attr)
             if value is not None:
                 try:
-                    runtime_config[attr] = int(value)
-                    if not runtime_config[attr] > 0:
-                        cls._error_positive_value(attr, value)
+                    runtime_config[attr] = int(value)  # type: ignore[call-overload, literal-required]
+                    if not runtime_config[attr] > 0:  # type: ignore[literal-required]
+                        cls._error_positive_value(attr, value)  # type: ignore[arg-type]
                 except ValueError:
-                    cls._error_positive_value(attr, value)
+                    cls._error_positive_value(attr, value)  # type: ignore[arg-type]
 
     @staticmethod
     def _error_positive_value(name: str, value: int) -> NoReturn:

@@ -227,7 +227,7 @@ def build(*, context: CfnginContext, **kwargs: Any) -> DockerHookData:
     """
     args = ImageBuildArgs.model_validate({"context": context, **kwargs})
     docker_hook_data = DockerHookData.from_cfngin_context(context)
-    image, logs = docker_hook_data.client.images.build(
+    image, logs = docker_hook_data.client.images.build(  # type: ignore[misc]
         path=str(args.path), **args.docker.model_dump()
     )
     # Stream build logs so users can observe progress and diagnose failures
@@ -238,8 +238,8 @@ def build(*, context: CfnginContext, **kwargs: Any) -> DockerHookData:
     # Apply each tag individually because the Docker SDK's build method only
     # accepts a single tag; multiple tags require explicit post-build tagging.
     for tag in args.tags:
-        image.tag(args.repo, tag=tag)
+        image.tag(args.repo, tag=tag)  # type: ignore[union-attr]
     image.reload()
-    LOGGER.info("created image %s with tags %s", image.short_id, ", ".join(image.tags))
-    docker_hook_data.image = DockerImage(image=image)
+    LOGGER.info("created image %s with tags %s", image.short_id, ", ".join(image.tags))  # type: ignore[union-attr]
+    docker_hook_data.image = DockerImage(image=image)  # type: ignore[arg-type]
     return docker_hook_data.update_context(context)

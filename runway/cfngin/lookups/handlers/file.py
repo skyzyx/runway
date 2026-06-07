@@ -87,7 +87,7 @@ class FileLookup(LookupHandler[Any]):
         """
         args: ParsedArgsTypeDef = {}
         try:
-            args["codec"], data_or_path = value.split(  # pyright: ignore[reportGeneralTypeIssues]
+            args["codec"], data_or_path = value.split(  # pyright: ignore[reportGeneralTypeIssues]  # type: ignore[typeddict-unknown-key]
                 ":", 1
             )
         except ValueError:

@@ -201,7 +201,7 @@ class TestActionArchitecture:
             "choose_sync_strategies",
             return_value={"sync_strategy": "test"},
         )
-        self.action.action = "invalid"
+        self.action.action = "invalid"  # type: ignore[assignment]
         self.parameters.paths_type = "locals3"
         with pytest.raises(NotImplementedError):
             self.action.run()

@@ -50,7 +50,7 @@ class RxrefLookup(LookupHandler["CfnginContext"]):
         return deconstruct(value), {}
 
     @classmethod
-    def handle(cls, value: str, context: CfnginContext, *, provider: Provider, **_: Any) -> Any:
+    def handle(cls, value: str, context: CfnginContext, *, provider: Provider, **_: Any) -> Any:  # type: ignore[override]
         """Fetch an output from the designated stack in the current namespace.
 
         The ``output`` lookup supports fetching outputs from stacks created

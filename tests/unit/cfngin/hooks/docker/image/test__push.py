@@ -49,7 +49,7 @@ def test_push(
     cfngin_context.hook_data["docker"] = docker_hook_data
     assert push(context=cfngin_context, **args.model_dump()) == docker_hook_data
     mock_from_cfngin_context.assert_called_once_with(cfngin_context)
-    docker_hook_data.client.api.push.assert_has_calls(
+    docker_hook_data.client.api.push.assert_has_calls(  # type: ignore[attr-defined]
         [call(args.repo, tag=args.tags[0]), call(args.repo, tag=args.tags[1])]
     )
     mock_update_context.assert_called_once_with(cfngin_context)

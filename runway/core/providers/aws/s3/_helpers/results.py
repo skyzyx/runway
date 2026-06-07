@@ -242,12 +242,12 @@ class BaseResultSubscriber(OnDoneFilteredSubscriber):
 class UploadResultSubscriber(BaseResultSubscriber):
     """Upload result subscriber."""
 
-    TRANSFER_TYPE: ClassVar[Literal["upload"]] = "upload"
+    TRANSFER_TYPE: ClassVar[Literal["upload"]] = "upload"  # type: ignore[assignment]
 
     def _get_src_dest(self, future: TransferFuture) -> tuple[str, str]:
         call_args = future.meta.call_args
-        src = self._get_src(call_args.fileobj)
-        dest = "s3://" + call_args.bucket + "/" + call_args.key
+        src = self._get_src(call_args.fileobj)  # type: ignore[attr-defined]
+        dest = "s3://" + call_args.bucket + "/" + call_args.key  # type: ignore[attr-defined]
         return src, dest
 
     def _get_src(self, fileobj: AnyPath) -> str:
@@ -264,12 +264,12 @@ class UploadStreamResultSubscriber(UploadResultSubscriber):
 class DownloadResultSubscriber(BaseResultSubscriber):
     """Download result subscriber."""
 
-    TRANSFER_TYPE: ClassVar[Literal["download"]] = "download"
+    TRANSFER_TYPE: ClassVar[Literal["download"]] = "download"  # type: ignore[assignment]
 
     def _get_src_dest(self, future: TransferFuture) -> tuple[str, str]:
         call_args = future.meta.call_args
-        src = "s3://" + call_args.bucket + "/" + call_args.key
-        dest = self._get_dest(call_args.fileobj)
+        src = "s3://" + call_args.bucket + "/" + call_args.key  # type: ignore[attr-defined]
+        dest = self._get_dest(call_args.fileobj)  # type: ignore[attr-defined]
         return src, dest
 
     def _get_dest(self, fileobj: AnyPath) -> str:
@@ -286,24 +286,24 @@ class DownloadStreamResultSubscriber(DownloadResultSubscriber):
 class CopyResultSubscriber(BaseResultSubscriber):
     """Copy result subscriber."""
 
-    TRANSFER_TYPE: ClassVar[Literal["copy"]] = "copy"
+    TRANSFER_TYPE: ClassVar[Literal["copy"]] = "copy"  # type: ignore[assignment]
 
     def _get_src_dest(self, future: TransferFuture) -> tuple[str, str]:
         call_args = future.meta.call_args
-        copy_source = call_args.copy_source
+        copy_source = call_args.copy_source  # type: ignore[attr-defined]
         src = "s3://" + copy_source["Bucket"] + "/" + copy_source["Key"]
-        dest = "s3://" + call_args.bucket + "/" + call_args.key
+        dest = "s3://" + call_args.bucket + "/" + call_args.key  # type: ignore[attr-defined]
         return src, dest
 
 
 class DeleteResultSubscriber(BaseResultSubscriber):
     """Delete result subscriber."""
 
-    TRANSFER_TYPE: ClassVar[Literal["delete"]] = "delete"
+    TRANSFER_TYPE: ClassVar[Literal["delete"]] = "delete"  # type: ignore[assignment]
 
     def _get_src_dest(self, future: TransferFuture) -> tuple[str, None]:  # type: ignore
         call_args = future.meta.call_args
-        src = "s3://" + call_args.bucket + "/" + call_args.key
+        src = "s3://" + call_args.bucket + "/" + call_args.key  # type: ignore[attr-defined]
         return src, None
 
 
@@ -353,7 +353,7 @@ class ResultRecorder(BaseResultHandler):
 
     def __call__(self, result: AnyResultType | PrintTask) -> None:
         """Record the result of an individual Result object."""
-        self._result_handler_map.get(type(result).__name__, self._record_noop)(result=result)
+        self._result_handler_map.get(type(result).__name__, self._record_noop)(result=result)  # type: ignore[operator]
 
     @staticmethod
     def _get_ongoing_dict_key(result: AnyResultType | object) -> str:
@@ -403,9 +403,9 @@ class ResultRecorder(BaseResultHandler):
         # than the timestamp of when the result processor actually
         # processes that initial queued result. So this will avoid
         # negative progress being displayed or zero division occurring.
-        if result.timestamp > self.start_time:
-            self.bytes_transfer_speed = self.bytes_transferred / (
-                result.timestamp - self.start_time
+        if result.timestamp > self.start_time:  # type: ignore[operator]
+            self.bytes_transfer_speed = self.bytes_transferred / (  # type: ignore[assignment]
+                result.timestamp - self.start_time  # type: ignore[operator]
             )
 
     def _update_ongoing_transfer_size_if_unknown(self, result: ProgressResult) -> None:
@@ -428,7 +428,7 @@ class ResultRecorder(BaseResultHandler):
             # just update the expected bytes with the know bytes transferred
             # as we know at the very least, those bytes are expected.
             else:
-                self.expected_bytes_transferred += result.bytes_transferred
+                self.expected_bytes_transferred += result.bytes_transferred  # type: ignore[unreachable]
 
     def _record_success_result(self, result: AnyResultType, **_: Any) -> None:
         self._pop_result_from_ongoing_dicts(result)
@@ -515,7 +515,7 @@ class ResultPrinter(BaseResultHandler):
 
     def __call__(self, result: AnyResultType | PrintTask) -> None:
         """Print the progress of the ongoing transfer based on a result."""
-        self._result_handler_map.get(type(result).__name__, self._print_noop)(result=result)
+        self._result_handler_map.get(type(result).__name__, self._print_noop)(result=result)  # type: ignore[operator]
 
     def _print_noop(self, **_: Any) -> None:
         """If result does not have a handler, then do nothing with it."""

@@ -104,7 +104,7 @@ class TestConfigNotFound:
 
     def test_pickle(self, tmp_path: Path) -> None:
         """Test pickling."""
-        exc = ConfigNotFound(["foo"], tmp_path)
+        exc = ConfigNotFound(["foo"], tmp_path)  # type: ignore[arg-type]
         assert str(pickle.loads(pickle.dumps(exc))) == str(exc)
 
 
@@ -122,7 +122,7 @@ class TestFailedLookup:
 
     def test_pickle(self) -> None:
         """Test pickling."""
-        exc = FailedLookup("foo", "bar")
+        exc = FailedLookup("foo", "bar")  # type: ignore[arg-type]
         assert str(pickle.loads(pickle.dumps(exc))) == str(exc)
 
 
@@ -247,7 +247,7 @@ class TestInvalidConfig:
 
     def test_pickle(self) -> None:
         """Test pickling."""
-        exc = InvalidConfig(Exception("error"))
+        exc = InvalidConfig(Exception("error"))  # type: ignore[arg-type]
         assert str(pickle.loads(pickle.dumps(exc))) == str(exc)
 
 

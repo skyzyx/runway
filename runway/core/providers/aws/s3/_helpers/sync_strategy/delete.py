@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__.replace("._", "."))
 class DeleteSync(BaseSync):
     """Delete file."""
 
-    NAME: ClassVar[Literal["delete"]] = "delete"
+    NAME: ClassVar[Literal["delete"]] = "delete"  # type: ignore[assignment]
 
     def determine_should_sync(
         self,

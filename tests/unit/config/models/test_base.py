@@ -54,7 +54,7 @@ class TestConfigProperty:
 
     def test_getitem(self) -> None:
         """Test __getitem__."""
-        assert GoodObject(name="test")["name"] == "test"
+        assert GoodObject(name="test")["name"] == "test"  # type: ignore[index]
 
     def test_setitem(self) -> None:
         """Test __setitem__."""

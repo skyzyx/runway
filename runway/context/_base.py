@@ -64,7 +64,7 @@ class BaseContext(DelCachedPropMixin):
     def boto3_credentials(self) -> Boto3CredentialsTypeDef:
         """Return a dict of boto3 credentials."""
         return Boto3CredentialsTypeDef(
-            **{key.lower(): value for key, value in self.current_aws_creds.items()}  # pyright: ignore[reportArgumentType]
+            **{key.lower(): value for key, value in self.current_aws_creds.items()}  # pyright: ignore[reportArgumentType]  # type: ignore[call-arg]
         )
 
     @property
@@ -165,8 +165,8 @@ class BaseContext(DelCachedPropMixin):
             creds = self.get_session(profile=self.env.aws_profile).get_credentials()
             if creds is not None:
                 frozen_creds = creds.get_frozen_credentials()
-                self.env.vars["AWS_ACCESS_KEY_ID"] = frozen_creds.access_key
-                self.env.vars["AWS_SECRET_ACCESS_KEY"] = frozen_creds.secret_key
+                self.env.vars["AWS_ACCESS_KEY_ID"] = frozen_creds.access_key  # type: ignore[assignment]
+                self.env.vars["AWS_SECRET_ACCESS_KEY"] = frozen_creds.secret_key  # type: ignore[assignment]
                 if frozen_creds.token:
                     self.env.vars["AWS_SESSION_TOKEN"] = frozen_creds.token
             else:

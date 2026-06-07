@@ -33,12 +33,12 @@ class ConfigComponentDefinition(ABC, Generic[_ConfigPropertyTypeVar]):
 
     def __init__(self, data: _ConfigPropertyTypeVar) -> None:
         """Instantiate class."""
-        self._data = data.model_copy(deep=True)
+        self._data = data.model_copy(deep=True)  # type: ignore[assignment]
 
         self._vars = {}
         for var in self._supports_vars:
-            if self._data[var]:
-                self._register_variable(var, self._data[var])
+            if self._data[var]:  # type: ignore[index]
+                self._register_variable(var, self._data[var])  # type: ignore[index]
 
     @property
     def data(self) -> dict[str, Any]:

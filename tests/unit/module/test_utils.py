@@ -133,7 +133,7 @@ def test_run_module_command_exit_on_error(fake_process: FakeProcess) -> None:
     """Test run_module_command exit_on_error no error."""
     cmd = ["test"]
     fake_process.register_subprocess(cmd, returncode=0)  # type: ignore
-    assert not run_module_command(cmd, {})
+    assert not run_module_command(cmd, {})  # type: ignore[func-returns-value]
     assert fake_process.call_count(cmd) == 1  # type: ignore
 
 
@@ -141,7 +141,7 @@ def test_run_module_command(fake_process: FakeProcess) -> None:
     """Test run_module_command."""
     cmd = ["test"]
     fake_process.register_subprocess(cmd, returncode=0)  # type: ignore
-    assert not run_module_command(cmd, {}, exit_on_error=False)
+    assert not run_module_command(cmd, {}, exit_on_error=False)  # type: ignore[func-returns-value]
     assert fake_process.call_count(cmd) == 1  # type: ignore
 
 

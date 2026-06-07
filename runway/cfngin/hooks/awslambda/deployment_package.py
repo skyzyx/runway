@@ -467,7 +467,7 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
             ContentMD5=self.md5_checksum,
             Key=self.object_key,
             Tagging=self.build_tag_set(),
-            **(
+            **(  # type: ignore[arg-type]
                 {"ContentType": content_type}  # pyright: ignore[reportArgumentType]
                 if content_type
                 else {}
@@ -579,7 +579,7 @@ class DeploymentPackageS3Object(DeploymentPackage[_ProjectTypeVar]):
         try:
             return self.bucket.client.head_object(Bucket=self.bucket.name, Key=self.object_key)
         except self.bucket.client.exceptions.ClientError as exc:
-            status_code = exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode", 0)
+            status_code = exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode", 0)  # type: ignore[typeddict-item]
             if status_code == 404:
                 LOGGER.verbose(
                     "%s not found",
@@ -633,7 +633,7 @@ class DeploymentPackageS3Object(DeploymentPackage[_ProjectTypeVar]):
         )
         if "TagSet" not in response:
             # can't be hit when using botocore.stub.Stubber as TagSet is required
-            return {}  # cov: ignore
+            return {}  # cov: ignore  # type: ignore[unreachable]
         return {t["Key"]: t["Value"] for t in response["TagSet"]}
 
     @cached_property

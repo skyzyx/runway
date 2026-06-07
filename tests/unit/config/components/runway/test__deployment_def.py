@@ -105,7 +105,7 @@ class TestRunwayDeploymentDefinition:
         with pytest.raises(TypeError):
             obj.modules = None  # type: ignore
         with pytest.raises(TypeError):
-            obj.modules = [
+            obj.modules = [  # type: ignore[assignment]
                 RunwayDeploymentDefinitionModel(modules=[], name="test-01", regions=["us-east-1"])  # type: ignore
             ]
 
@@ -148,7 +148,7 @@ class TestRunwayDeploymentDefinition:
             }
         )
         obj = RunwayDeploymentDefinition(data)
-        assert not obj.reverse()
+        assert not obj.reverse()  # type: ignore[func-returns-value]
         assert obj._data.modules != data.modules
         assert obj._data.regions != data.regions
         assert obj.regions == ["us-west-2", "us-east-1"]
@@ -171,7 +171,7 @@ class TestRunwayDeploymentDefinition:
             }
         )
         obj = RunwayDeploymentDefinition(data)
-        assert not obj.reverse()
+        assert not obj.reverse()  # type: ignore[func-returns-value]
         assert obj._data.modules != data.modules
         invert_data: RunwayDeploymentDefinitionModel = data.model_copy(deep=True)
         for mod in invert_data.modules:
@@ -188,6 +188,6 @@ class TestRunwayDeploymentDefinition:
             }
         )
         obj = RunwayDeploymentDefinition(data)
-        assert not obj.reverse()
+        assert not obj.reverse()  # type: ignore[func-returns-value]
         assert obj._data.parallel_regions != data.parallel_regions
         assert obj.parallel_regions == ["us-west-2", "us-east-1"]

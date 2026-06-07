@@ -32,7 +32,7 @@ GetObjectJob = collections.namedtuple(
     ],
 )
 
-@contextlib.contextmanager
+@contextlib.contextmanager  # type: ignore[call-overload]
 def ignore_ctrl_c(): ...
 
 class ProcessTransferConfig:

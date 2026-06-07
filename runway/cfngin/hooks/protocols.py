@@ -89,7 +89,7 @@ class CfnginHookProtocol(Protocol):
 
     """
 
-    ARGS_PARSER: ClassVar
+    ARGS_PARSER: ClassVar  # type: ignore[misc]
     """Class used to parse arguments passed to the hook."""
 
     @abstractmethod

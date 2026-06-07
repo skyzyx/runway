@@ -514,9 +514,9 @@ class VariableValueList(VariableValue, MutableSequence[VariableValue]):
 
     def __getitem__(self, _index: int | slice) -> MutableSequence[VariableValue] | VariableValue:
         """Get item by index."""
-        return self._data[_index]
+        return self._data[_index]  # type: ignore[call-overload]
 
-    @overload
+    @overload  # type: ignore[override]
     def __setitem__(self, _index: int, _value: VariableValue) -> None: ...
 
     @overload

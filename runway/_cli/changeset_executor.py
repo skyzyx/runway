@@ -111,7 +111,7 @@ class ChangesetExecutor:
             change_type = response.get("ChangeSetType", "UPDATE")
 
             # Wait for completion
-            self._wait_for_stack(stack_fqn, change_type)
+            self._wait_for_stack(stack_fqn, change_type)  # type: ignore[arg-type]
 
             LOGGER.success("%s:changeset execution complete", stack_fqn)
 
@@ -143,7 +143,7 @@ class ChangesetExecutor:
         waiter_name = (
             "stack_create_complete" if change_type == "CREATE" else "stack_update_complete"
         )
-        waiter = self._cfn.get_waiter(waiter_name)
+        waiter = self._cfn.get_waiter(waiter_name)  # type: ignore[call-overload]
 
         try:
             LOGGER.info("%s:waiting for stack %s to complete...", stack_name, change_type.lower())

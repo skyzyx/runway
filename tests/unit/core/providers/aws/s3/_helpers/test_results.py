@@ -268,9 +268,9 @@ class TestBaseResultHandler(BaseResultSubscriberTest):
     def test_on_progress(self, mocker: MockerFixture) -> None:
         """Test on_progress."""
         mocker.patch.object(BaseResultSubscriber, "_get_src_dest", return_value=(None, None))
-        assert not self.result_subscriber.on_queued(self.future)
+        assert not self.result_subscriber.on_queued(self.future)  # type: ignore[func-returns-value]
         assert isinstance(self.get_queued_result(), QueuedResult)
-        assert not self.result_subscriber.on_progress(self.future, 13)
+        assert not self.result_subscriber.on_progress(self.future, 13)  # type: ignore[func-returns-value]
         result = self.get_queued_result()
         assert isinstance(result, ProgressResult)
         assert result.bytes_transferred == 13
@@ -311,7 +311,7 @@ class TestCommandResultRecorder:
         """Test error."""
         with self.command_result_recorder:
             raise Exception("test exception")
-        assert self.command_result_recorder.get_command_result() == CommandResult(
+        assert self.command_result_recorder.get_command_result() == CommandResult(  # type: ignore[unreachable]
             num_tasks_failed=1, num_tasks_warned=0
         )
 
@@ -1142,7 +1142,7 @@ class TestResultPrinter(BaseResultPrinterTest):
 
     def test_unknown_result_object(self) -> None:
         """Test unknown result object."""
-        self.result_printer(object())
+        self.result_printer(object())  # type: ignore[arg-type]
         assert self.out_file.getvalue() == ""
         assert self.error_file.getvalue() == ""
 
@@ -1206,7 +1206,7 @@ class TestResultProcessor:
         mock_process_result = mocker.patch.object(ResultProcessor, "_process_result")
         self.result_queue.put(error_result)
         self.result_queue.put(ShutdownThreadRequest())
-        assert not self.result_processor.run()
+        assert not self.result_processor.run()  # type: ignore[func-returns-value]
         mock_process_result.assert_called_once_with(error_result)
         assert not self.result_processor._result_handlers_enabled
 
@@ -1217,7 +1217,7 @@ class TestResultProcessor:
         q_result = QueuedResult(total_transfer_size=0)
         self.result_queue.put(q_result)
         self.result_queue.put(ShutdownThreadRequest())
-        assert not result_processor.run()
+        assert not result_processor.run()  # type: ignore[func-returns-value]
         mock_handler.assert_called_once_with(q_result)
 
 
@@ -1238,20 +1238,20 @@ class TestResultRecorder:
     def test_record_error_result(self) -> None:
         """Test _record_error_result."""
         assert self.result_recorder.errors == 0
-        assert not self.result_recorder(ErrorResult(exception=Exception()))
+        assert not self.result_recorder(ErrorResult(exception=Exception()))  # type: ignore[func-returns-value]
         assert self.result_recorder.errors == 1
 
     def test_record_final_expected_files(self) -> None:
         """Test _record_final_expected_files."""
         assert not self.result_recorder.final_expected_files_transferred
-        assert not self.result_recorder(FinalTotalSubmissionsResult(total_submissions=13))
+        assert not self.result_recorder(FinalTotalSubmissionsResult(total_submissions=13))  # type: ignore[func-returns-value]
         assert self.result_recorder.final_expected_files_transferred == 13
 
     def test_record_progress_result_start_time(self, mocker: MockerFixture) -> None:
         """Test _record_progress_result set start_time."""
         mock_time = mocker.patch("time.time", return_value=time.time())
         assert not self.result_recorder.start_time
-        assert not self.result_recorder(
+        assert not self.result_recorder(  # type: ignore[func-returns-value]
             ProgressResult(total_transfer_size=13, timestamp=time.time(), bytes_transferred=0)
         )
         assert self.result_recorder.start_time == mock_time.return_value
@@ -1261,7 +1261,7 @@ class TestResultRecorder:
         now = time.time()
         self.result_recorder.start_time = EPOCH_TIME.timestamp()
         assert self.result_recorder.bytes_transferred == 0
-        assert not self.result_recorder(
+        assert not self.result_recorder(  # type: ignore[func-returns-value]
             ProgressResult(
                 total_transfer_size=13,
                 timestamp=now,
@@ -1312,7 +1312,7 @@ class TestUploadStreamResultSubscriber(BaseResultSubscriberTest):
 
     def test_on_queued(self) -> None:
         """Test on_queued."""
-        assert not self.result_subscriber.on_queued(self.future)
+        assert not self.result_subscriber.on_queued(self.future)  # type: ignore[func-returns-value]
         result = self.get_queued_result()
         self.assert_result_queue_is_empty()
         assert result == QueuedResult(

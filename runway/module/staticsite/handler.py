@@ -37,7 +37,7 @@ class StaticSite(RunwayModule[StaticSiteOptions]):
         "may be removed in the next major release."
     )
 
-    parameters: RunwayStaticSiteModuleParametersDataModel
+    parameters: RunwayStaticSiteModuleParametersDataModel  # type: ignore[assignment]
 
     def __init__(
         self,
@@ -274,7 +274,7 @@ class StaticSite(RunwayModule[StaticSiteOptions]):
 
         out_file = module_dir / "01-dependencies.yaml"
         out_file.write_text(
-            yaml.dump(content, default_flow_style=False, sort_keys=True), encoding="utf-8"
+            yaml.dump(content, default_flow_style=False, sort_keys=True), encoding="utf-8"  # type: ignore[arg-type]
         )
         self.logger.debug("created %s:\n%s", out_file.name, yaml.dump(content, Dumper=YamlDumper))
         return out_file
@@ -440,7 +440,7 @@ class StaticSite(RunwayModule[StaticSiteOptions]):
 
         out_file = module_dir / "02-staticsite.yaml"
         out_file.write_text(
-            yaml.dump(content, default_flow_style=False, sort_keys=True), encoding="utf-8"
+            yaml.dump(content, default_flow_style=False, sort_keys=True), encoding="utf-8"  # type: ignore[arg-type]
         )
         self.logger.debug("created 02-staticsite.yaml:\n%s", yaml.dump(content, Dumper=YamlDumper))
         return out_file
@@ -473,7 +473,7 @@ class StaticSite(RunwayModule[StaticSiteOptions]):
 
         out_file = module_dir / "03-cleanup.yaml"
         out_file.write_text(
-            yaml.dump(content, default_flow_style=False, sort_keys=True), encoding="utf-8"
+            yaml.dump(content, default_flow_style=False, sort_keys=True), encoding="utf-8"  # type: ignore[arg-type]
         )
         self.logger.debug("created %s:\n%s", out_file.name, yaml.dump(content, Dumper=YamlDumper))
         return out_file

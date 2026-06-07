@@ -19,9 +19,9 @@ import re
 import secrets
 from urllib.parse import quote_plus, urlencode
 
-from shared_jose import validate_jwt
+from shared_jose import validate_jwt  # type: ignore[import-not-found]
 
-from shared import (
+from shared import (  # type: ignore[import-not-found]
     decode_token,
     extract_and_parse_cookies,
     get_config,

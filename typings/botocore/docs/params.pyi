@@ -39,13 +39,13 @@ class BaseParamsDocumenter(ShapeDocumenter):
 class ResponseParamsDocumenter(BaseParamsDocumenter):
     """Generates the description for the response parameters"""
 
-    EVENT_NAME = ...
+    EVENT_NAME = ...  # type: ignore[assignment]
     def document_shape_type_event_stream(self, section, shape, history, **kwargs): ...
 
 class RequestParamsDocumenter(BaseParamsDocumenter):
     """Generates the description for the request parameters"""
 
-    EVENT_NAME = ...
-    def document_shape_type_structure(
+    EVENT_NAME = ...  # type: ignore[assignment]
+    def document_shape_type_structure(  # type: ignore[override]
         self, section, shape, history, include=..., exclude=..., **kwargs
     ): ...

@@ -25,7 +25,7 @@ def test_register_sync_strategies(mocker: MockerFixture) -> None:
     """Test register_sync_strategies."""
     mock_register = mocker.patch(f"{MODULE}.register_sync_strategy", Mock())
     session = Mock()
-    assert not register_sync_strategies(session)
+    assert not register_sync_strategies(session)  # type: ignore[func-returns-value]
     mock_register.assert_has_calls(
         [
             call(session, SizeOnlySync),

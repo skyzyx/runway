@@ -53,14 +53,14 @@ class TestPythonFunction:
     def test_cleanup(self, args: PythonHookArgs, mocker: MockerFixture) -> None:
         """Test cleanup."""
         project = mocker.patch.object(PythonFunction, "project")
-        assert not PythonFunction(Mock(), **args.model_dump()).cleanup()
+        assert not PythonFunction(Mock(), **args.model_dump()).cleanup()  # type: ignore[func-returns-value]
         project.cleanup.assert_called_once_with()
 
     def test_cleanup_on_error(self, args: PythonHookArgs, mocker: MockerFixture) -> None:
         """Test cleanup_on_error."""
         deployment_package = mocker.patch.object(PythonFunction, "deployment_package")
         project = mocker.patch.object(PythonFunction, "project")
-        assert not PythonFunction(Mock(), **args.model_dump()).cleanup_on_error()
+        assert not PythonFunction(Mock(), **args.model_dump()).cleanup_on_error()  # type: ignore[func-returns-value]
         deployment_package.delete.assert_called_once_with()
         project.cleanup_on_error.assert_called_once_with()
 

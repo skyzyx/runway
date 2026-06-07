@@ -39,7 +39,7 @@ def get_official_service_name(service_model):
     ...
 
 _DocumentedShape = namedtuple(
-    "DocumentedShape",
+    "DocumentedShape",  # type: ignore[name-match]
     ["name", "type_name", "documentation", "metadata", "members", "required_members"],
 )
 

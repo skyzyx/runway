@@ -3,8 +3,8 @@
 from . import AWSObject, AWSProperty
 
 class DomainValidationOption(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class Certificate(AWSObject):
     resource_type = ...
-    props = ...
+    props = ...  # type: ignore[assignment]

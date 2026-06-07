@@ -31,7 +31,7 @@ class APIClient(
     SwarmApiMixin,
     VolumeApiMixin,
 ):
-    __attrs__ = ...
+    __attrs__ = ...  # type: ignore[assignment]
     def __init__(
         self,
         base_url=...,

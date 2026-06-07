@@ -50,7 +50,7 @@ class BaseConfig(Generic[_ModelTypeVar]):
             path: Path to the config file.
 
         """
-        self._data = data.model_copy()
+        self._data = data.model_copy()  # type: ignore[assignment]
         self.file_path = path.resolve() if path else Path.cwd()
 
     def dump(
@@ -405,7 +405,7 @@ class CfnginConfig(BaseConfig[CfnginConfigDefinitionModel]):
                 LOGGER.debug("merging in remote config: %s", i)
                 with i.open("rb") as opened_file:
                     config = merge_dicts(yaml.safe_load(opened_file), config)
-            return cls.resolve_raw_data(yaml.dump(config), parameters=parameters or {})
+            return cls.resolve_raw_data(yaml.dump(config), parameters=parameters or {})  # type: ignore[arg-type]
         return raw_data
 
     @staticmethod

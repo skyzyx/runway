@@ -233,7 +233,7 @@ class TestCertificate:
         )
 
         domain_match = {"DomainName": "example.com"}
-        checks = [
+        checks = [  # type: ignore[var-annotated]
             # is_stack_recreatable, is_stack_in_progress, is_stack_rolling_back, get_outputs
             (False, False, False, {"DomainName": "nope"}),
             (False, False, False, domain_match),
@@ -487,7 +487,7 @@ class TestCertificate:
         )
 
         with r53_stubber:
-            assert not cert.put_record_set(cast("ResourceRecordTypeDef", gen_record_set()))
+            assert not cert.put_record_set(cast("ResourceRecordTypeDef", gen_record_set()))  # type: ignore[func-returns-value]
         r53_stubber.assert_no_pending_responses()
 
     def test_remove_validation_records(
@@ -541,7 +541,7 @@ class TestCertificate:
                                 gen_record_set(
                                     use_resource_record=True,
                                     TTL=cert.args.ttl,
-                                    **gen_domain_validation_option().get("ResourceRecord", {}),
+                                    **gen_domain_validation_option().get("ResourceRecord", {}),  # type: ignore[typeddict-item]
                                 ),
                             ),
                         )
@@ -555,7 +555,7 @@ class TestCertificate:
             r53_stubber,
             pytest.raises(ValueError, match="Must provide one of more record sets"),
         ):
-            assert not cert.remove_validation_records()
+            assert not cert.remove_validation_records()  # type: ignore[func-returns-value]
             cert.remove_validation_records()
 
         acm_stubber.assert_no_pending_responses()
@@ -595,7 +595,7 @@ class TestCertificate:
         )
 
         with r53_stubber:
-            assert not cert.update_record_set(cast("ResourceRecordTypeDef", gen_record_set()))
+            assert not cert.update_record_set(cast("ResourceRecordTypeDef", gen_record_set()))  # type: ignore[func-returns-value]
         r53_stubber.assert_no_pending_responses()
 
     def test_deploy(

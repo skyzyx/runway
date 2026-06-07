@@ -151,7 +151,7 @@ class RunwayDeploymentDefinition(ConfigComponentDefinition[RunwayDeploymentDefin
             name=f"{self.name}.{var_name}", value=var_value, variable_type="runway"
         )
 
-    @overload
+    @overload  # type: ignore[override]
     @classmethod
     def parse_obj(cls: type[Self], obj: list[dict[str, Any]]) -> list[Self]: ...
 

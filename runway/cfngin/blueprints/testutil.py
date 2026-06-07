@@ -183,7 +183,7 @@ class YamlDirTestGenerator:
                 except AttributeError:
                     ctx = CfnginContext(config=self.config, parameters={"environment": "test"})
 
-                configvars = self.stack.variables or {}
+                configvars = self.stack.variables or {}  # type: ignore[var-annotated]
                 variables = [Variable(k, v, "cfngin") for k, v in configvars.items()]
 
                 blueprint_class = load_object_from_string(cast("str", self.stack.class_path))

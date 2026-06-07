@@ -149,7 +149,7 @@ class TestStack:
             context=cfngin_context,
         )
         stack._blueprint = Mock()
-        assert not stack.resolve(cfngin_context, mock_provider)
+        assert not stack.resolve(cfngin_context, mock_provider)  # type: ignore[func-returns-value]
         mock_resolve_variables.assert_called_once_with(
             stack.variables, cfngin_context, mock_provider
         )
@@ -167,7 +167,7 @@ class TestStack:
         )
         assert not stack.outputs
         outputs = {"foo": "bar"}
-        assert not stack.set_outputs(outputs)
+        assert not stack.set_outputs(outputs)  # type: ignore[func-returns-value]
         assert stack.outputs == outputs
 
     def test_stack_policy(self, cfngin_context: MockCfnginContext, tmp_path: Path) -> None:

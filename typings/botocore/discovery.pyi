@@ -14,12 +14,12 @@ class EndpointDiscoveryException(BotoCoreError): ...
 class EndpointDiscoveryRequired(EndpointDiscoveryException):
     """Endpoint Discovery is disabled but is required for this operation."""
 
-    fmt = ...
+    fmt = ...  # type: ignore[assignment]
 
 class EndpointDiscoveryRefreshFailed(EndpointDiscoveryException):
     """Endpoint Discovery failed to the refresh the known endpoints."""
 
-    fmt = ...
+    fmt = ...  # type: ignore[assignment]
 
 def block_endpoint_discovery_required_operations(model, **kwargs): ...
 

@@ -62,7 +62,7 @@ class GitCfnginPackageSourceDefinitionModel(ConfigProperty):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_one_ref(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _validate_one_ref(cls, values: dict[str, Any]) -> dict[str, Any]:  # type: ignore[operator]
         """Ensure that only one ref is defined."""
         ref_keys = ["branch", "commit", "tag"]
         count_ref_defs = sum(bool(values.get(i)) for i in ref_keys)

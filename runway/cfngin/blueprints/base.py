@@ -122,7 +122,7 @@ def build_parameter(name: str, properties: BlueprintVariableTypeDef) -> Paramete
     param = Parameter(name, Type=properties.get("type"))
     for name_, attr in PARAMETER_PROPERTIES.items():
         if name_ in properties:
-            setattr(param, attr, properties[name_])
+            setattr(param, attr, properties[name_])  # type: ignore[literal-required]
     return param
 
 
@@ -483,7 +483,7 @@ class Blueprint(DelCachedPropMixin):
         """Return rendered blueprint."""
         if not self._rendered:
             self._version, self._rendered = self.render_template()
-        return self._rendered
+        return self._rendered  # type: ignore[return-value]
 
     @cached_property
     def required_parameter_definitions(self) -> dict[str, BlueprintVariableTypeDef]:
@@ -544,7 +544,7 @@ class Blueprint(DelCachedPropMixin):
         """Template version."""
         if not self._version:
             self._version, self._rendered = self.render_template()
-        return self._version
+        return self._version  # type: ignore[return-value]
 
     def add_output(self, name: str, value: Any) -> None:
         """Add an output to the template.

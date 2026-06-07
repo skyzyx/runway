@@ -79,7 +79,7 @@ class TestGitCfnginPackageSourceDefinitionModel:
         """Test _validate_one_ref."""
         data = {"uri": "something", ref["field"]: ref["value"]}
         assert (
-            GitCfnginPackageSourceDefinitionModel.model_validate(data)[ref["field"]] == ref["value"]
+            GitCfnginPackageSourceDefinitionModel.model_validate(data)[ref["field"]] == ref["value"]  # type: ignore[index]
         )
 
     @pytest.mark.parametrize(

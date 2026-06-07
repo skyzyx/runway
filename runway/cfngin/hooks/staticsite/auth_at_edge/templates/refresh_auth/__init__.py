@@ -4,7 +4,7 @@ import logging
 import traceback
 from urllib.parse import parse_qs
 
-from shared import (
+from shared import (  # type: ignore[import-not-found]
     create_error_html,
     extract_and_parse_cookies,
     generate_cookie_headers,
@@ -90,7 +90,7 @@ def handler(event, _context):
     # why refresh was unsuccessful
     except Exception as err:
         LOGGER.info(err)
-        LOGGER.info(traceback.print_exc())
+        LOGGER.info(traceback.print_exc())  # type: ignore[func-returns-value]
 
         response = {
             "body": create_error_html(

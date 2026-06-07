@@ -67,5 +67,5 @@ class AdminRole(Blueprint):
             PermissionsBoundary=self.variables["PermissionsBoundary"],
             RoleName=self.role_name or NoValue,
         )
-        self.add_output(role.title, role.ref())
+        self.add_output(role.title, role.ref())  # type: ignore[arg-type]
         self.add_output(f"{role.title}Arn", role.get_att("Arn"))

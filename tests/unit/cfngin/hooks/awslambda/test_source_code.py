@@ -120,7 +120,7 @@ class TestSourceCode:
         pattern = "foobar/"
         src_path = tmp_path / "src"
         obj = SourceCode(src_path, gitignore_filter=gitignore_filter, project_root=tmp_path)
-        assert not obj.add_filter_rule(pattern)
+        assert not obj.add_filter_rule(pattern)  # type: ignore[func-returns-value]
         gitignore_filter.add_rule.assert_called_once_with(pattern=pattern, base_path=src_path)
 
     def test_md5_hash(self, mocker: MockerFixture, tmp_path: Path) -> None:

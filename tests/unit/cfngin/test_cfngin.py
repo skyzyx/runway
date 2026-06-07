@@ -31,7 +31,7 @@ def copy_fixture(src: Path, dest: Path) -> Path:
     Ensures consistent fixture copying across Python versions where Path
     support in shutil was not always guaranteed.
     """
-    return shutil.copy(src.absolute(), dest.absolute())
+    return shutil.copy(src.absolute(), dest.absolute())  # type: ignore[return-value]
 
 
 def copy_basic_fixtures(cfngin_fixtures: Path, tmp_path: Path) -> None:

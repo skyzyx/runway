@@ -34,8 +34,8 @@ class TestRunwayConfigDefinitionModel:
         }
         obj = RunwayConfigDefinitionModel.model_validate(data)
         # this also adds coverage for __getitem__
-        assert obj["deployments"][0]["name"] == "deployment_1"
-        assert obj["deployments"][1]["name"] == "test-name"
+        assert obj["deployments"][0]["name"] == "deployment_1"  # type: ignore[index]
+        assert obj["deployments"][1]["name"] == "test-name"  # type: ignore[index]
 
     def test_convert_runway_version(self) -> None:
         """Test _convert_runway_version."""
@@ -85,7 +85,7 @@ class TestRunwayConfigDefinitionModel:
             ]
         }
         runway_yml = tmp_path / "runway.yml"
-        runway_yml.write_text(yaml.dump(data))
+        runway_yml.write_text(yaml.dump(data))  # type: ignore[arg-type]
 
         obj = RunwayConfigDefinitionModel.parse_file(runway_yml)
         assert obj.deployments[0].modules[0].name == "sampleapp.cfn"
@@ -150,7 +150,7 @@ class TestRunwayDeploymentDefinitionModel:
 
         data[field] = "${var something}"
         obj = RunwayDeploymentDefinitionModel.model_validate(data)
-        assert obj[field] == data[field]
+        assert obj[field] == data[field]  # type: ignore[index]
 
     def test_validate_regions(self) -> None:
         """Test _validate_regions."""

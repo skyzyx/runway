@@ -72,11 +72,11 @@ class Deployment:
         if not assume_role:
             self.logger.debug("assume_role not configured for deployment: %s", self.name)
             return {}
-        if isinstance(assume_role, str):
-            self.logger.debug("role found: %s", assume_role)
+        if isinstance(assume_role, str):  # type: ignore[unreachable]
+            self.logger.debug("role found: %s", assume_role)  # type: ignore[unreachable]
             assume_role = RunwayAssumeRoleDefinitionModel(arn=assume_role)
-        elif isinstance(assume_role, dict):
-            assume_role = RunwayAssumeRoleDefinitionModel.model_validate(assume_role)
+        elif isinstance(assume_role, dict):  # type: ignore[unreachable]
+            assume_role = RunwayAssumeRoleDefinitionModel.model_validate(assume_role)  # type: ignore[unreachable]
         if not assume_role.arn:
             self.logger.debug("assume_role not configured for deployment: %s", self.name)
             return {}

@@ -170,7 +170,7 @@ def test_sync_extra_files_yaml_content(cfngin_context: MockCfnginContext) -> Non
         {
             "Bucket": "bucket",
             "Key": "test.yaml",
-            "Body": yaml.safe_dump(content).encode(),
+            "Body": yaml.safe_dump(content).encode(),  # type: ignore[union-attr]
             "ContentType": "text/yaml",
         },
     )

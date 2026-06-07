@@ -307,7 +307,7 @@ class BaseTransferRequestSubmitter:
 
         if not self._config_params.dryrun:
             return self._submit_transfer_request(fileinfo, extra_args, subscribers)
-        return self._submit_dryrun(fileinfo)
+        return self._submit_dryrun(fileinfo)  # type: ignore[func-returns-value]
 
     def _submit_dryrun(self, fileinfo: FileInfo) -> None:
         """Submit dryrun."""

@@ -40,7 +40,7 @@ def get_config():
     }
 
     user_pool_region = "us-east-1"
-    region_match = re.match(r"^(\\S+?)_\\S+$", config["user_pool_id"])
+    region_match = re.match(r"^(\\S+?)_\\S+$", config["user_pool_id"])  # type: ignore[arg-type]
     if region_match:
         user_pool_region = region_match.groups()[0]
 

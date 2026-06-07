@@ -90,7 +90,7 @@ class TestCfnginConfigDefinitionModel:
     def test_parse_file(self, tmp_path: Path) -> None:
         """Test parse_file."""
         config_yml = tmp_path / "config.yml"
-        config_yml.write_text(yaml.dump({"namespace": "test"}))
+        config_yml.write_text(yaml.dump({"namespace": "test"}))  # type: ignore[arg-type]
 
         obj = CfnginConfigDefinitionModel.parse_file(config_yml)
         assert obj.namespace == "test"

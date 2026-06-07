@@ -160,7 +160,7 @@ class Filter:
             return Filter([], None, None)
         filter_patterns: set[FilterPattern] = set()
         for filter_type in cls.FILTER_TYPES:
-            for pat in parameters[filter_type]:
+            for pat in parameters[filter_type]:  # type: ignore[index]
                 filter_patterns.add(FilterPattern(type=filter_type, pattern=pat))
         return Filter(
             filter_patterns,

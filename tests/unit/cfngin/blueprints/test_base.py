@@ -245,10 +245,10 @@ class TestBlueprint:
         obj._rendered = "true"
         obj._version = "test"
         initial_template = obj.template
-        assert not obj.reset_template()
+        assert not obj.reset_template()  # type: ignore[func-returns-value]
         assert id(obj.template) != id(initial_template)
         assert obj._rendered is None
-        assert obj._version is None
+        assert obj._version is None  # type: ignore[unreachable]
 
     def test_requires_change_set(self, cfngin_context: CfnginContext) -> None:
         """Test requires_change_set."""
@@ -262,7 +262,7 @@ class TestBlueprint:
         template = Mock()
         mocker.patch(f"{MODULE}.build_parameter", return_value="params")
         obj = SampleBlueprint(name="test", context=cfngin_context, template=template)
-        assert not obj.setup_parameters()
+        assert not obj.setup_parameters()  # type: ignore[func-returns-value]
         template.add_parameter.assert_called_once_with("params")
 
     def test_to_json(self, cfngin_context: CfnginContext) -> None:
@@ -464,7 +464,7 @@ def test_resolve_variable_troposphere_many() -> None:
     buckets = resolve_troposphere_var(s3.Bucket, bucket_defs, many=True)
     for bucket in buckets:
         assert isinstance(bucket, s3.Bucket)
-        assert bucket.properties == bucket_defs[bucket.title]
+        assert bucket.properties == bucket_defs[bucket.title]  # type: ignore[index]
 
 
 def test_resolve_variable_troposphere_many_empty() -> None:
@@ -521,7 +521,7 @@ def test_resolve_variable_troposphere_single() -> None:
     bucket_defs = {"MyBucket": {"BucketName": "some-bucket"}}
     bucket = resolve_troposphere_var(s3.Bucket, bucket_defs)
     assert isinstance(bucket, s3.Bucket)
-    assert bucket.properties == bucket_defs[bucket.title]
+    assert bucket.properties == bucket_defs[bucket.title]  # type: ignore[index]
     assert bucket.title == "MyBucket"
 
 

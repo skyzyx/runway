@@ -5,7 +5,7 @@ from __future__ import annotations
 from docker.models.resource import Collection, Model
 
 class Service(Model):
-    id_attribute = ...
+    id_attribute = ...  # type: ignore[assignment]
     @property
     def name(self): ...
     @property
@@ -19,7 +19,7 @@ class Service(Model):
 
 class ServiceCollection(Collection):
     model = Service
-    def create(self, image, command=..., **kwargs): ...
+    def create(self, image, command=..., **kwargs): ...  # type: ignore[override]
     def get(self, service_id, insert_defaults=...): ...
     def list(self, **kwargs): ...
 

@@ -62,7 +62,7 @@ class TestPythonProject:
         )
         mocker.patch.object(PythonProject, "poetry", poetry_value)
 
-        assert not PythonProject(Mock(), Mock()).cleanup()
+        assert not PythonProject(Mock(), Mock()).cleanup()  # type: ignore[func-returns-value]
         if poetry_value:
             tmp_requirements_txt.exists.assert_called_once_with()
         else:
@@ -97,7 +97,7 @@ class TestPythonProject:
         )
         mocker.patch.object(PythonProject, "poetry", None)
 
-        assert not PythonProject(Mock(), Mock()).cleanup()
+        assert not PythonProject(Mock(), Mock()).cleanup()  # type: ignore[func-returns-value]
         build_directory.iterdir.assert_called_once_with()
         mock_rmtree.assert_called_once_with(dependency_directory, ignore_errors=True)
 
@@ -123,7 +123,7 @@ class TestPythonProject:
         requirements_txt = mocker.patch.object(
             PythonProject, "requirements_txt", "requirements_txt"
         )
-        assert not PythonProject(args, Mock()).install_dependencies()
+        assert not PythonProject(args, Mock()).install_dependencies()  # type: ignore[func-returns-value]
         mock_pip.install.assert_called_once_with(
             cache_dir="foo",
             extend_args=args.extend_pip_args,
@@ -139,7 +139,7 @@ class TestPythonProject:
         mock_pip = mocker.patch.object(PythonProject, "pip")
         mocker.patch.object(PythonProject, "dependency_directory", "dependency_directory")
         mocker.patch.object(PythonProject, "requirements_txt", "requirements.txt")
-        assert not PythonProject(Mock(), Mock()).install_dependencies()
+        assert not PythonProject(Mock(), Mock()).install_dependencies()  # type: ignore[func-returns-value]
         mock_docker.install.assert_called_once_with()
         mock_pip.install.assert_not_called()
 
@@ -156,7 +156,7 @@ class TestPythonProject:
             PythonProject, "requirements_txt", "requirements_txt"
         )
         with pytest.raises(PipInstallFailedError):
-            assert not PythonProject(
+            assert not PythonProject(  # type: ignore[func-returns-value]
                 Mock(cache_dir="foo", extend_pip_args=None, use_cache=True), Mock()
             ).install_dependencies()
         mock_pip.install.assert_called_once_with(
@@ -177,7 +177,7 @@ class TestPythonProject:
         mock_pip = mocker.patch.object(PythonProject, "pip")
         mocker.patch.object(PythonProject, "dependency_directory", "dependency_directory")
         mocker.patch.object(PythonProject, "requirements_txt", None)
-        assert not PythonProject(Mock(), Mock()).install_dependencies()
+        assert not PythonProject(Mock(), Mock()).install_dependencies()  # type: ignore[func-returns-value]
         mock_docker.install.assert_not_called()
         mock_pip.install.assert_not_called()
         assert "skipped installing dependencies; none found" in caplog.messages

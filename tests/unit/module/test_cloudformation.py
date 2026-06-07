@@ -42,7 +42,7 @@ class TestCloudFormation:
         module = CloudFormation(
             self.get_context(), module_root=tmp_path, parameters=self.generic_parameters
         )
-        assert not module.deploy()
+        assert not module.deploy()  # type: ignore[func-returns-value]
         mock_init.assert_called_once()
         mock_deploy.assert_called_once()
 
@@ -52,7 +52,7 @@ class TestCloudFormation:
         module = CloudFormation(
             self.get_context(), module_root=tmp_path, parameters=self.generic_parameters
         )
-        assert not module.destroy()
+        assert not module.destroy()  # type: ignore[func-returns-value]
         mock_action.assert_called_once()
 
     def test_init(
@@ -61,7 +61,7 @@ class TestCloudFormation:
         """Test init."""
         mock_action = mocker.patch("runway.cfngin.cfngin.CFNgin.init")
         obj = CloudFormation(runway_context, module_root=tmp_path)
-        assert not obj.init()
+        assert not obj.init()  # type: ignore[func-returns-value]
         mock_action.assert_called_once()
 
     def test_plan(self, tmp_path: Path, mocker: MockerFixture) -> None:
@@ -70,5 +70,5 @@ class TestCloudFormation:
         module = CloudFormation(
             self.get_context(), module_root=tmp_path, parameters=self.generic_parameters
         )
-        assert not module.plan()
+        assert not module.plan()  # type: ignore[func-returns-value]
         mock_action.assert_called_once()

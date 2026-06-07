@@ -20,7 +20,7 @@ def test_whichenv(caplog: pytest.LogCaptureFixture, cd_tmp_path: Path) -> None:
     """Test ``runway whichenv``."""
     caplog.set_level(logging.DEBUG, logger="runway")
     runway_yml = cd_tmp_path / "runway.yml"
-    runway_yml.write_text(yaml.safe_dump({"deployments": [], "ignore_git_branch": True}))
+    runway_yml.write_text(yaml.safe_dump({"deployments": [], "ignore_git_branch": True}))  # type: ignore[arg-type]
     runner = CliRunner()
     result = runner.invoke(cli, ["whichenv"], env={})
     assert result.exit_code == 0
@@ -31,7 +31,7 @@ def test_whichenv_debug(caplog: pytest.LogCaptureFixture, cd_tmp_path: Path) -> 
     """Test ``runway whichenv`` debug."""
     caplog.set_level(logging.DEBUG, logger="runway")
     runway_yml = cd_tmp_path / "runway.yml"
-    runway_yml.write_text(yaml.safe_dump({"deployments": [], "ignore_git_branch": True}))
+    runway_yml.write_text(yaml.safe_dump({"deployments": [], "ignore_git_branch": True}))  # type: ignore[arg-type]
     runner = CliRunner()
     result = runner.invoke(cli, ["whichenv", "--debug"])
     assert result.exit_code == 0
@@ -43,7 +43,7 @@ def test_whichenv_debug_debug(caplog: pytest.LogCaptureFixture, cd_tmp_path: Pat
     """Test ``runway whichenv`` debug."""
     caplog.set_level(logging.DEBUG, logger="runway")
     runway_yml = cd_tmp_path / "runway.yml"
-    runway_yml.write_text(yaml.safe_dump({"deployments": [], "ignore_git_branch": True}))
+    runway_yml.write_text(yaml.safe_dump({"deployments": [], "ignore_git_branch": True}))  # type: ignore[arg-type]
     runner = CliRunner()
     result = runner.invoke(cli, ["whichenv"], env={"DEBUG": "2"})
     assert result.exit_code == 0
@@ -54,7 +54,7 @@ def test_whichenv_debug_debug(caplog: pytest.LogCaptureFixture, cd_tmp_path: Pat
 def test_whichenv_invalid_debug_environ(cd_tmp_path: Path) -> None:
     """Test ``runway whichenv`` with invalid debug environ."""
     runway_yml = cd_tmp_path / "runway.yml"
-    runway_yml.write_text(yaml.safe_dump({"deployments": [], "ignore_git_branch": True}))
+    runway_yml.write_text(yaml.safe_dump({"deployments": [], "ignore_git_branch": True}))  # type: ignore[arg-type]
     runner = CliRunner()
     result = runner.invoke(cli, ["whichenv"], env={"DEBUG": "invalid"})
     assert result.exit_code == 2

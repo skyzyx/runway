@@ -31,13 +31,13 @@ from botocore.credentials import (
     EnvProvider,
     InstanceMetadataFetcher,
     InstanceMetadataProvider,
-    JSONFileCache,
+    JSONFileCache,  # type: ignore[attr-defined]
     OriginalEC2Provider,
 )
 from botocore.credentials import (
     ProfileProviderBuilder as BotocoreProfileProviderBuilder,
 )
-from botocore.credentials import _get_client_creator, _serialize_if_needed
+from botocore.credentials import _get_client_creator, _serialize_if_needed  # type: ignore[attr-defined]
 from botocore.exceptions import InvalidConfigError
 from dateutil.tz import tzutc
 
@@ -138,20 +138,20 @@ class ProfileProviderBuilder(BotocoreProfileProviderBuilder):
     def providers(self, profile_name, disable_env_vars=False):
         """Return list of providers."""
         return [
-            self._create_web_identity_provider(profile_name, disable_env_vars,),
+            self._create_web_identity_provider(profile_name, disable_env_vars,),  # type: ignore[attr-defined]
             self._create_sso_provider(profile_name),
-            self._create_shared_credential_provider(profile_name),
-            self._create_process_provider(profile_name),
-            self._create_config_provider(profile_name),
+            self._create_shared_credential_provider(profile_name),  # type: ignore[attr-defined]
+            self._create_process_provider(profile_name),  # type: ignore[attr-defined]
+            self._create_config_provider(profile_name),  # type: ignore[attr-defined]
         ]
 
     def _create_sso_provider(self, profile_name):
         """AWS SSO credential provider."""
         return SSOProvider(
-            load_config=lambda: self._session.full_config,
-            client_creator=self._session.create_client,
+            load_config=lambda: self._session.full_config,  # type: ignore[attr-defined]
+            client_creator=self._session.create_client,  # type: ignore[attr-defined]
             profile_name=profile_name,
-            cache=self._cache,
+            cache=self._cache,  # type: ignore[attr-defined]
             token_cache=self._sso_token_cache,
         )
 
@@ -198,7 +198,7 @@ class SSOCredentialFetcher(CachedCredentialFetcher):
         # all fetchers should use the below caching scheme.
         args = json.dumps(args, sort_keys=True, separators=(",", ":"))
         argument_hash = sha1(args.encode("utf-8")).hexdigest()
-        return self._make_file_safe(argument_hash)
+        return self._make_file_safe(argument_hash)  # type: ignore[attr-defined]
 
     def _parse_timestamp(self, timestamp_ms):
         """Parse timestamp."""

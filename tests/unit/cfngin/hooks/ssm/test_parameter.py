@@ -477,7 +477,7 @@ class TestParameter:
             {"ResourceId": "test", "ResourceType": "Parameter", "Tags": new_tags},
         )
         with ssm_stubber:
-            assert not Parameter(
+            assert not Parameter(  # type: ignore[func-returns-value]
                 cfngin_context, name="test", tags=new_tags, type="String"
             ).update_tags()
         get_current_tags.assert_called_once_with()
@@ -498,7 +498,7 @@ class TestParameter:
             {"ResourceId": "test", "ResourceType": "Parameter", "Tags": new_tags},
         )
         with ssm_stubber:
-            assert not Parameter(
+            assert not Parameter(  # type: ignore[func-returns-value]
                 cfngin_context, name="test", tags=new_tags, type="String"
             ).update_tags()
 
@@ -513,7 +513,7 @@ class TestParameter:
         mocker.patch.object(Parameter, "get_current_tags", return_value=[])
         ssm_stubber.add_client_error("add_tags_to_resource")
         with ssm_stubber, pytest.raises(ClientError):
-            assert Parameter(
+            assert Parameter(  # type: ignore[func-returns-value]
                 cfngin_context, name="test", tags=new_tags, type="String"
             ).update_tags()
         ssm_stubber.assert_no_pending_responses()
@@ -538,7 +538,7 @@ class TestParameter:
         )
         ssm_stubber.add_client_error("add_tags_to_resource")
         with ssm_stubber:
-            assert not Parameter(cfngin_context, name="test", type="String").update_tags()
+            assert not Parameter(cfngin_context, name="test", type="String").update_tags()  # type: ignore[func-returns-value]
 
     def test_update_tags_delete_only_raise_client_error(
         self, cfngin_context: CfnginContext, mocker: MockerFixture, ssm_stubber: Stubber
@@ -551,7 +551,7 @@ class TestParameter:
         mocker.patch.object(Parameter, "get_current_tags", return_value=current_tags)
         ssm_stubber.add_client_error("remove_tags_from_resource")
         with ssm_stubber, pytest.raises(ClientError):
-            assert Parameter(cfngin_context, name="test", type="String").update_tags()
+            assert Parameter(cfngin_context, name="test", type="String").update_tags()  # type: ignore[func-returns-value]
         ssm_stubber.assert_no_pending_responses()
 
     def test_update_tags_handle_invalid_resource_id(
@@ -570,7 +570,7 @@ class TestParameter:
         mocker.patch.object(Parameter, "get_current_tags", return_value=[])
         ssm_stubber.add_client_error("add_tags_to_resource", "InvalidResourceId")
         with ssm_stubber:
-            assert not Parameter(
+            assert not Parameter(  # type: ignore[func-returns-value]
                 cfngin_context, name="test", tags=new_tags, type="String"
             ).update_tags()
         ssm_stubber.assert_no_pending_responses()

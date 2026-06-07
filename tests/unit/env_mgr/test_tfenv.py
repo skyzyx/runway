@@ -314,7 +314,7 @@ class TestTFEnvManager:
         tfenv = TFEnvManager(tmp_path)
         (tfenv.versions_dir / str(version)).mkdir()
         assert not tfenv.current_version
-        assert not tfenv.set_version(str(version))
+        assert not tfenv.set_version(str(version))  # type: ignore[func-returns-value]
         assert tfenv.version == version
         assert tfenv.current_version == str(version)
 
@@ -323,7 +323,7 @@ class TestTFEnvManager:
         version = mocker.patch.object(TFEnvManager, "version")
         tfenv = TFEnvManager(tmp_path)
         tfenv.current_version = "0.15.5"
-        assert not tfenv.set_version("0.15.5")
+        assert not tfenv.set_version("0.15.5")  # type: ignore[func-returns-value]
         assert tfenv.current_version == "0.15.5"
         assert tfenv.version == version
 

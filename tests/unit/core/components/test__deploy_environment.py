@@ -147,7 +147,7 @@ class TestDeployEnvironment:
 
         obj.ci = True
         assert obj.ci
-        assert obj.vars["CI"] == "1"
+        assert obj.vars["CI"] == "1"  # type: ignore[unreachable]
 
         obj.ci = False
         assert not obj.ci
@@ -161,7 +161,7 @@ class TestDeployEnvironment:
 
         obj.debug = True
         assert obj.debug
-        assert obj.vars["DEBUG"] == "1"
+        assert obj.vars["DEBUG"] == "1"  # type: ignore[unreachable]
 
         obj.debug = False
         assert not obj.debug
@@ -184,7 +184,7 @@ class TestDeployEnvironment:
         assert obj.ignore_git_branch
 
         # delete attr before setting new val to force AttributeError
-        del obj.name
+        del obj.name  # type: ignore[unreachable]
         obj.ignore_git_branch = False
         assert obj.name == "second"
 
@@ -288,7 +288,7 @@ class TestDeployEnvironment:
 
         obj.verbose = True
         assert obj.verbose
-        assert obj.vars["VERBOSE"] == "1"
+        assert obj.vars["VERBOSE"] == "1"  # type: ignore[unreachable]
 
         obj.verbose = False
         assert not obj.verbose

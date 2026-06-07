@@ -87,7 +87,7 @@ class BaseProvideContentTypeSubscriber(BaseSubscriber):
         """On queued."""
         guessed_type = guess_content_type(self._get_filename(future))
         if guessed_type is not None:
-            future.meta.call_args.extra_args["ContentType"] = guessed_type
+            future.meta.call_args.extra_args["ContentType"] = guessed_type  # type: ignore[attr-defined]
 
     def _get_filename(self, future: TransferFuture) -> str:
         raise NotImplementedError("_get_filename()")
@@ -97,7 +97,7 @@ def _date_parser(date_string: datetime | str) -> datetime:
     """Parse date string into a datetime object."""
     if isinstance(date_string, datetime):
         return date_string
-    return parse(date_string).astimezone(tzlocal())
+    return parse(date_string).astimezone(tzlocal())  # type: ignore[union-attr]
 
 
 class BucketLister:
@@ -141,7 +141,7 @@ class BucketLister:
             kwargs.update(extra_args)
 
         paginator = self._client.get_paginator("list_objects_v2")
-        pages = paginator.paginate(**kwargs)  # pyright: ignore[reportArgumentType]
+        pages = paginator.paginate(**kwargs)  # pyright: ignore[reportArgumentType]  # type: ignore[arg-type]
         # NOTE (@ITProKyle): for some reason, pyright is not seeing `PageIterator` as a generic
         for page in cast("Iterator[ListObjectsV2OutputTypeDef]", pages):
             contents = page.get("Contents", [])
@@ -193,7 +193,7 @@ class DeleteSourceFileSubscriber(DeleteSourceSubscriber):
     """A subscriber which deletes a file."""
 
     def _delete_source(self, future: TransferFuture) -> None:
-        Path(future.meta.call_args.fileobj).unlink()
+        Path(future.meta.call_args.fileobj).unlink()  # type: ignore[attr-defined]
 
 
 class DeleteSourceObjectSubscriber(DeleteSourceSubscriber):
@@ -206,22 +206,22 @@ class DeleteSourceObjectSubscriber(DeleteSourceSubscriber):
     @staticmethod
     def _get_bucket(call_args: CallArgs) -> str:
         """Get bucket."""
-        return call_args.bucket
+        return call_args.bucket  # type: ignore[attr-defined]
 
     @staticmethod
     def _get_key(call_args: CallArgs) -> str:
         """Get key."""
-        return call_args.key
+        return call_args.key  # type: ignore[attr-defined]
 
     def _delete_source(self, future: TransferFuture) -> None:
         """Delete source."""
         call_args = future.meta.call_args
         delete_object_kwargs: DeleteObjectRequestTypeDef = {
-            "Bucket": self._get_bucket(call_args),
-            "Key": self._get_key(call_args),
+            "Bucket": self._get_bucket(call_args),  # type: ignore[arg-type]
+            "Key": self._get_key(call_args),  # type: ignore[arg-type]
         }
-        if call_args.extra_args.get("RequestPayer"):
-            delete_object_kwargs["RequestPayer"] = call_args.extra_args["RequestPayer"]
+        if call_args.extra_args.get("RequestPayer"):  # type: ignore[attr-defined]
+            delete_object_kwargs["RequestPayer"] = call_args.extra_args["RequestPayer"]  # type: ignore[attr-defined]
         self._client.delete_object(**delete_object_kwargs)
 
 
@@ -230,11 +230,11 @@ class DeleteCopySourceObjectSubscriber(DeleteSourceObjectSubscriber):
 
     @staticmethod
     def _get_bucket(call_args: CallArgs) -> str:
-        return call_args.copy_source["Bucket"]
+        return call_args.copy_source["Bucket"]  # type: ignore[attr-defined]
 
     @staticmethod
     def _get_key(call_args: CallArgs) -> str:
-        return call_args.copy_source["Key"]
+        return call_args.copy_source["Key"]  # type: ignore[attr-defined]
 
 
 class CreateDirectoryError(Exception):
@@ -246,7 +246,7 @@ class DirectoryCreatorSubscriber(BaseSubscriber):
 
     def on_queued(self, future: TransferFuture, **_: Any) -> None:
         """On queued."""
-        dirname = Path(future.meta.call_args.fileobj).parent
+        dirname = Path(future.meta.call_args.fileobj).parent  # type: ignore[attr-defined]
         try:
             dirname.mkdir(exist_ok=True, parents=True)
         except OSError as exc:
@@ -308,7 +308,7 @@ class ProvideCopyContentTypeSubscriber(BaseProvideContentTypeSubscriber):
     """Provide copy content type subscriber."""
 
     def _get_filename(self, future: TransferFuture) -> str:
-        return future.meta.call_args.copy_source["Key"]
+        return future.meta.call_args.copy_source["Key"]  # type: ignore[attr-defined]
 
 
 class ProvideLastModifiedTimeSubscriber(OnDoneFilteredSubscriber):
@@ -320,7 +320,7 @@ class ProvideLastModifiedTimeSubscriber(OnDoneFilteredSubscriber):
         self._result_queue = result_queue
 
     def _on_success(self, future: TransferFuture, **_: Any) -> None:
-        filename = future.meta.call_args.fileobj
+        filename = future.meta.call_args.fileobj  # type: ignore[attr-defined]
         try:
             last_update_tuple = self._last_modified_time.timetuple()
             mod_timestamp = time.mktime(last_update_tuple)
@@ -349,7 +349,7 @@ class ProvideUploadContentTypeSubscriber(BaseProvideContentTypeSubscriber):
     """Provider upload content type subscriber."""
 
     def _get_filename(self, future: TransferFuture) -> str:
-        return str(future.meta.call_args.fileobj)
+        return str(future.meta.call_args.fileobj)  # type: ignore[attr-defined]
 
 
 class RequestParamsMapper:

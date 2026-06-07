@@ -13,207 +13,207 @@ BucketOwnerFullControl = "BucketOwnerFullControl"
 LogDeliveryWrite = "LogDeliveryWrite"
 
 class PublicAccessBlockConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class VpcConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class AccessPoint(AWSObject):
     resource_type = ...
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class CorsRules(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class CorsConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class VersioningConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class AccelerateConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class RedirectAllRequestsTo(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class RedirectRule(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class RoutingRuleCondition(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class RoutingRule(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class WebsiteConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class LifecycleRuleTransition(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class AbortIncompleteMultipartUpload(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class NoncurrentVersionTransition(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class TagFilter(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class LifecycleRule(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
     def validate(self): ...
 
 class LifecycleConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class LoggingConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class Rules(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class S3Key(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class Filter(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class LambdaConfigurations(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class QueueConfigurations(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class TopicConfigurations(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class MetricsConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class NotificationConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class OwnershipControlsRule(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class OwnershipControls(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class DeleteMarkerReplication(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class AccessControlTranslation(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class EncryptionConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class ReplicationTimeValue(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class Metrics(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class ReplicationTime(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class ReplicationConfigurationRulesDestination(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class ReplicationRuleAndOperator(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class ReplicationRuleFilter(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class ReplicaModifications(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class SseKmsEncryptedObjects(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class SourceSelectionCriteria(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class ReplicationConfigurationRules(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class ReplicationConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class Destination(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class DataExport(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class StorageClassAnalysis(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class AnalyticsConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class ServerSideEncryptionByDefault(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class ServerSideEncryptionRule(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class BucketEncryption(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class InventoryConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class DefaultRetention(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class ObjectLockRule(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class ObjectLockConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class Bucket(AWSObject):
     resource_type = ...
-    props = ...
+    props = ...  # type: ignore[assignment]
     access_control_types = ...
     def validate(self): ...
 
 class BucketPolicy(AWSObject):
     resource_type = ...
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class ActivityMetrics(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class SelectionCriteria(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class PrefixLevelStorageMetrics(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class PrefixLevel(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class BucketLevel(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class AccountLevel(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class AwsOrg(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class BucketsAndRegions(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class StorageLensConfiguration(AWSProperty):
-    props = ...
+    props = ...  # type: ignore[assignment]
 
 class StorageLens(AWSObject):
     resource_type: str = ...
 
-    props = ...
+    props = ...  # type: ignore[assignment]

@@ -69,7 +69,7 @@ class AwslambdaStackOutputs(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _convert_null_to_none(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _convert_null_to_none(cls, values: dict[str, Any]) -> dict[str, Any]:  # type: ignore[operator]
         """Convert ``null`` to ``NoneType``."""
 
         def _handle_null(v: Any) -> Any:
@@ -124,7 +124,7 @@ class AwslambdaTester:
         response = self.client.invoke(
             FunctionName=self.outputs.LambdaFunction,
             InvocationType="RequestResponse",
-            **{"Payload": payload} if payload else {},  # pyright: ignore[reportArgumentType]
+            **{"Payload": payload} if payload else {},  # pyright: ignore[reportArgumentType]  # type: ignore[arg-type]
         )
         if "Payload" in response:
             return json.load(response["Payload"])

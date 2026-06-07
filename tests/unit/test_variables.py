@@ -81,7 +81,7 @@ def patch_lookups(mocker: MockerFixture) -> None:
 def test_resolve_variables(cfngin_context: MockCfnginContext) -> None:
     """Test resolve_variables."""
     variable = MagicMock()
-    assert not resolve_variables([variable], cfngin_context)
+    assert not resolve_variables([variable], cfngin_context)  # type: ignore[func-returns-value]
     variable.resolve.assert_called_once_with(context=cfngin_context, provider=None)
 
 
@@ -230,7 +230,7 @@ class TestVariables:
         provider = MagicMock()
         obj = Variable("Param", "val")
         mock_resolve = mocker.patch.object(obj._value, "resolve")
-        assert not obj.resolve(context, provider, kwarg="something")
+        assert not obj.resolve(context, provider, kwarg="something")  # type: ignore[func-returns-value]
         mock_resolve.assert_called_once_with(
             context, provider=provider, variables=None, kwarg="something"
         )
@@ -309,7 +309,7 @@ class TestVariableValue:
 
     def test_resolve(self, cfngin_context: MockCfnginContext) -> None:
         """Test resolve."""
-        assert not VariableValue().resolve(context=cfngin_context)
+        assert not VariableValue().resolve(context=cfngin_context)  # type: ignore[func-returns-value]
 
     def test_simplified(self) -> None:
         """Test simplified."""
@@ -852,7 +852,7 @@ class TestVariableValueLookup:
             assert obj.value
         obj._resolve("success")
         assert obj.resolved is True
-        assert obj.value == "success"
+        assert obj.value == "success"  # type: ignore[unreachable]
 
 
 class TestVariableValuePydanticModel:

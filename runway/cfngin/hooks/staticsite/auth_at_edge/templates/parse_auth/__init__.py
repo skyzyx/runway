@@ -13,12 +13,12 @@ import logging
 from datetime import datetime
 from urllib.parse import parse_qs
 
-from shared_jose import (
+from shared_jose import (  # type: ignore[import-not-found]
     MissingRequiredGroupError,
     validate_and_check_id_token,
 )
 
-from shared import (
+from shared import (  # type: ignore[import-not-found]
     create_error_html,
     extract_and_parse_cookies,
     generate_cookie_headers,
@@ -132,7 +132,7 @@ def handler(event, _context):
         cookies = extract_and_parse_cookies(request.get("headers"), CONFIG["client_id"])
         id_token = cookies["id_token"]
         code, pkce, requested_uri = validate_querystring_and_cookies(request, cookies)
-        redirected_from_uri += requested_uri
+        redirected_from_uri += requested_uri  # type: ignore[operator]
 
         # Request tokens from our Cognito Authorization Domain
         body = {

@@ -167,7 +167,7 @@ class TestDeployment:
 
         assert obj.env_vars_config == expected
         variable.resolve.assert_called_once()
-        assert obj.definition._data["env_vars"] == expected
+        assert obj.definition._data["env_vars"] == expected  # type: ignore[index]
 
     @pytest.mark.parametrize(
         "config, expected",
@@ -221,7 +221,7 @@ class TestDeployment:
         mock_run = MagicMock()
         mocker.patch.object(Deployment, "run", mock_run)
         obj = Deployment(context=runway_context, definition=fx_deployments.load("min_required"))
-        assert not obj.deploy()
+        assert not obj.deploy()  # type: ignore[func-returns-value]
         mock_run.assert_called_once_with("deploy", "us-east-1")
 
     def test_deploy_async(
@@ -244,7 +244,7 @@ class TestDeployment:
             context=runway_context,
             definition=fx_deployments.load("simple_parallel_regions"),
         )
-        assert not obj.deploy()
+        assert not obj.deploy()  # type: ignore[func-returns-value]
         assert (
             "unnamed_deployment:processing regions in parallel... (output will be interwoven)"
             in caplog.messages
@@ -276,7 +276,7 @@ class TestDeployment:
             context=runway_context,
             definition=fx_deployments.load("simple_parallel_regions"),
         )
-        assert not obj.deploy()
+        assert not obj.deploy()  # type: ignore[func-returns-value]
         assert "unnamed_deployment:processing regions sequentially..." in caplog.messages
         mock_run.assert_has_calls([call("deploy", "us-east-1"), call("deploy", "us-west-2")])
 
@@ -298,9 +298,9 @@ class TestDeployment:
             context=runway_context,
             definition=fx_deployments.load("simple_parallel_regions"),
         )
-        assert obj.destroy()
+        assert obj.destroy()  # type: ignore[func-returns-value]
 
-        if async_used:
+        if async_used:  # type: ignore[unreachable]
             mock_async.assert_called_once_with("destroy")
             mock_sync.assert_not_called()
         else:
@@ -327,9 +327,9 @@ class TestDeployment:
             context=runway_context,
             definition=fx_deployments.load("simple_parallel_regions"),
         )
-        assert obj.init()
+        assert obj.init()  # type: ignore[func-returns-value]
 
-        if async_used:
+        if async_used:  # type: ignore[unreachable]
             mock_async.assert_called_once_with("init")
             mock_sync.assert_not_called()
         else:
@@ -356,9 +356,9 @@ class TestDeployment:
             context=runway_context,
             definition=fx_deployments.load("simple_parallel_regions"),
         )
-        assert obj.plan()
+        assert obj.plan()  # type: ignore[func-returns-value]
 
-        if async_used:
+        if async_used:  # type: ignore[unreachable]
             assert (
                 "unnamed_deployment:processing of regions will be done in "
                 "parallel during deploy/destroy" in caplog.messages
@@ -380,7 +380,7 @@ class TestDeployment:
         mock_validate = mocker.patch.object(Deployment, "validate_account_credentials")
         obj = Deployment(context=runway_context, definition=definition)
 
-        assert not obj.run("deploy", "us-west-2")
+        assert not obj.run("deploy", "us-west-2")  # type: ignore[func-returns-value]
 
         assert runway_context.command == "deploy"
         assert runway_context.env.aws_region == "us-west-2"
@@ -412,7 +412,7 @@ class TestDeployment:
         mocker.patch.object(Deployment, "validate_account_credentials")
         obj = Deployment(context=runway_context, definition=definition)
 
-        assert not obj.run("destroy", "us-west-2")
+        assert not obj.run("destroy", "us-west-2")  # type: ignore[func-returns-value]
 
         new_ctx = mock_resolve.call_args.args[0]
         assert new_ctx != runway_context
@@ -439,7 +439,7 @@ class TestDeployment:
         account.id = "111111111111"
         mock_aws.AccountDetails.return_value = account
         with pytest.raises(SystemExit) as excinfo:
-            assert obj.validate_account_credentials()
+            assert obj.validate_account_credentials()  # type: ignore[func-returns-value]
         assert excinfo.value.code == 1
         assert 'does not match required account "123456789012"' in "\n".join(caplog.messages)
         caplog.clear()
@@ -447,7 +447,7 @@ class TestDeployment:
 
         account.id = "123456789012"
         with pytest.raises(SystemExit) as excinfo:
-            assert obj.validate_account_credentials()
+            assert obj.validate_account_credentials()  # type: ignore[func-returns-value]
         assert excinfo.value.code == 1
         logs = "\n".join(caplog.messages)
         assert "verified current AWS account matches required account id" in logs
@@ -457,7 +457,7 @@ class TestDeployment:
         del excinfo
 
         account.aliases = ["test"]
-        assert not obj.validate_account_credentials()
+        assert not obj.validate_account_credentials()  # type: ignore[func-returns-value]
         logs = "\n".join(caplog.messages)
         assert "verified current AWS account matches required account id" in logs
         assert "verified current AWS account alias matches required alias" in logs

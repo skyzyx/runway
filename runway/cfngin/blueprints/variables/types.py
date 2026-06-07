@@ -141,7 +141,7 @@ class TroposphereType(Generic[TroposphereT]):
 
             result = [self._type.from_dict(title, v) for title, v in value.items()]
         elif self._many and isinstance(value, list):
-            result = [self._type.from_dict(None, v) for v in value]
+            result = [self._type.from_dict(None, v) for v in value]  # type: ignore[arg-type]
         elif not isinstance(value, dict):
             raise ValueError(
                 "TroposphereType for a single non-resource"
@@ -149,7 +149,7 @@ class TroposphereType(Generic[TroposphereT]):
                 "parameters"
             )
         else:
-            result = [self._type.from_dict(None, value)]
+            result = [self._type.from_dict(None, value)]  # type: ignore[arg-type]
 
         # Validate eagerly so template authors see schema errors during
         # blueprint compilation rather than at CloudFormation deploy time.
@@ -185,7 +185,7 @@ class CFNType:
 
     """
 
-    parameter_type: ClassVar
+    parameter_type: ClassVar  # type: ignore[misc]
 
 
 # General CFN types

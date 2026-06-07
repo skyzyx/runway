@@ -309,7 +309,7 @@ class TestMethods(unittest.TestCase):
         """
         get_input_path = "runway.cfngin.ui.get_raw_input"
         with patch(get_input_path, return_value="y"):
-            assert ask_for_approval([], [], False) is None
+            assert ask_for_approval([], [], False) is None  # type: ignore[func-returns-value]
 
         for v in ("n", "N", "x", "\n"):
             with patch(get_input_path, return_value=v), pytest.raises(exceptions.CancelExecution):
@@ -336,7 +336,7 @@ class TestMethods(unittest.TestCase):
             DictValue("ParamB", "param-b-old-value", "param-b-new-value-delta"),
         ]
         with patch(get_input_path, return_value="y"):
-            assert ask_for_approval([], params_diff, False) is None
+            assert ask_for_approval([], params_diff, False) is None  # type: ignore[func-returns-value]
 
         for v in ("n", "N", "x", "\n"):
             with patch(get_input_path, return_value=v), pytest.raises(exceptions.CancelExecution):
@@ -368,7 +368,7 @@ class TestMethods(unittest.TestCase):
 
         for v in ["y", "v", "Y", "V"]:
             with patch(get_input_path, return_value=v) as prompt:
-                assert output_full_changeset(full_changeset=[], params_diff=[], fqn=None) is None
+                assert output_full_changeset(full_changeset=[], params_diff=[], fqn=None) is None  # type: ignore[func-returns-value]
                 assert prompt.call_count == 1
                 safe_dump_counter += 1
                 assert mock_safe_dump.call_count == safe_dump_counter
@@ -1139,7 +1139,7 @@ class TestProviderDefaultMode(unittest.TestCase):
         stack = MagicMock(spec=Stack)
         stack.fqn = f"my-namespace-{stack_name}"
 
-        default.TAIL_RETRY_SLEEP = 0.01
+        default.TAIL_RETRY_SLEEP = 0.01  # type: ignore[assignment]
 
         # Ensure the stack never appears before we run out of retries
         for i in range(MAX_TAIL_RETRIES + 5):
@@ -1156,7 +1156,7 @@ class TestProviderDefaultMode(unittest.TestCase):
                 self.provider.tail_stack(stack, threading.Event())
             except ClientError as exc:
                 assert (  # noqa: PT017
-                    exc.response.get("ResponseMetadata", {}).get("attempt") == MAX_TAIL_RETRIES
+                    exc.response.get("ResponseMetadata", {}).get("attempt") == MAX_TAIL_RETRIES  # type: ignore[typeddict-item]
                 )
 
     def test_tail_stack_retry_on_missing_stack_eventual_success(self) -> None:
@@ -1170,7 +1170,7 @@ class TestProviderDefaultMode(unittest.TestCase):
         stack = MagicMock(spec=Stack)
         stack.fqn = f"my-namespace-{stack_name}"
 
-        default.TAIL_RETRY_SLEEP = 0.01
+        default.TAIL_RETRY_SLEEP = 0.01  # type: ignore[assignment]
 
         received_events: list[Any] = []
 
@@ -1286,7 +1286,7 @@ class TestProviderInteractiveMode(unittest.TestCase):
         self.stubber.add_response("delete_stack", {}, stack)
 
         with self.stubber:
-            assert self.provider.interactive_destroy_stack(stack_name) is None
+            assert self.provider.interactive_destroy_stack(stack_name) is None  # type: ignore[func-returns-value]
             self.stubber.assert_no_pending_responses()
 
     @patch("runway.cfngin.providers.aws.default.Provider.update_termination_protection")

@@ -45,7 +45,7 @@ class RunwayStaticSiteExtraFileDataModel(ConfigProperty):
 
     @model_validator(mode="before")
     @classmethod
-    def _autofill_content_type(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _autofill_content_type(cls, values: dict[str, Any]) -> dict[str, Any]:  # type: ignore[operator]
         """Attempt to fill content_type if not provided."""
         if values.get("content_type"):
             return values
@@ -58,7 +58,7 @@ class RunwayStaticSiteExtraFileDataModel(ConfigProperty):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_content_or_file(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _validate_content_or_file(cls, values: dict[str, Any]) -> dict[str, Any]:  # type: ignore[operator]
         """Validate that content or file is provided."""
         if all(i in values and values[i] for i in ["content", "file"]):
             raise ValueError("only one of content or file can be provided")

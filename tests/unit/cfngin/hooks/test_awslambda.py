@@ -129,7 +129,7 @@ class TestLambdaHooks(unittest.TestCase):
         }
         real_kwargs.update(kwargs)
 
-        return upload_lambda_functions(**real_kwargs)
+        return upload_lambda_functions(**real_kwargs)  # type: ignore[arg-type]
 
     @mock_aws
     def test_bucket_default(self) -> None:
@@ -152,7 +152,7 @@ class TestLambdaHooks(unittest.TestCase):
         with self.temp_directory_with_files() as temp_dir:
             results = self.run_hook(
                 prefix="cloudformation-custom-resources/",
-                functions={"MyFunction": {"path": temp_dir.path + "/f1"}},
+                functions={"MyFunction": {"path": temp_dir.path + "/f1"}},  # type: ignore[operator]
             )
 
         assert results is not None
@@ -166,7 +166,7 @@ class TestLambdaHooks(unittest.TestCase):
     def test_prefix_missing(self) -> None:
         """Test prefix missing."""
         with self.temp_directory_with_files() as temp_dir:
-            results = self.run_hook(functions={"MyFunction": {"path": temp_dir.path + "/f1"}})
+            results = self.run_hook(functions={"MyFunction": {"path": temp_dir.path + "/f1"}})  # type: ignore[operator]
 
         assert results is not None
 
@@ -228,8 +228,8 @@ class TestLambdaHooks(unittest.TestCase):
         with self.temp_directory_with_files() as temp_dir:
             results = self.run_hook(
                 functions={
-                    "MyFunction": {"path": temp_dir.path + "/f1"},
-                    "OtherFunction": {"path": temp_dir.path + "/f2"},
+                    "MyFunction": {"path": temp_dir.path + "/f1"},  # type: ignore[operator]
+                    "OtherFunction": {"path": temp_dir.path + "/f2"},  # type: ignore[operator]
                 }
             )
 
@@ -260,7 +260,7 @@ class TestLambdaHooks(unittest.TestCase):
             results = self.run_hook(
                 functions={
                     "MyFunction": {
-                        "path": temp_dir.path + "/f1",
+                        "path": temp_dir.path + "/f1",  # type: ignore[operator]
                         "include": ["*.py", "test2/"],
                     }
                 }
@@ -289,7 +289,7 @@ class TestLambdaHooks(unittest.TestCase):
             results = self.run_hook(
                 functions={
                     "MyFunction": {
-                        "path": temp_dir.path + "/f1",
+                        "path": temp_dir.path + "/f1",  # type: ignore[operator]
                         "exclude": ["*.pyc", "test/"],
                     }
                 }
@@ -310,7 +310,7 @@ class TestLambdaHooks(unittest.TestCase):
             results = self.run_hook(
                 functions={
                     "MyFunction": {
-                        "path": temp_dir.path + "/f1",
+                        "path": temp_dir.path + "/f1",  # type: ignore[operator]
                         "include": "*.py",
                         "exclude": "test/",
                     }
@@ -332,7 +332,7 @@ class TestLambdaHooks(unittest.TestCase):
 
         with self.temp_directory_with_files() as temp_dir, ShouldRaise(RuntimeError(msg)):
             results = self.run_hook(
-                functions={"MyFunction": {"path": temp_dir.path + "/f1", "exclude": ["**"]}}
+                functions={"MyFunction": {"path": temp_dir.path + "/f1", "exclude": ["**"]}}  # type: ignore[operator]
             )
 
             assert results is None
@@ -346,7 +346,7 @@ class TestLambdaHooks(unittest.TestCase):
         CloudFormation detects no-change correctly.
         """
         with self.temp_directory_with_files() as temp_dir:
-            functions = {"MyFunction": {"path": temp_dir.path + "/f1"}}
+            functions = {"MyFunction": {"path": temp_dir.path + "/f1"}}  # type: ignore[operator]
 
             bucket_name = "test"
 
@@ -462,7 +462,7 @@ class TestLambdaHooks(unittest.TestCase):
             root1 = temp_dir1.path
             with self.temp_directory_with_files() as temp_dir2:
                 root2 = temp_dir2.path
-                os.symlink(root1 + "/f1", root2 + "/f3")
+                os.symlink(root1 + "/f1", root2 + "/f3")  # type: ignore[operator]
                 results = self.run_hook(
                     follow_symlinks=True, functions={"MyFunction": {"path": root2}}
                 )
@@ -504,7 +504,7 @@ class TestLambdaHooks(unittest.TestCase):
             root1 = temp_dir1.path
             with self.temp_directory_with_files() as temp_dir2:
                 root2 = temp_dir2.path
-                os.symlink(root1 + "/f1", root2 + "/f3")
+                os.symlink(root1 + "/f1", root2 + "/f3")  # type: ignore[operator]
                 results = self.run_hook(
                     follow_symlinks=False, functions={"MyFunction": {"path": root2}}
                 )
@@ -534,7 +534,7 @@ class TestLambdaHooks(unittest.TestCase):
             root1 = temp_dir1.path
             with self.temp_directory_with_files() as temp_dir2:
                 root2 = temp_dir2.path
-                os.symlink(root1 + "/f1", root2 + "/f3")
+                os.symlink(root1 + "/f1", root2 + "/f3")  # type: ignore[operator]
                 results = self.run_hook(functions={"MyFunction": {"path": root2}})
             assert results is not None
 
@@ -581,7 +581,7 @@ class TestLambdaHooks(unittest.TestCase):
             self.run_hook(
                 functions={
                     "MyFunction": {
-                        "path": temp_dir.path + "/f1",
+                        "path": temp_dir.path + "/f1",  # type: ignore[operator]
                         "include": ["*.py", "test2/"],
                     }
                 }
@@ -627,18 +627,18 @@ class TestDockerizePip:
             docker_file = tmp_dir.write("Dockerfile", b"")
             dockerized_pip(str(Path.cwd()), client=client, docker_file=docker_file)
 
-            client.api.build.assert_called_with(
+            client.api.build.assert_called_with(  # type: ignore[attr-defined]
                 path=tmp_dir.path, dockerfile="Dockerfile", forcerm=True
             )
-            client.api.create_container.assert_called_with(
+            client.api.create_container.assert_called_with(  # type: ignore[attr-defined]
                 detach=True,
                 image=FAKE_IMAGE_ID,
                 command=self.command,
                 host_config=self.host_config,
             )
-            client.api.inspect_container.assert_called_with(FAKE_CONTAINER_ID)
-            client.api.start.assert_called_with(FAKE_CONTAINER_ID)
-            client.api.logs.assert_called_with(
+            client.api.inspect_container.assert_called_with(FAKE_CONTAINER_ID)  # type: ignore[attr-defined]
+            client.api.start.assert_called_with(FAKE_CONTAINER_ID)  # type: ignore[attr-defined]
+            client.api.logs.assert_called_with(  # type: ignore[attr-defined]
                 FAKE_CONTAINER_ID, stderr=True, stdout=True, stream=True, tail=0
             )
 
@@ -648,12 +648,12 @@ class TestDockerizePip:
         image = "alpine"
         dockerized_pip(str(Path.cwd()), client=client, docker_image=image)
 
-        client.api.create_container.assert_called_with(
+        client.api.create_container.assert_called_with(  # type: ignore[attr-defined]
             detach=True, image=image, command=self.command, host_config=self.host_config
         )
-        client.api.inspect_container.assert_called_with(FAKE_CONTAINER_ID)
-        client.api.start.assert_called_with(FAKE_CONTAINER_ID)
-        client.api.logs.assert_called_with(
+        client.api.inspect_container.assert_called_with(FAKE_CONTAINER_ID)  # type: ignore[attr-defined]
+        client.api.start.assert_called_with(FAKE_CONTAINER_ID)  # type: ignore[attr-defined]
+        client.api.logs.assert_called_with(  # type: ignore[attr-defined]
             FAKE_CONTAINER_ID, stderr=True, stdout=True, stream=True, tail=0
         )
 
@@ -663,15 +663,15 @@ class TestDockerizePip:
         runtime = "python3.8"
         dockerized_pip(str(Path.cwd()), client=client, runtime=runtime)
 
-        client.api.create_container.assert_called_with(
+        client.api.create_container.assert_called_with(  # type: ignore[attr-defined]
             detach=True,
             image="lambci/lambda:build-" + runtime,
             command=self.command,
             host_config=self.host_config,
         )
-        client.api.inspect_container.assert_called_with(FAKE_CONTAINER_ID)
-        client.api.start.assert_called_with(FAKE_CONTAINER_ID)
-        client.api.logs.assert_called_with(
+        client.api.inspect_container.assert_called_with(FAKE_CONTAINER_ID)  # type: ignore[attr-defined]
+        client.api.start.assert_called_with(FAKE_CONTAINER_ID)  # type: ignore[attr-defined]
+        client.api.logs.assert_called_with(  # type: ignore[attr-defined]
             FAKE_CONTAINER_ID, stderr=True, stdout=True, stream=True, tail=0
         )
 

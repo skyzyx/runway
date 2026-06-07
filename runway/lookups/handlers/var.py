@@ -22,7 +22,7 @@ class VarLookup(LookupHandler[Any]):
     """Name that the Lookup is registered as."""
 
     @classmethod
-    def handle(cls, value: str, *_args: Any, variables: MutableMap, **_kwargs: Any) -> Any:
+    def handle(cls, value: str, *_args: Any, variables: MutableMap, **_kwargs: Any) -> Any:  # type: ignore[override]
         """Retrieve a variable from the variable definition.
 
         The value is retrieved from the variables passed to Runway using

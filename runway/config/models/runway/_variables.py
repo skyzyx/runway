@@ -45,7 +45,7 @@ class RunwayVariablesDefinitionModel(ConfigProperty):
             description="Directory to use as the root of a relative 'file_path'. "
             "If not provided, the current working directory is used.",
         ),
-    ] = "./"  # pyright: ignore[reportAssignmentType]
+    ] = "./"  # pyright: ignore[reportAssignmentType]  # type: ignore[assignment]
     """Directory to use as the root of a relative 'file_path'.
     If not provided, the current working directory is used.
 

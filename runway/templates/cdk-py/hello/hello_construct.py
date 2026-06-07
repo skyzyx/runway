@@ -1,9 +1,9 @@
 """Sample app."""
 
 # ruff: noqa
-from aws_cdk import aws_iam as iam
-from aws_cdk import aws_s3 as s3
-from aws_cdk import core
+from aws_cdk import aws_iam as iam  # type: ignore[import-not-found]
+from aws_cdk import aws_s3 as s3  # type: ignore[import-not-found]
+from aws_cdk import core  # type: ignore[import-not-found]
 
 
 class HelloConstruct(core.Construct):

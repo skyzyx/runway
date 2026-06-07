@@ -37,7 +37,7 @@ class FakeTransferFuture:
         self,
         result: str | None = None,
         exception: Exception | None = None,
-        meta: FakeTransferFutureMeta = None,
+        meta: FakeTransferFutureMeta = None,  # type: ignore[assignment]
     ) -> None:
         """Instantiate class."""
         self._result = result
