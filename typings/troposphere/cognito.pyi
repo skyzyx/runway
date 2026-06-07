@@ -11,151 +11,151 @@ def validate_recoveryoption_name(recoveryoption_name):
     ...
 
 class CognitoIdentityProvider(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class CognitoStreams(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class PushSync(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class IdentityPool(AWSObject):
     resource_type = ...
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class MappingRule(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class RulesConfiguration(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class RoleMapping(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class IdentityPoolRoleAttachment(AWSObject):
     resource_type = ...
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class InviteMessageTemplate(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class AdminCreateUserConfig(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class DeviceConfiguration(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class EmailConfiguration(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class LambdaConfig(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class PasswordPolicy(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class Policies(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class NumberAttributeConstraints(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class StringAttributeConstraints(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class SchemaAttribute(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class SmsConfiguration(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class UserPoolAddOns(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class VerificationMessageTemplate(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class RecoveryOption(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class AccountRecoverySetting(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class UsernameConfiguration(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class UserPool(AWSObject):
     resource_type = ...
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class AnalyticsConfiguration(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class UserPoolClient(AWSObject):
     resource_type = ...
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class CustomDomainConfigType(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class UserPoolDomain(AWSObject):
     resource_type = ...
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class UserPoolGroup(AWSObject):
     resource_type = ...
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class UserPoolIdentityProvider(AWSObject):
     resource_type = ...
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class ResourceServerScopeType(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class UserPoolResourceServer(AWSObject):
     resource_type = ...
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class AccountTakeoverActionType(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class AccountTakeoverActionsType(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class NotifyEmailType(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class NotifyConfigurationType(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class AccountTakeoverRiskConfigurationType(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class CompromisedCredentialsActionsType(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class CompromisedCredentialsRiskConfigurationType(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class RiskExceptionConfigurationType(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class UserPoolRiskConfigurationAttachment(AWSObject):
     resource_type = ...
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class UserPoolUICustomizationAttachment(AWSObject):
     resource_type = ...
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class AttributeType(AWSProperty):
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class UserPoolUser(AWSObject):
     resource_type = ...
-    props = ...  # type: ignore[assignment]
+    props = ...
 
 class UserPoolUserToGroupAttachment(AWSObject):
     resource_type = ...
-    props = ...  # type: ignore[assignment]
+    props = ...

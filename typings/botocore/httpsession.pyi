@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 DEFAULT_TIMEOUT = 60
 MAX_POOL_CONNECTIONS = 10
-DEFAULT_CA_BUNDLE = os.path.join(os.path.dirname(__file__), "cacert.pem")  # type: ignore[name-defined]
+DEFAULT_CA_BUNDLE = os.path.join(os.path.dirname(__file__), "cacert.pem")
 
 def get_cert_path(verify): ...
 def create_urllib3_context(ssl_version=..., cert_reqs=..., options=..., ciphers=...):

@@ -12,7 +12,7 @@ in a specific AWS partition.
 """
 LOG = logging.getLogger(__name__)
 DEFAULT_URI_TEMPLATE = "{service}.{region}.{dnsSuffix}"
-DEFAULT_SERVICE_DATA = {"endpoints": {}}  # type: ignore[var-annotated]
+DEFAULT_SERVICE_DATA = {"endpoints": {}}
 
 class BaseEndpointResolver(object):
     """Resolves regions and endpoints. Must be subclassed."""

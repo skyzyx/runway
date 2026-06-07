@@ -95,7 +95,7 @@ class ImageCollection(Collection):
         auth_config: Optional[Dict[str, Any]] = ...,
         platform: Optional[str] = ...,
     ) -> List[Image]: ...
-    def pull(  # type: ignore[misc]
+    def pull(
         self,
         repository: Optional[str],
         tag: Optional[str] = ...,
@@ -124,7 +124,7 @@ class ImageCollection(Collection):
         decode: bool = ...,
         stream: Literal[True] = ...,
     ) -> Iterator[str]: ...
-    def push(  # type: ignore[misc]
+    def push(
         self,
         repository: Optional[str],
         tag: Optional[str] = ...,
@@ -138,6 +138,4 @@ class ImageCollection(Collection):
     def prune(self, filters: Optional[Dict[str, Any]] = ...) -> Dict[str, Any]: ...
     def prune_builds(self, *args: Any, **kwargs: Any) -> Dict[str, Any]: ...
 
-def normalize_platform(
-    platform: Optional[Dict[str, Any]], engine_info: Dict[str, Any]
-) -> Dict[str, Any]: ...
+def normalize_platform(platform: Optional[Dict[str, Any]], engine_info: Dict[str, Any]) -> Dict[str, Any]: ...

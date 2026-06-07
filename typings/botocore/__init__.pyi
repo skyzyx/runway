@@ -40,7 +40,7 @@ class UNSIGNED(object):
     def __copy__(self): ...
     def __deepcopy__(self, memodict): ...
 
-UNSIGNED = UNSIGNED()  # type: ignore[no-redef]
+UNSIGNED = UNSIGNED()
 
 def xform_name(name, sep=..., _xform_cache=...):
     """Convert camel case to a "pythonic" name.

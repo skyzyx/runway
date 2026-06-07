@@ -70,7 +70,7 @@ class Container(Model):
         stdout: bool = ...,
         stream: Literal[False] = ...,
     ) -> str: ...
-    def attach(  # type: ignore[misc]
+    def attach(
         self,
         *,
         logs: bool = ...,
@@ -138,7 +138,7 @@ class Container(Model):
         workdir: str = ...,
         demux: Literal[True] = ...,
     ) -> _ExecResultTuple: ...
-    def exec_run(  # type: ignore[misc]
+    def exec_run(
         self,
         cmd: Union[List[str], str],
         stdout: bool = ...,
@@ -185,7 +185,7 @@ class Container(Model):
         timestamps: bool = ...,
         until: Optional[Union[datetime.datetime, int]] = ...,
     ) -> Iterator[bytes]: ...
-    def logs(  # type: ignore[misc]
+    def logs(
         self,
         *,
         follow: bool = ...,
@@ -399,7 +399,7 @@ class ContainerCollection(Collection):
         volumes_from: List[str] = ...,
         working_dir: str = ...,
     ) -> Container: ...
-    def run(  # type: ignore[misc]
+    def run(
         self,
         image: Union[Image, str],
         command: Union[List[str], str] = ...,
@@ -491,7 +491,7 @@ class ContainerCollection(Collection):
         volumes_from: List[str] = ...,
         working_dir: str = ...,
     ) -> Any: ...
-    def create(  # type: ignore[override]
+    def create(
         self,
         image: Union[Image, str],
         command: Union[List[str], str] = ...,

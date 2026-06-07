@@ -6,7 +6,7 @@ from docker.api import APIClient
 from docker.client import DockerClient, from_env
 from docker.context import Context, ContextAPI
 from docker.tls import TLSConfig
-from docker.version import version, version_info  # type: ignore[attr-defined]
+from docker.version import version, version_info
 
 __all__ = [
     "APIClient",

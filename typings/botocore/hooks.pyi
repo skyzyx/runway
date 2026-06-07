@@ -6,7 +6,7 @@ import logging
 from collections import namedtuple
 
 logger = logging.getLogger(__name__)
-_NodeList = namedtuple("NodeList", ["first", "middle", "last"])  # type: ignore[name-match]
+_NodeList = namedtuple("NodeList", ["first", "middle", "last"])
 _FIRST = 0
 _MIDDLE = 1
 _LAST = 2

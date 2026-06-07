@@ -10,7 +10,7 @@ import struct
 import sys
 import types
 
-import StringIO  # type: ignore[import-not-found]
+import StringIO
 
 """Utilities for writing code that runs on Python 2 and 3"""
 __author__ = "Benjamin Peterson <benjamin@python.org>"
@@ -80,7 +80,7 @@ _importer = _SixMetaPathImporter(__name__)
 class _MovedItems(_LazyModule):
     """Lazy loading of moved objects"""
 
-    __path__ = ...  # type: ignore[assignment]
+    __path__ = ...
 
 _moved_attributes = [
     MovedAttribute("cStringIO", "cStringIO", "io", "StringIO"),
@@ -146,8 +146,7 @@ _moved_attributes = [
     MovedModule("xmlrpc_client", "xmlrpclib", "xmlrpc.client"),
     MovedModule("xmlrpc_server", "SimpleXMLRPCServer", "xmlrpc.server"),
 ]
-if sys.platform == "win32":
-    ...
+if sys.platform == "win32": ...
 moves = _MovedItems(__name__ + ".moves")
 
 class Module_six_moves_urllib_parse(_LazyModule):
@@ -250,14 +249,12 @@ class Module_six_moves_urllib_robotparser(_LazyModule):
 
     ...
 
-_urllib_robotparser_moved_attributes = [
-    MovedAttribute("RobotFileParser", "robotparser", "urllib.robotparser")
-]
+_urllib_robotparser_moved_attributes = [MovedAttribute("RobotFileParser", "robotparser", "urllib.robotparser")]
 
 class Module_six_moves_urllib(types.ModuleType):
     """Create a six.moves.urllib namespace that resembles the Python 3 namespace"""
 
-    __path__ = ...  # type: ignore[assignment]
+    __path__ = ...
     parse = ...
     error = ...
     request = ...
@@ -287,7 +284,7 @@ else:
     _func_code = "func_code"
     _func_defaults = "func_defaults"
     _func_globals = "func_globals"
-next = advance_iterator  # type: ignore[name-defined]
+next = advance_iterator
 if PY3:
     def get_unbound_function(unbound): ...
     create_bound_method = types.MethodType
@@ -391,7 +388,5 @@ def python_2_unicode_compatible(klass):
 
 __path__ = []
 __package__ = __name__
-if globals().get("__spec__") is not None:
-    ...
-if sys.meta_path:
-    ...
+if globals().get("__spec__") is not None: ...
+if sys.meta_path: ...

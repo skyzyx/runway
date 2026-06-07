@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Tuple, Type, TypeVar
 
-from botocore.vendored import requests  # type: ignore[import-not-found]
-from botocore.vendored.requests.packages import urllib3  # type: ignore[import-not-found]
+from botocore.vendored import requests
+from botocore.vendored.requests.packages import urllib3
 from typing_extensions import TypedDict
 
 class BotoCoreError(Exception):

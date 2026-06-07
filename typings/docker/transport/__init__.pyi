@@ -2,5 +2,5 @@
 
 from __future__ import annotations
 
-from docker.transport.ssladapter import SSLHTTPAdapter  # type: ignore[import-not-found]
+from docker.transport.ssladapter import SSLHTTPAdapter
 from docker.transport.unixconn import UnixHTTPAdapter
