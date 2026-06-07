@@ -1,5 +1,5 @@
 {
-  "cavemanMode": "lite",
+  "cavemanMode": "none",
   "dataContextLimit": 5,
   "dataExclude": [
     "node_modules/**",
