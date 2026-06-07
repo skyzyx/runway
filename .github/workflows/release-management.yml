@@ -16,7 +16,7 @@ jobs:
     steps:
       # https://github.com/release-drafter/release-drafter
       - name: 🚀 Run Release Drafter
-        uses: release-drafter/release-drafter@v6.1.0
+        uses: release-drafter/release-drafter@b1476f6e6eb133afa41ed8589daba6dc69b4d3f5 # v6.1.0
         env:
           # Using a PAT here will allow releases to trigger a build/release but
           # we're just using the actions token for the time being since we

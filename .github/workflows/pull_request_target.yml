@@ -10,13 +10,13 @@ jobs:
     if: ${{ !endswith(github.actor, '[bot]') && (github.event.action == 'opened' || github.event.action == 'reopened') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: technote-space/assign-author@v1 # cspell:ignore technote
+      - uses: technote-space/assign-author@9558557c5c4816f38bd06176fbc324ba14bb3160 # v1.6.2
   enforce-branch-name:
     name: Enforce Branch Name
     runs-on: ubuntu-latest
     steps:
       - name: 💂 Enforce Branch Name
-        uses: finleyfamily/action-enforce-branch-name@v1.0.2
+        uses: finleyfamily/action-enforce-branch-name@27f7c2a8a81b14def3b2d6504a506444da3abdc8 # v1.0.2
         with:
           allowed_prefixes: >-
             bugfix,chore,dep,depend,dependabot,deps,docs,feat,feature,fix,hotfix,
@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🚀 Run Release Drafter
-        uses: release-drafter/release-drafter@v6
+        uses: release-drafter/release-drafter@6a93d829887aa2e0748befe2e808c66c0ec6e4c7 # v6.4.0
         with:
           disable-releaser: true
         env:

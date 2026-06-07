@@ -106,11 +106,11 @@ jobs:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
       - name: 🏗 Setup Python
-        uses: finleyfamily/action-setup-python@v1.2.0
+        uses: finleyfamily/action-setup-python@aef39163cba867cd580d548432a0de677e9cd74b # v1.2.0
         with:
           poetry-plugins: poetry-dynamic-versioning[plugin]
       - name: 🏗 Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           aws-access-key-id: ${{ secrets.DEPLOY_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
@@ -137,12 +137,12 @@ jobs:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
       - name: 🏗 Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           cache: npm
           node-version: ${{ env.NODE_VERSION }}
       - name: 🏗 Setup Python
-        uses: finleyfamily/action-setup-python@v1.2.0
+        uses: finleyfamily/action-setup-python@aef39163cba867cd580d548432a0de677e9cd74b # v1.2.0
         with:
           poetry-plugins: poetry-dynamic-versioning[plugin]
           python-version: ${{ matrix.python-version }}
@@ -167,12 +167,12 @@ jobs:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
       - name: 🏗 Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           cache: npm
           node-version: ${{ env.NODE_VERSION }}
       - name: 🏗 Setup Python
-        uses: finleyfamily/action-setup-python@v1.2.0
+        uses: finleyfamily/action-setup-python@aef39163cba867cd580d548432a0de677e9cd74b # v1.2.0
         with:
           poetry-plugins: poetry-dynamic-versioning[plugin]
           python-version: '3.10'
@@ -181,7 +181,7 @@ jobs:
           sudo apt update -y
           sudo apt install -y default-libmysqlclient-dev libxml2-dev libxmlsec1-dev libxmlsec1-openssl pkg-config
       - name: 🏗 Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           aws-access-key-id: ${{ secrets.TEST_RUNNER_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.TEST_RUNNER_AWS_SECRET_ACCESS_KEY }}
@@ -206,12 +206,12 @@ jobs:
         with:
           fetch-depth: 0
       - name: 🏗 Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           cache: npm
           node-version: ${{ env.NODE_VERSION }}
       - name: 🏗 Setup Python
-        uses: finleyfamily/action-setup-python@v1.2.0
+        uses: finleyfamily/action-setup-python@aef39163cba867cd580d548432a0de677e9cd74b # v1.2.0
         with:
           poetry-plugins: poetry-dynamic-versioning[plugin]
           python-version: ${{ matrix.python-version }}
@@ -219,7 +219,7 @@ jobs:
         run: make setup-npm
       - name: 🏗 Configure Pagefile # avoid MemoryError during tests
         if: runner.os == 'Windows'
-        uses: al-cheb/configure-pagefile-action@v1.4 # cspell:ignore cheb
+        uses: al-cheb/configure-pagefile-action@a3b6ebd6b634da88790d9c58d4b37a7f4a7b8708 # v1.4
         with:
           minimum-size: 16GB
           maximum-size: 16GB
@@ -228,7 +228,7 @@ jobs:
         # assertions assume linux so some fail when run on windows
         run: make test cov-xml
       - name: ⤴️ Upload to Codecov
-        uses: codecov/codecov-action@v5.5.0
+        uses: codecov/codecov-action@fdcc8476540edceab3de004e990f80d881c6cc00 # v5.5.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
@@ -241,7 +241,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: 🏗 Setup Python
-        uses: finleyfamily/action-setup-python@v1.2.0
+        uses: finleyfamily/action-setup-python@aef39163cba867cd580d548432a0de677e9cd74b # v1.2.0
         with:
           poetry-install: false
           poetry-plugins: poetry-dynamic-versioning[plugin]
@@ -255,7 +255,7 @@ jobs:
       - name: 👷 Build
         run: make build
       - name: ⤴️ Upload distribution artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: pypi-dist
           path: dist

@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: 🏗 Setup Python
-        uses: finleyfamily/action-setup-python@v1.2.0
+        uses: finleyfamily/action-setup-python@aef39163cba867cd580d548432a0de677e9cd74b # v1.2.0
         with:
           poetry-plugins: poetry-dynamic-versioning[plugin]
       # Remove apt repos that are known to break from time to time
@@ -32,7 +32,7 @@ jobs:
       - name: 👷 Build
         run: make build
       - name: ⤴️ Upload distribution artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: pypi-dist
           path: dist
@@ -48,12 +48,12 @@ jobs:
       id-token: write
     steps:
       - name: ⤵️ Download distribution artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: pypi-dist
           path: dist
       - name: 🚀 Publish Distribution 📦 to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.12.4
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
   notify-on-publish:
     name: Notify
     needs:
@@ -63,7 +63,7 @@ jobs:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
       - name: 🚀 Microsoft Teams Notification
-        uses: skitionek/notify-microsoft-teams@v1.0.9 # cspell:ignore skitionek
+        uses: skitionek/notify-microsoft-teams@11e40c38c3a629ae65a985b582eca4897b01e79e # v1.0.9
         if: always()
         with:
           webhook_url: ${{ secrets.MSTEAMS_WEBHOOK }}
