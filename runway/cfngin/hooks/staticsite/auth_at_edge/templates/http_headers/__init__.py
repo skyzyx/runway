@@ -1,6 +1,6 @@
 """Add all configured (CloudFront compatible) headers to origin response."""
 
-from shared import as_cloud_front_headers, get_config  # type: ignore[import-not-found]
+from shared import as_cloud_front_headers, get_config
 
 CONFIG = get_config()
 

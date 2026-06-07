@@ -113,7 +113,7 @@ def get_output_dict(stack: StackTypeDef) -> dict[str, str]:
         return {}
     outputs = {
         # both of these should exist even if the schema says they may not
-        output["OutputKey"]: output["OutputValue"]  # type: ignore
+        output["OutputKey"]: output["OutputValue"]
         for output in stack.get("Outputs", [])
     }
     LOGGER.debug("%s stack outputs: %s", stack["StackName"], json.dumps(outputs))
@@ -308,10 +308,7 @@ def output_summary(
     for change in changeset:
         resource = change.get("ResourceChange", {})
         replacement = resource.get("Replacement", "") == "True"
-        summary = (
-            f"- {resource.get('Action')} {resource.get('LogicalResourceId')} "
-            f"({resource.get('ResourceType')})"
-        )
+        summary = f"- {resource.get('Action')} {resource.get('LogicalResourceId')} ({resource.get('ResourceType')})"
         if replacement:
             replacements.append(summary)
         else:
@@ -457,10 +454,7 @@ def create_change_set(
         # CloudFormation reports "no changes" via a FAILED changeset status
         # rather than a distinct API response, so we must inspect the reason
         # string to distinguish a no-op from an actual failure.
-        if (
-            "didn't contain changes" in status_reason
-            or "No updates are to be performed" in status_reason
-        ):
+        if "didn't contain changes" in status_reason or "No updates are to be performed" in status_reason:
             LOGGER.debug("%s:stack did not change; not updating and removing changeset", fqn)
             cfn_client.delete_change_set(ChangeSetName=change_set_id)
             raise exceptions.StackDidNotChange
@@ -900,9 +894,7 @@ class Provider(BaseProvider):
             None,
         )
 
-    def get_events(
-        self, stack_name: str, chronological: bool = True
-    ) -> Iterable[StackEventTypeDef]:
+    def get_events(self, stack_name: str, chronological: bool = True) -> Iterable[StackEventTypeDef]:
         """Get the events in batches and return in chronological order.
 
         Paginates through all stack events because the CloudFormation API
@@ -913,9 +905,7 @@ class Provider(BaseProvider):
         event_list: list[list[StackEventTypeDef]] = []
         while True:
             if next_token is not None:
-                events = self.cloudformation.describe_stack_events(
-                    StackName=stack_name, NextToken=next_token
-                )
+                events = self.cloudformation.describe_stack_events(StackName=stack_name, NextToken=next_token)
             else:
                 events = self.cloudformation.describe_stack_events(StackName=stack_name)
             event_list.append(events["StackEvents"])
@@ -926,9 +916,7 @@ class Provider(BaseProvider):
         if chronological:
             return cast(
                 "Iterable[StackEventTypeDef]",
-                reversed(
-                    cast("list[StackEventTypeDef]", functools.reduce(operator.iadd, event_list, []))
-                ),
+                reversed(cast("list[StackEventTypeDef]", functools.reduce(operator.iadd, event_list, []))),
             )
         return cast("Iterable[StackEventTypeDef]", functools.reduce(operator.iadd, event_list, []))
 
@@ -947,12 +935,8 @@ class Provider(BaseProvider):
 
         """
         event: dict[str, str] | StackEventTypeDef = (
-            self.get_event_by_resource_status(
-                stack_name, "UPDATE_ROLLBACK_IN_PROGRESS", chronological=False
-            )
-            or self.get_event_by_resource_status(
-                stack_name, "ROLLBACK_IN_PROGRESS", chronological=True
-            )
+            self.get_event_by_resource_status(stack_name, "UPDATE_ROLLBACK_IN_PROGRESS", chronological=False)
+            or self.get_event_by_resource_status(stack_name, "ROLLBACK_IN_PROGRESS", chronological=True)
             or {}  # type: ignore[typeddict-item]
         )
         return event.get("ResourceStatusReason")
@@ -1110,9 +1094,7 @@ class Provider(BaseProvider):
                 else:
                     raise
 
-    def select_update_method(
-        self, force_interactive: bool, force_change_set: bool
-    ) -> Callable[..., None]:
+    def select_update_method(self, force_interactive: bool, force_change_set: bool) -> Callable[..., None]:
         """Select the correct update method when updating a stack.
 
         Routes to the appropriate update strategy because each path has
@@ -1169,14 +1151,10 @@ class Provider(BaseProvider):
         stack_status = self.get_stack_status(stack)
 
         if self.is_stack_in_progress(stack):
-            raise exceptions.StackUpdateBadStatus(
-                stack_name, stack_status, "Update already in-progress"
-            )
+            raise exceptions.StackUpdateBadStatus(stack_name, stack_status, "Update already in-progress")
 
         if not self.is_stack_recreatable(stack):
-            raise exceptions.StackUpdateBadStatus(
-                stack_name, stack_status, "Unsupported state for re-creation"
-            )
+            raise exceptions.StackUpdateBadStatus(stack_name, stack_status, "Unsupported state for re-creation")
 
         if not self.recreate_failed:
             raise exceptions.StackUpdateBadStatus(
@@ -1296,9 +1274,7 @@ class Provider(BaseProvider):
                 EnableTerminationProtection=termination_protection, StackName=fqn
             )
 
-    def deal_with_changeset_stack_policy(
-        self, fqn: str, stack_policy: Template | None = None
-    ) -> None:
+    def deal_with_changeset_stack_policy(self, fqn: str, stack_policy: Template | None = None) -> None:
         """Set a stack policy when using changesets.
 
         Works around a CloudFormation API limitation: the CreateChangeSet
@@ -1320,9 +1296,7 @@ class Provider(BaseProvider):
             LOGGER.debug("%s:adding stack policy", fqn)
             self.cloudformation.set_stack_policy(**kwargs)
 
-    def interactive_destroy_stack(
-        self, fqn: str, approval: str | None = None, **kwargs: Any
-    ) -> None:
+    def interactive_destroy_stack(self, fqn: str, approval: str | None = None, **kwargs: Any) -> None:
         """Delete a CloudFormation stack in interactive mode.
 
         Requires explicit operator confirmation before deletion to prevent
@@ -1345,18 +1319,14 @@ class Provider(BaseProvider):
             detail = " created to generate a change set" if action == "diff" else ""
             approval = (
                 approval
-                or ui.ask(
-                    f"Destroy {description}stack '{fqn}'{detail}? [{'/'.join(approval_options)}] "
-                ).lower()
+                or ui.ask(f"Destroy {description}stack '{fqn}'{detail}? [{'/'.join(approval_options)}] ").lower()
             )
 
         if approval != "y":
             raise exceptions.CancelExecution
 
         try:
-            return self.noninteractive_destroy_stack(
-                fqn, allow_disable_termination_protection=False, **kwargs
-            )
+            return self.noninteractive_destroy_stack(fqn, allow_disable_termination_protection=False, **kwargs)
         except botocore.exceptions.ClientError as err:
             if "TerminationProtection" in err.response["Error"]["Message"]:
                 approval = ui.ask(
@@ -1415,8 +1385,8 @@ class Provider(BaseProvider):
                     x
                     if "ParameterValue" in x
                     else {
-                        "ParameterKey": x["ParameterKey"],  # type: ignore
-                        "ParameterValue": old_parameters_as_dict[x["ParameterKey"]],  # type: ignore
+                        "ParameterKey": x["ParameterKey"],
+                        "ParameterValue": old_parameters_as_dict[x["ParameterKey"]],  # type: ignore[typeddict-item]
                     }
                 )
                 for x in parameters
@@ -1710,8 +1680,8 @@ class Provider(BaseProvider):
                     x
                     if "ParameterValue" in x
                     else {
-                        "ParameterKey": x["ParameterKey"],  # type: ignore
-                        "ParameterValue": old_params[x["ParameterKey"]],  # type: ignore
+                        "ParameterKey": x["ParameterKey"],
+                        "ParameterValue": old_params[x["ParameterKey"]],  # type: ignore[typeddict-item]
                     }
                 )
                 for x in parameters
@@ -1729,9 +1699,7 @@ class Provider(BaseProvider):
                         params_diff,
                         replacements_only=self.replacements_only,
                     )
-                    output_full_changeset(
-                        full_changeset=changes, params_diff=params_diff, fqn=stack.fqn
-                    )
+                    output_full_changeset(full_changeset=changes, params_diff=params_diff, fqn=stack.fqn)
                 else:
                     output_full_changeset(
                         full_changeset=changes,
@@ -1761,10 +1729,7 @@ class Provider(BaseProvider):
             # scope of changes that can invalidate a change
             if (
                 resc_change
-                and (
-                    resc_change.get("Replacement") == "True"
-                    or "Properties" in resc_change.get("Scope", {})
-                )
+                and (resc_change.get("Replacement") == "True" or "Properties" in resc_change.get("Scope", {}))
                 and "LogicalResourceId" in resc_change
             ):
                 LOGGER.debug(
@@ -1800,9 +1765,7 @@ class Provider(BaseProvider):
             try:
                 temp_stack = self.get_stack(stack.fqn)
                 if self.is_stack_in_review(temp_stack):
-                    LOGGER.debug(
-                        'removing temporary stack that is created with a ChangeSet of type "CREATE"'
-                    )
+                    LOGGER.debug('removing temporary stack that is created with a ChangeSet of type "CREATE"')
                     # this method is currently only used by one action so
                     # hardcoding should be fine for now.
                     self.destroy_stack(temp_stack, action="diff")
@@ -1824,7 +1787,4 @@ class Provider(BaseProvider):
         Converts CloudFormation's list-of-dicts parameter format to a flat
         dict for easier comparison when computing parameter diffs.
         """
-        return {
-            param["ParameterKey"]: param["ParameterValue"]  # type: ignore
-            for param in parameters_list
-        }
+        return {param["ParameterKey"]: param["ParameterValue"] for param in parameters_list}

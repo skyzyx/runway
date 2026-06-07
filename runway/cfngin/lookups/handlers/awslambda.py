@@ -47,9 +47,7 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
     TYPE_NAME: ClassVar[str] = "awslambda"
 
     @classmethod
-    def get_deployment_package_data(
-        cls, context: CfnginContext, data_key: str
-    ) -> AwsLambdaHookDeployResponse:
+    def get_deployment_package_data(cls, context: CfnginContext, data_key: str) -> AwsLambdaHookDeployResponse:
         """Get the response of an AwsLambdaHook run.
 
         Lazily initializes hook data if missing, enabling ``runway plan`` to
@@ -79,9 +77,7 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
 
         if data_key not in context.hook_data:
             LOGGER.debug("%s missing from hook_data; attempting to get value", data_key)
-            hook = cls.init_hook_class(
-                context, cls.get_required_hook_definition(context.config, data_key)
-            )
+            hook = cls.init_hook_class(context, cls.get_required_hook_definition(context.config, data_key))
             context.set_hook_data(data_key, hook.plan())
         try:
             return _AwsLambdaHookDeployResponse.model_validate(context.hook_data[data_key])
@@ -91,9 +87,7 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
             ) from None
 
     @staticmethod
-    def get_required_hook_definition(
-        config: CfnginConfig, data_key: str
-    ) -> CfnginHookDefinitionModel:
+    def get_required_hook_definition(config: CfnginConfig, data_key: str) -> CfnginHookDefinitionModel:
         """Get the required Hook definition from the CFNgin config.
 
         Currently, this only supports finding the data_key pre_deploy.
@@ -113,9 +107,7 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
                 ``data_key`` or, more than one was found.
 
         """
-        hooks_with_data_key = [
-            hook_def for hook_def in config.pre_deploy if hook_def.data_key == data_key
-        ]
+        hooks_with_data_key = [hook_def for hook_def in config.pre_deploy if hook_def.data_key == data_key]
         if not hooks_with_data_key:
             raise ValueError(f"no hook definition found with data_key {data_key}")
         if len(hooks_with_data_key) > 1:
@@ -123,9 +115,7 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
         return hooks_with_data_key.pop()
 
     @classmethod
-    def handle(
-        cls, value: str, context: CfnginContext, **_kwargs: Any
-    ) -> AwsLambdaHookDeployResponse:
+    def handle(cls, value: str, context: CfnginContext, **_kwargs: Any) -> AwsLambdaHookDeployResponse:
         """Retrieve metadata for an AWS Lambda deployment package.
 
         Args:
@@ -141,9 +131,7 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
         return cls.get_deployment_package_data(context, query)
 
     @staticmethod
-    def init_hook_class(
-        context: CfnginContext, hook_def: CfnginHookDefinitionModel
-    ) -> AwsLambdaHook[Any]:
+    def init_hook_class(context: CfnginContext, hook_def: CfnginHookDefinitionModel) -> AwsLambdaHook[Any]:
         """Initialize AwsLambdaHook subclass instance.
 
         Validates that the resolved class is actually an AwsLambdaHook subclass
@@ -164,11 +152,7 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
         from ...hooks.awslambda.base_classes import AwsLambdaHook as _AwsLambdaHook  # noqa: PLC0415
 
         kls = load_object_from_string(hook_def.path)
-        if (
-            not isinstance(kls, type)
-            or not hasattr(kls, "__subclasscheck__")
-            or not issubclass(kls, _AwsLambdaHook)
-        ):
+        if not isinstance(kls, type) or not hasattr(kls, "__subclasscheck__") or not issubclass(kls, _AwsLambdaHook):
             raise TypeError(
                 f"hook path {hook_def.path} for hook with data_key {hook_def.data_key} "
                 "must be a subclass of AwsLambdaHook to use this lookup"
@@ -241,9 +225,7 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
         TYPE_NAME: ClassVar[str] = "awslambda.CompatibleArchitectures"
 
         @classmethod
-        def handle(
-            cls, value: str, context: CfnginContext, *args: Any, **kwargs: Any
-        ) -> list[str] | None:
+        def handle(cls, value: str, context: CfnginContext, *args: Any, **kwargs: Any) -> list[str] | None:
             """Retrieve metadata for an AWS Lambda deployment package.
 
             Args:
@@ -328,9 +310,7 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
         TYPE_NAME: ClassVar[str] = "awslambda.LicenseInfo"
 
         @classmethod
-        def handle(
-            cls, value: str, context: CfnginContext, *args: Any, **kwargs: Any
-        ) -> str | None:
+        def handle(cls, value: str, context: CfnginContext, *args: Any, **kwargs: Any) -> str | None:
             """Retrieve metadata for an AWS Lambda deployment package.
 
             Args:
@@ -424,9 +404,7 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
         TYPE_NAME: ClassVar[str] = "awslambda.S3ObjectVersion"
 
         @classmethod
-        def handle(
-            cls, value: str, context: CfnginContext, *args: Any, **kwargs: Any
-        ) -> str | None:
+        def handle(cls, value: str, context: CfnginContext, *args: Any, **kwargs: Any) -> str | None:
             """Retrieve metadata for an AWS Lambda deployment package.
 
             Args:

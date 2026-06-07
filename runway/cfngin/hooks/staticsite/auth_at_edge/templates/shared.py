@@ -40,14 +40,12 @@ def get_config():
     }
 
     user_pool_region = "us-east-1"
-    region_match = re.match(r"^(\\S+?)_\\S+$", config["user_pool_id"])  # type: ignore[arg-type]
+    region_match = re.match(r"^(\\S+?)_\\S+$", config["user_pool_id"])
     if region_match:
         user_pool_region = region_match.groups()[0]
 
     config["cloud_front_headers"] = as_cloud_front_headers(config["http_headers"])
-    config["token_issuer"] = (
-        f"https://cognito-idp.{user_pool_region}.amazonaws.com/{config['user_pool_id']}"
-    )
+    config["token_issuer"] = f"https://cognito-idp.{user_pool_region}.amazonaws.com/{config['user_pool_id']}"
     config["token_jwks_uri"] = f"{config['token_issuer']}/.well-known/jwks.json"
     return config
 
@@ -86,9 +84,7 @@ def extract_and_parse_cookies(headers, client_id, cookie_compatibility="amplify"
         cookie_names = get_elasticsearch_cookie_names()
 
     return {
-        "token_user_name": (
-            cookies.get(cookie_names["last_user_key"]) if "last_user_key" in cookie_names else None
-        ),
+        "token_user_name": (cookies.get(cookie_names["last_user_key"]) if "last_user_key" in cookie_names else None),
         "id_token": cookies.get(cookie_names["id_token_key"]),
         "access_token": cookies.get(cookie_names["access_token_key"]),
         "refresh_token": cookies.get(cookie_names["refresh_token_key"]),
@@ -253,14 +249,12 @@ def generate_cookie_headers(
     cookies[cookie_names["refresh_token_key"]] = f"{tokens.get('refresh_token')}; " + str(
         with_cookie_domain(domain_name, cookie_settings.get("refreshToken"))
     )
-    cookies_iter = cookies  # type: ignore
+    cookies_iter = cookies
     if event == "sign_out":
         for key in cookies_iter:
             cookies[key] = expire_cookie(cookies[key])
     elif event == "refresh_failed":
-        cookies[cookie_names["refresh_token_key"]] = expire_cookie(
-            cookies[cookie_names["refresh_token_key"]]
-        )
+        cookies[cookie_names["refresh_token_key"]] = expire_cookie(cookies[cookie_names["refresh_token_key"]])
 
     # https://github.com/aws-samples/cloudfront-authorization-at-edge/issues/89
     for i in ["spa-auth-edge-nonce", "spa-auth-edge-nonce-hmac", "spa-auth-edge-pkce"]:

@@ -133,9 +133,7 @@ class ArgsDataModel(BaseModel):
             return cast("list[dict[str, str]]", v)
         if isinstance(v, dict):  # TODO (kyle): improve with `typing.TypeIs` narrowing
             return [{"Key": k, "Value": v} for k, v in cast("dict[str, str]", v).items()]
-        raise ValueError(
-            f"unexpected type {type(v)}; permitted: dict[str, str] | list[dict[str, str]] | none"
-        )
+        raise ValueError(f"unexpected type {type(v)}; permitted: dict[str, str] | list[dict[str, str]] | none")
 
 
 class _Parameter(CfnginHookProtocol):
@@ -205,9 +203,7 @@ class _Parameter(CfnginHookProtocol):
         if self.args.force:  # bypass getting current value
             return {}
         try:
-            return self.client.get_parameter(Name=self.args.name, WithDecryption=True).get(
-                "Parameter", {}
-            )
+            return self.client.get_parameter(Name=self.args.name, WithDecryption=True).get("Parameter", {})
         except self.client.exceptions.ParameterNotFound:
             LOGGER.verbose("parameter %s does not exist", self.args.name)
             return {}
@@ -219,9 +215,9 @@ class _Parameter(CfnginHookProtocol):
         does not include tags in GetParameter responses.
         """
         try:
-            return self.client.list_tags_for_resource(
-                ResourceId=self.args.name, ResourceType="Parameter"
-            ).get("TagList", [])
+            return self.client.list_tags_for_resource(ResourceId=self.args.name, ResourceType="Parameter").get(
+                "TagList", []
+            )
         except (
             self.client.exceptions.InvalidResourceId,
             self.client.exceptions.ParameterNotFound,
@@ -264,14 +260,11 @@ class _Parameter(CfnginHookProtocol):
         if current_param.get("Value") != self.args.value:
             try:
                 result = self.client.put_parameter(
-                    **self.args.model_dump(
-                        by_alias=True, exclude_none=True, exclude={"force", "tags"}
-                    )
+                    **self.args.model_dump(by_alias=True, exclude_none=True, exclude={"force", "tags"})
                 )
             except self.client.exceptions.ParameterAlreadyExists:
                 LOGGER.warning(
-                    "parameter %s already exists; to overwrite it's value, "
-                    'set the overwrite field to "true"',
+                    "parameter %s already exists; to overwrite it's value, set the overwrite field to \"true\"",
                     self.args.name,
                 )
                 return {
@@ -314,9 +307,7 @@ class _Parameter(CfnginHookProtocol):
                 LOGGER.debug("removed tags for parameter %s: %s", self.args.name, diff_tag_keys)
 
             if self.args.tags:
-                tags_to_add = [
-                    cast("TagTypeDef", tag.model_dump(by_alias=True)) for tag in self.args.tags
-                ]
+                tags_to_add = [cast("TagTypeDef", tag.model_dump(by_alias=True)) for tag in self.args.tags]
                 self.client.add_tags_to_resource(
                     ResourceId=self.args.name,
                     ResourceType="Parameter",

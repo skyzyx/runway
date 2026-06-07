@@ -257,9 +257,7 @@ def _find_files(
 
     """
     root = os.path.abspath(root)  # noqa: PTH100
-    file_set = formic.FileSet(
-        directory=root, include=includes, exclude=excludes, symlinks=follow_symlinks
-    )
+    file_set = formic.FileSet(directory=root, include=includes, exclude=excludes, symlinks=follow_symlinks)
     yield from file_set.qualified_files(absolute=False)
 
 
@@ -287,9 +285,7 @@ def _zip_from_file_patterns(
 
     files = list(_find_files(root, includes, excludes, follow_symlinks))
     if not files:
-        raise RuntimeError(
-            "Empty list of files for Lambda payload. Check your include/exclude options for errors."
-        )
+        raise RuntimeError("Empty list of files for Lambda payload. Check your include/exclude options for errors.")
 
     LOGGER.info("adding %d files:", len(files))
 
@@ -447,7 +443,7 @@ def _pip_has_no_color_option(python_path: str) -> bool:
                 "from __future__ import print_function;import pip;print(pip.__version__)",
             ]
         )
-        if isinstance(pip_version_string, bytes):  # type: ignore
+        if isinstance(pip_version_string, bytes):
             pip_version_string = pip_version_string.decode()
         if int(pip_version_string.split(".", maxsplit=1)[0]) > 10:
             return True
@@ -701,7 +697,7 @@ def _check_pattern_list(
     if isinstance(patterns, str):
         return [patterns]
 
-    if isinstance(patterns, list) and all(isinstance(p, str) for p in patterns):  # type: ignore
+    if isinstance(patterns, list) and all(isinstance(p, str) for p in patterns):
         return patterns
 
     raise ValueError(f"Invalid file patterns in key '{key}': must be a string or list of strings")
@@ -981,8 +977,7 @@ def upload_lambda_functions(  # noqa: D417
 
     """
     LOGGER.warning(
-        "%s is deprecated and will be removed in a future release - "
-        "see documentation for replacement",
+        "%s is deprecated and will be removed in a future release - see documentation for replacement",
         __name__,
     )
     # TODO (craig): add better handling for misconfiguration (e.g. forgetting function names)

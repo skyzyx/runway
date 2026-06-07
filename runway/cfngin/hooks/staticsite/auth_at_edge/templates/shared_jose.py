@@ -7,7 +7,7 @@ import logging
 import re
 from urllib import request
 
-from jose import jwt  # type: ignore[import-untyped]
+from jose import jwt
 
 LOGGER = logging.getLogger(__name__)
 
@@ -71,9 +71,7 @@ def rsa_public_key_to_pem(modulus_b64, exponent_b64):
     encoded_exp_len = encode_length_hex(exp_len)
 
     encoded_pub_key = "30"
-    encoded_pub_key += encode_length_hex(
-        mod_len + exp_len + len(encoded_mod_len) / 2 + len(encoded_exp_len) / 2 + 2
-    )
+    encoded_pub_key += encode_length_hex(mod_len + exp_len + len(encoded_mod_len) / 2 + len(encoded_exp_len) / 2 + 2)
     encoded_pub_key += "02" + encoded_mod_len + modulus_hex
     encoded_pub_key += "02" + encoded_exp_len + exponent_hex
 
@@ -103,9 +101,7 @@ class JwksClient:
 
         try:
             request_res = request.urlopen(self.options.get("jwks_uri"))
-            data = json.loads(
-                request_res.read().decode(request_res.info().get_param("charset") or "utf-8")
-            )
+            data = json.loads(request_res.read().decode(request_res.info().get_param("charset") or "utf-8"))
             keys = data["keys"]
             LOGGER.info("Keys: %s", keys)
             return keys

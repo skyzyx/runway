@@ -73,11 +73,7 @@ def get_archives_to_prune(archives: list[dict[str, Any]], hook_data: dict[str, A
         hook_data: CFNgin hook data
 
     """
-    files_to_skip = [
-        hook_data[i]
-        for i in ["current_archive_filename", "old_archive_filename"]
-        if hook_data.get(i)
-    ]
+    files_to_skip = [hook_data[i] for i in ["current_archive_filename", "old_archive_filename"] if hook_data.get(i)]
 
     archives.sort(key=itemgetter("LastModified"), reverse=False)  # sort from oldest to newest
 
@@ -229,14 +225,12 @@ def prune_archives(context: CfnginContext, session: Session) -> bool:
 
     # NOTE (@ITProKyle): for some reason, pyright is not seeing `PageIterator` as a generic
     for page in cast("Iterator[ListObjectsV2OutputTypeDef]", response_iterator):
-        archives.extend(page.get("Contents", []))  # type: ignore
+        archives.extend(page.get("Contents", []))  # type: ignore[arg-type]
     archives_to_prune = get_archives_to_prune(archives, context.hook_data["staticsite"])
 
     # Iterate in chunks of 1000 to match the S3 delete_objects API limit,
     # which rejects requests with more than 1000 keys.
-    for objects in [
-        archives_to_prune[i : i + 1000] for i in range(0, len(archives_to_prune), 1000)
-    ]:
+    for objects in [archives_to_prune[i : i + 1000] for i in range(0, len(archives_to_prune), 1000)]:
         s3_client.delete_objects(
             Bucket=context.hook_data["staticsite"]["artifact_bucket_name"],
             Delete={"Objects": [{"Key": i} for i in objects]},
@@ -388,9 +382,7 @@ def set_ssm_value(session: Session, name: str, value: Any, description: str = ""
     """
     ssm_client = session.client("ssm")
 
-    ssm_client.put_parameter(
-        Name=name, Description=description, Value=value, Type="String", Overwrite=True
-    )
+    ssm_client.put_parameter(Name=name, Description=description, Value=value, Type="String", Overwrite=True)
 
 
 def sync_extra_files(  # noqa: C901

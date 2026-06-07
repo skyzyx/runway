@@ -223,8 +223,7 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
         if self.project.args.object_prefix:
             prefix = f"{prefix}/{self.project.args.object_prefix.lstrip('/').rstrip('/')}"
         return (  # this can't contain runtime - causes a cyclic dependency
-            f"{prefix}/{self.project.source_code.root_directory.name}."
-            f"{self.project.source_code.md5_hash}.zip"
+            f"{prefix}/{self.project.source_code.root_directory.name}.{self.project.source_code.md5_hash}.zip"
         )
 
     @cached_property
@@ -301,9 +300,9 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
                     current_perms,
                     required_perm,
                 )
-                file_info.external_attr = (
-                    file_info.external_attr & ~self.ZIPFILE_PERMISSION_MASK
-                ) | (required_perm << 16)
+                file_info.external_attr = (file_info.external_attr & ~self.ZIPFILE_PERMISSION_MASK) | (
+                    required_perm << 16
+                )
 
     def _build_zip_dependencies(
         self,
@@ -345,9 +344,9 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
             archive_file.write(
                 src_file,
                 (
-                    self.insert_layer_dir(
-                        src_file, self.project.source_code.root_directory
-                    ).relative_to(self.project.source_code.root_directory)
+                    self.insert_layer_dir(src_file, self.project.source_code.root_directory).relative_to(
+                        self.project.source_code.root_directory
+                    )
                     if self.usage_type == "layer"
                     else src_file.relative_to(self.project.source_code.root_directory)
                 ),
@@ -376,14 +375,10 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
         """
         optional_metadata = {
             self.META_TAGS["compatible_architectures"]: (
-                "+".join(self.project.compatible_architectures)
-                if self.project.compatible_architectures
-                else None
+                "+".join(self.project.compatible_architectures) if self.project.compatible_architectures else None
             ),
             self.META_TAGS["compatible_runtimes"]: (
-                "+".join(self.project.compatible_runtimes)
-                if self.project.compatible_runtimes
-                else None
+                "+".join(self.project.compatible_runtimes) if self.project.compatible_runtimes else None
             ),
             self.META_TAGS["license"]: self.project.license,
         }
@@ -467,7 +462,7 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
             ContentMD5=self.md5_checksum,
             Key=self.object_key,
             Tagging=self.build_tag_set(),
-            **(  # type: ignore[arg-type]
+            **(
                 {"ContentType": content_type}  # pyright: ignore[reportArgumentType]
                 if content_type
                 else {}
@@ -579,7 +574,7 @@ class DeploymentPackageS3Object(DeploymentPackage[_ProjectTypeVar]):
         try:
             return self.bucket.client.head_object(Bucket=self.bucket.name, Key=self.object_key)
         except self.bucket.client.exceptions.ClientError as exc:
-            status_code = exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode", 0)  # type: ignore[typeddict-item]
+            status_code = exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode", 0)
             if status_code == 404:
                 LOGGER.verbose(
                     "%s not found",
@@ -628,12 +623,10 @@ class DeploymentPackageS3Object(DeploymentPackage[_ProjectTypeVar]):
         call.
 
         """
-        response = self.bucket.client.get_object_tagging(
-            Bucket=self.bucket.name, Key=self.object_key
-        )
+        response = self.bucket.client.get_object_tagging(Bucket=self.bucket.name, Key=self.object_key)
         if "TagSet" not in response:
             # can't be hit when using botocore.stub.Stubber as TagSet is required
-            return {}  # cov: ignore  # type: ignore[unreachable]
+            return {}  # cov: ignore
         return {t["Key"]: t["Value"] for t in response["TagSet"]}
 
     @cached_property

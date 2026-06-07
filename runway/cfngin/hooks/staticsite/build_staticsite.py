@@ -57,9 +57,7 @@ class HookArgsOptions(HookArgsBaseModel):
     pre_build_steps: list[str | list[str] | dict[str, str | list[str]]] = []
     """Steps to run before building the static site."""
 
-    source_hashing: RunwayStaticSiteSourceHashingDataModel = (
-        RunwayStaticSiteSourceHashingDataModel()
-    )
+    source_hashing: RunwayStaticSiteSourceHashingDataModel = RunwayStaticSiteSourceHashingDataModel()
     """Settings for tracking the hash of the source code between runs."""
 
 
@@ -77,9 +75,7 @@ class HookArgs(HookArgsBaseModel):
     """Hook ``options`` block."""
 
 
-def zip_and_upload(
-    app_dir: str, bucket: str, key: str, session: boto3.Session | None = None
-) -> None:
+def zip_and_upload(app_dir: str, bucket: str, key: str, session: boto3.Session | None = None) -> None:
     """Zip built static site and upload to S3.
 
     Archives the build output as a single zip so it can be stored as a versioned
@@ -133,9 +129,7 @@ def build(
     args = HookArgs.model_validate({"options": options, **kwargs})
     session = context.get_session()
 
-    context_dict: dict[str, Any] = {
-        "artifact_key_prefix": f"{args.options.namespace}-{args.options.name}-"
-    }
+    context_dict: dict[str, Any] = {"artifact_key_prefix": f"{args.options.namespace}-{args.options.name}-"}
 
     build_output = (
         os.path.join(args.options.path, args.options.build_output)  # noqa: PTH118
@@ -167,22 +161,18 @@ def build(
         ssm_client = session.client("ssm")
 
         try:
-            old_parameter_value = ssm_client.get_parameter(
-                Name=context_dict["hash_tracking_parameter"]
-            )["Parameter"].get("Value")
+            old_parameter_value = ssm_client.get_parameter(Name=context_dict["hash_tracking_parameter"])[
+                "Parameter"
+            ].get("Value")
         except ssm_client.exceptions.ParameterNotFound:
             old_parameter_value = None
     else:
         context_dict["hash_tracking_disabled"] = True
         old_parameter_value = None
 
-    context_dict["current_archive_filename"] = (
-        context_dict["artifact_key_prefix"] + context_dict["hash"] + ".zip"
-    )
+    context_dict["current_archive_filename"] = context_dict["artifact_key_prefix"] + context_dict["hash"] + ".zip"
     if old_parameter_value:
-        context_dict["old_archive_filename"] = (
-            context_dict["artifact_key_prefix"] + old_parameter_value + ".zip"
-        )
+        context_dict["old_archive_filename"] = context_dict["artifact_key_prefix"] + old_parameter_value + ".zip"
 
     if old_parameter_value == context_dict["hash"]:
         LOGGER.info("skipped build; hash already deployed")

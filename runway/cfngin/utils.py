@@ -174,8 +174,7 @@ class SOARecordText:
     def __str__(self) -> str:
         """Convert an instance of this class to a string."""
         return (
-            f"{self.nameserver} {self.contact} {self.serial} {self.refresh} "
-            f"{self.retry} {self.expire} {self.min_ttl}"
+            f"{self.nameserver} {self.contact} {self.serial} {self.refresh} {self.retry} {self.expire} {self.min_ttl}"
         )
 
 
@@ -285,7 +284,7 @@ def yaml_to_ordered_dict(  # noqa: C901
 
     """
 
-    class OrderedUniqueLoader(loader):  # type: ignore
+    class OrderedUniqueLoader(loader):  # type: ignore[misc]
         """Subclasses the given pyYAML `loader` class.
 
         Extends the base loader to enforce unique keys for critical CFNgin
@@ -317,8 +316,7 @@ def yaml_to_ordered_dict(  # noqa: C901
                     b = mapping.get(a.value)
                     if b:
                         raise ConstructorError(
-                            f"{node_name} mapping cannot have duplicate keys "
-                            f"{b.start_mark} {a.start_mark}"
+                            f"{node_name} mapping cannot have duplicate keys {b.start_mark} {a.start_mark}"
                         )
                     mapping[a.value] = a
 
@@ -349,8 +347,7 @@ def yaml_to_ordered_dict(  # noqa: C901
                 # prevent duplicate sibling keys for certain "keywords".
                 if key in mapping and key in self.NO_DUPE_SIBLINGS:
                     raise ConstructorError(
-                        f"{key} key cannot have duplicate siblings "
-                        f"{node.start_mark} {key_node.start_mark}"
+                        f"{key} key cannot have duplicate siblings {node.start_mark} {key_node.start_mark}"
                     )
                 if key in self.NO_DUPE_CHILDREN:
                     # prevent duplicate children keys for this mapping.
@@ -377,9 +374,7 @@ def yaml_to_ordered_dict(  # noqa: C901
             value: OrderedDict[Any, Any] = self.construct_mapping(node)
             data.update(value)
 
-    OrderedUniqueLoader.add_constructor(
-        "tag:yaml.org,2002:map", OrderedUniqueLoader.construct_yaml_map
-    )
+    OrderedUniqueLoader.add_constructor("tag:yaml.org,2002:map", OrderedUniqueLoader.construct_yaml_map)
     return yaml.load(stream, OrderedUniqueLoader)  # noqa: S506
 
 
@@ -541,14 +536,10 @@ def ensure_s3_bucket(
             create_args: dict[str, Any] = {"Bucket": bucket_name}
             location_constraint = s3_bucket_location_constraint(bucket_region)
             if location_constraint:
-                create_args["CreateBucketConfiguration"] = {
-                    "LocationConstraint": location_constraint
-                }
+                create_args["CreateBucketConfiguration"] = {"LocationConstraint": location_constraint}
             s3_client.create_bucket(**create_args)
             if persist_graph:
-                s3_client.put_bucket_versioning(
-                    Bucket=bucket_name, VersioningConfiguration={"Status": "Enabled"}
-                )
+                s3_client.put_bucket_versioning(Bucket=bucket_name, VersioningConfiguration={"Status": "Enabled"})
             return
         if err.response["Error"]["Message"] == "Forbidden":
             LOGGER.exception(
@@ -765,9 +756,7 @@ class SourceProcessor:
 
         """
         # Update sys.path & merge in remote configs (if necessary)
-        self.update_paths_and_config(
-            config=config, pkg_dir_name=config.source, pkg_cache_dir=Path.cwd()
-        )
+        self.update_paths_and_config(config=config, pkg_dir_name=config.source, pkg_cache_dir=Path.cwd())
 
     def fetch_s3_package(self, config: S3CfnginPackageSourceDefinitionModel) -> None:
         """Make a remote S3 archive available for local use.
@@ -796,15 +785,12 @@ class SourceProcessor:
                     config.key,
                     config.bucket,
                 )
-                dir_name = self.sanitize_uri_path(
-                    f"s3-{config.bucket}-{config.key[: -len(suffix)]}"
-                )
+                dir_name = self.sanitize_uri_path(f"s3-{config.bucket}-{config.key[: -len(suffix)]}")
                 break
 
         if extractor is None:
             raise ValueError(
-                f'Archive type could not be determined for S3 object "{config.key}" '
-                f"in bucket {config.bucket}."
+                f'Archive type could not be determined for S3 object "{config.key}" in bucket {config.bucket}.'
             )
 
         session = get_session(region=None)
@@ -819,9 +805,7 @@ class SourceProcessor:
                 # hurt to explicitly convert it to UTC again just in case
                 modified_date = (
                     session.client("s3")
-                    .head_object(Bucket=config.bucket, Key=config.key, **extra_s3_args)[
-                        "LastModified"
-                    ]
+                    .head_object(Bucket=config.bucket, Key=config.key, **extra_s3_args)["LastModified"]
                     .astimezone(dateutil.tz.tzutc())
                 )
             except botocore.exceptions.ClientError as client_error:
@@ -871,8 +855,7 @@ class SourceProcessor:
                 shutil.move(str(tmp_package_path), self.package_cache_dir)
         else:
             LOGGER.debug(
-                "remote package s3://%s/%s appears to have "
-                "been previously downloaded to %s; download skipped",
+                "remote package s3://%s/%s appears to have been previously downloaded to %s; download skipped",
                 config.bucket,
                 config.key,
                 cached_dir_path,
@@ -902,8 +885,7 @@ class SourceProcessor:
         # We can skip cloning the repo if it's already been cached
         if not cached_dir_path.is_dir():
             LOGGER.debug(
-                "remote repo %s does not appear to have been "
-                "previously downloaded; starting clone to %s",
+                "remote repo %s does not appear to have been previously downloaded; starting clone to %s",
                 config.uri,
                 cached_dir_path,
             )

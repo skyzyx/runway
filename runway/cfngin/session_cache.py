@@ -68,8 +68,8 @@ def get_session(
     # Inject the shared credential cache into the assume-role provider so
     # that temporary credentials are reused across threads rather than
     # triggering a new STS AssumeRole call for each client.
-    cred_provider = session._session.get_component("credential_provider")  # type: ignore
-    provider = cred_provider.get_provider("assume-role")  # type: ignore
+    cred_provider = session._session.get_component("credential_provider")
+    provider = cred_provider.get_provider("assume-role")
     provider.cache = BOTO3_CREDENTIAL_CACHE
     # Use cfngin's own UI getpass to prompt for MFA tokens in a way that
     # works with the cfngin interactive output handler.

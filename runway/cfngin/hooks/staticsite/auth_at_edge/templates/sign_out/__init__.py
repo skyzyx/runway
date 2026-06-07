@@ -3,7 +3,7 @@
 import logging
 from urllib.parse import urlencode
 
-from shared import (  # type: ignore[import-not-found]
+from shared import (
     create_error_html,
     extract_and_parse_cookies,
     generate_cookie_headers,
@@ -54,8 +54,7 @@ def handler(event, _context):
             "location": [
                 {
                     "key": "location",
-                    "value": "https://%s/logout?%s"
-                    % (CONFIG.get("cognito_auth_domain"), urlencode(query_string)),
+                    "value": "https://%s/logout?%s" % (CONFIG.get("cognito_auth_domain"), urlencode(query_string)),
                 }
             ],
             "set-cookie": generate_cookie_headers(

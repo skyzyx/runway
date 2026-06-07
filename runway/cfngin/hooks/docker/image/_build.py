@@ -227,9 +227,7 @@ def build(*, context: CfnginContext, **kwargs: Any) -> DockerHookData:
     """
     args = ImageBuildArgs.model_validate({"context": context, **kwargs})
     docker_hook_data = DockerHookData.from_cfngin_context(context)
-    image, logs = docker_hook_data.client.images.build(  # type: ignore[misc]
-        path=str(args.path), **args.docker.model_dump()
-    )
+    image, logs = docker_hook_data.client.images.build(path=str(args.path), **args.docker.model_dump())  # type: ignore[misc]
     # Stream build logs so users can observe progress and diagnose failures
     # in real time rather than waiting for the entire build to complete.
     for msg in logs:  # iterate through JSON log messages

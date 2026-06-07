@@ -85,8 +85,7 @@ class CFNParameter:
             self.value = str(value)
         else:
             raise TypeError(
-                f"CFNParameter ({name}) value must be one of bool, float, int, str, "
-                f"list[str] but got: {type(value)}"
+                f"CFNParameter ({name}) value must be one of bool, float, int, str, list[str] but got: {type(value)}"
             )
 
     def __repr__(self) -> str:
@@ -159,9 +158,7 @@ def validate_variable_type(
     elif issubclass(var_type, CFNType):
         value = CFNParameter(name=var_name, value=value)
     elif not isinstance(value, var_type):
-        raise TypeError(
-            f"Value for variable {var_name} must be of type {var_type}. Actual type: {type(value)}"
-        )
+        raise TypeError(f"Value for variable {var_name} must be of type {var_type}. Actual type: {type(value)}")
     return value
 
 
@@ -496,11 +493,7 @@ class Blueprint(DelCachedPropMixin):
             Will be a dictionary of ``<parameter name>: <parameter attributes>``.
 
         """
-        return {
-            name: attrs
-            for name, attrs in self.parameter_definitions.items()
-            if "Default" not in attrs
-        }
+        return {name: attrs for name, attrs in self.parameter_definitions.items() if "Default" not in attrs}
 
     @property
     def requires_change_set(self) -> bool:
@@ -641,8 +634,7 @@ class Blueprint(DelCachedPropMixin):
 
         """
         LOGGER.warning(
-            "%s.get_required_parameter_definitions is deprecated and will be removed "
-            "in a future release",
+            "%s.get_required_parameter_definitions is deprecated and will be removed in a future release",
             self.__class__.__name__,
         )
         return self.required_parameter_definitions

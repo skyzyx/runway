@@ -244,21 +244,19 @@ class DockerDependencyInstaller:
             Object representing the image that was built.
 
         """
-        image, log_stream = self.client.images.build(  # type: ignore[misc]
+        image, log_stream = self.client.images.build(
             dockerfile=docker_file.name,
             forcerm=True,
             path=str(docker_file.parent),
             pull=self.options.pull,
         )
         self.log_docker_msg_dict(log_stream)
-        image.tag(name or DEFAULT_IMAGE_NAME, tag=tag or DEFAULT_IMAGE_TAG)  # type: ignore[union-attr]
+        image.tag(name or DEFAULT_IMAGE_NAME, tag=tag or DEFAULT_IMAGE_TAG)
         image.reload()
-        LOGGER.info("built docker image %s (%s)", ", ".join(image.tags), image.id)  # type: ignore[union-attr]
-        return image  # type: ignore[return-value]
+        LOGGER.info("built docker image %s (%s)", ", ".join(image.tags), image.id)
+        return image
 
-    def log_docker_msg_bytes(
-        self, stream: Iterator[bytes], *, level: int = logging.INFO
-    ) -> list[str]:
+    def log_docker_msg_bytes(self, stream: Iterator[bytes], *, level: int = logging.INFO) -> list[str]:
         """Log Docker output message from blocking generator that return bytes.
 
         Args:
@@ -276,9 +274,7 @@ class DockerDependencyInstaller:
             self._docker_logger.log(level, msg)
         return result
 
-    def log_docker_msg_dict(
-        self, stream: Iterator[dict[str, Any]], *, level: int = logging.INFO
-    ) -> list[str]:
+    def log_docker_msg_dict(self, stream: Iterator[dict[str, Any]], *, level: int = logging.INFO) -> list[str]:
         """Log Docker output message from blocking generator that return dict.
 
         Args:
@@ -338,11 +334,11 @@ class DockerDependencyInstaller:
         """
         try:
             if not force:
-                return self.client.images.get(name)  # type: ignore[return-value]
+                return self.client.images.get(name)
             LOGGER.info("pulling docker image %s...", name)
         except ImageNotFound:
             LOGGER.info("image not found; pulling docker image %s...", name)
-        return self.client.images.pull(repository=name)  # type: ignore[return-value]
+        return self.client.images.pull(repository=name)
 
     def run_command(self, command: str, *, level: int = logging.INFO) -> list[str]:
         """Execute equivalent of ``docker container run``.
@@ -371,13 +367,11 @@ class DockerDependencyInstaller:
             working_dir=self.PROJECT_DIR,
         )
         try:
-            container.start()  # type: ignore[union-attr]
-            return self.log_docker_msg_bytes(
-                container.logs(stderr=True, stdout=True, stream=True), level=level  # type: ignore[union-attr]
-            )
+            container.start()
+            return self.log_docker_msg_bytes(container.logs(stderr=True, stdout=True, stream=True), level=level)
         finally:
-            response = container.wait()  # type: ignore[union-attr]
-            container.remove(force=True)  # always remove container  # type: ignore[union-attr]
+            response = container.wait()
+            container.remove(force=True)  # always remove container
             if response.get("StatusCode", 0) != 0:
                 raise DockerExecFailedError(response)
 

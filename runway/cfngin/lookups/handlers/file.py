@@ -33,7 +33,9 @@ if TYPE_CHECKING:
 _PARAMETER_PATTERN = re.compile(r"{{([::|\w]+)}}")
 
 ParameterizedObjectTypeDef: TypeAlias = "str | Mapping[str, Any] | Sequence[Any] | Any"
-ParameterizedObjectReturnTypeDef: TypeAlias = "dict[str, ParameterizedObjectReturnTypeDef] | GenericHelperFn | list[ParameterizedObjectReturnTypeDef]"  # noqa: E501
+ParameterizedObjectReturnTypeDef: TypeAlias = (
+    "dict[str, ParameterizedObjectReturnTypeDef] | GenericHelperFn | list[ParameterizedObjectReturnTypeDef]"  # noqa: E501
+)
 
 
 class ArgsDataModel(BaseModel):
@@ -91,9 +93,7 @@ class FileLookup(LookupHandler[Any]):
                 ":", 1
             )
         except ValueError:
-            raise ValueError(
-                rf"Query '{value}' doesn't match regex: ^(?P<codec>[{'|'.join(CODECS)}]:.+$)"
-            ) from None
+            raise ValueError(rf"Query '{value}' doesn't match regex: ^(?P<codec>[{'|'.join(CODECS)}]:.+$)") from None
         return read_value_from_path(data_or_path), args
 
     @classmethod
@@ -203,9 +203,7 @@ def _parameterize_obj(
         return _parameterize_string(obj)
     if isinstance(obj, collections.abc.Mapping):
         # TODO (kyle): improve with `typing.TypeIs` narrowing
-        return {
-            key: _parameterize_obj(value) for key, value in cast("Mapping[str, Any]", obj).items()
-        }
+        return {key: _parameterize_obj(value) for key, value in cast("Mapping[str, Any]", obj).items()}
     if isinstance(obj, collections.abc.Sequence):
         # TODO (kyle): improve with `typing.TypeIs` narrowing
         return [_parameterize_obj(item) for item in cast("Sequence[Any]", obj)]

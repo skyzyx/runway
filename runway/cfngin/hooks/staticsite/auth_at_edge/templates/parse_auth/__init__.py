@@ -13,12 +13,7 @@ import logging
 from datetime import datetime
 from urllib.parse import parse_qs
 
-from shared_jose import (  # type: ignore[import-not-found]
-    MissingRequiredGroupError,
-    validate_and_check_id_token,
-)
-
-from shared import (  # type: ignore[import-not-found]
+from shared import (
     create_error_html,
     extract_and_parse_cookies,
     generate_cookie_headers,
@@ -26,6 +21,10 @@ from shared import (  # type: ignore[import-not-found]
     http_post_with_retry,
     sign,
     timestamp_in_seconds,
+)
+from shared_jose import (
+    MissingRequiredGroupError,
+    validate_and_check_id_token,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -78,10 +77,7 @@ def validate_querystring_and_cookies(request, cookies):
     if not current_nonce or not original_nonce or current_nonce != original_nonce:
         # No original nonce? CSRF violation
         if not original_nonce:
-            msg = (
-                "Your browser didn't send the nonce cookie along, "
-                "but it is required for security (prevent CSRF)"
-            )
+            msg = "Your browser didn't send the nonce cookie along, but it is required for security (prevent CSRF)"
             LOGGER.debug(msg)
             raise RequiresConfirmationError(msg)
         # Nonce's don't match
@@ -90,8 +86,7 @@ def validate_querystring_and_cookies(request, cookies):
         raise RequiresConfirmationError(msg)
     if not pkce:
         raise Exception(
-            "Your browser didn't send the pkce cookie along, "
-            "but it is required for security (prevent CSRF)"
+            "Your browser didn't send the pkce cookie along, but it is required for security (prevent CSRF)"
         )
 
     # Nonce should not be too old
@@ -132,7 +127,7 @@ def handler(event, _context):
         cookies = extract_and_parse_cookies(request.get("headers"), CONFIG["client_id"])
         id_token = cookies["id_token"]
         code, pkce, requested_uri = validate_querystring_and_cookies(request, cookies)
-        redirected_from_uri += requested_uri  # type: ignore[operator]
+        redirected_from_uri += requested_uri
 
         # Request tokens from our Cognito Authorization Domain
         body = {

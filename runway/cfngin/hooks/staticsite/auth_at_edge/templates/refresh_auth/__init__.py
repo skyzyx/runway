@@ -4,7 +4,7 @@ import logging
 import traceback
 from urllib.parse import parse_qs
 
-from shared import (  # type: ignore[import-not-found]
+from shared import (
     create_error_html,
     extract_and_parse_cookies,
     generate_cookie_headers,
@@ -90,7 +90,7 @@ def handler(event, _context):
     # why refresh was unsuccessful
     except Exception as err:
         LOGGER.info(err)
-        LOGGER.info(traceback.print_exc())  # type: ignore[func-returns-value]
+        LOGGER.info(traceback.print_exc())
 
         response = {
             "body": create_error_html(
@@ -120,10 +120,7 @@ def validate_refresh_request(current_nonce, original_nonce, tokens):
 
     """
     if not original_nonce:
-        msg = (
-            "Your browser didn't send the nonce cookie along, "
-            "but it is required for security (prevent CSRF)."
-        )
+        msg = "Your browser didn't send the nonce cookie along, but it is required for security (prevent CSRF)."
         LOGGER.error(msg)
         raise Exception(msg)
 

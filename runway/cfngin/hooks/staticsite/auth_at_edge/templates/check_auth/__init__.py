@@ -19,15 +19,14 @@ import re
 import secrets
 from urllib.parse import quote_plus, urlencode
 
-from shared_jose import validate_jwt  # type: ignore[import-not-found]
-
-from shared import (  # type: ignore[import-not-found]
+from shared import (
     decode_token,
     extract_and_parse_cookies,
     get_config,
     sign,
     timestamp_in_seconds,
 )
+from shared_jose import validate_jwt
 
 LOGGER = logging.getLogger(__file__)
 
@@ -138,11 +137,7 @@ def handler(event, _context):
                 "response_type": "code",
                 "client_id": CONFIG["client_id"],
                 "state": base64.urlsafe_b64encode(
-                    bytes(
-                        json.dumps(
-                            {"nonce": state["nonce"], "requestedUri": requested_uri}
-                        ).encode()
-                    )
+                    bytes(json.dumps({"nonce": state["nonce"], "requestedUri": requested_uri}).encode())
                 ),
                 "scope": " ".join(CONFIG["oauth_scopes"]),
                 "code_challenge_method": "S256",
@@ -158,8 +153,7 @@ def handler(event, _context):
                 "location": [
                     {
                         "key": "location",
-                        "value": "https://%s/oauth2/authorize?%s"
-                        % (CONFIG["cognito_auth_domain"], login_query_string),
+                        "value": "https://%s/oauth2/authorize?%s" % (CONFIG["cognito_auth_domain"], login_query_string),
                     }
                 ],
                 "set-cookie": [

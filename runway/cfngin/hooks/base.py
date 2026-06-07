@@ -103,9 +103,7 @@ class Hook(CfnginHookProtocol):
         Builds a Stack from a synthetic definition so hooks can deploy
         CloudFormation stacks without requiring a full stacker config entry.
         """
-        definition = CfnginStackDefinitionModel.model_construct(
-            name=self.stack_name, tags=self.args.tags, **kwargs
-        )
+        definition = CfnginStackDefinitionModel.model_construct(name=self.stack_name, tags=self.args.tags, **kwargs)
         stack = Stack(definition, self.context)
         # Directly assign the blueprint to bypass the normal resolution path,
         # since hooks construct their own blueprint rather than reading one
@@ -329,7 +327,7 @@ class HookDeployAction(deploy.Action):
         """
         return self._provider
 
-    def run(self, **kwargs: Any) -> Status:  # type: ignore
+    def run(self, **kwargs: Any) -> Status:  # type: ignore[override]
         """Run the action for one stack.
 
         Delegates directly to _launch_stack to bypass plan-level

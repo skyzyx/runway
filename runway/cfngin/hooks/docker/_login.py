@@ -65,9 +65,7 @@ class LoginArgs(BaseModel):
         needing to re-parse the raw dict.
         """
         if "ecr" in values and isinstance(values["ecr"], dict):
-            values["ecr"] = ElasticContainerRegistry.model_validate(
-                {"context": values.get("context"), **values["ecr"]}
-            )
+            values["ecr"] = ElasticContainerRegistry.model_validate({"context": values.get("context"), **values["ecr"]})
         return values
 
     @field_validator("registry", mode="before")
