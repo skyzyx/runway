@@ -178,7 +178,8 @@
     "tail *",
     "task *",
     "wc *",
-    "wget *"
+    "wget *",
+    "uv *"
   ],
   "kiroAgent.usageSummary": true,
   "makefile.configureOnOpen": false,

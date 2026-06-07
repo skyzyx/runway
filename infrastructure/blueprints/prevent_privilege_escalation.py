@@ -38,8 +38,7 @@ class AdminPreventPrivilegeEscalation(Blueprint):
     VARIABLES: ClassVar[dict[str, BlueprintVariableTypeDef]] = {
         "ApprovedPermissionBoundaries": {
             "default": [],
-            "description": "List of policy names (not ARNs) that are approved to "
-            "be attached to roles and users.",
+            "description": "List of policy names (not ARNs) that are approved to be attached to roles and users.",
             "type": list,
         },
         "DenyAssumeRoleNotResources": {
@@ -68,9 +67,7 @@ class AdminPreventPrivilegeEscalation(Blueprint):
     @cached_property
     def deny_assume_role_not_resources(self) -> list[str | Sub]:
         """List of IAM Role ARNs that can be assumed."""
-        tmp: list[str | Sub] = [
-            Sub(f"arn:${{AWS::Partition}}:iam::${{AWS::AccountId}}:role/{self.namespace}-*")
-        ]
+        tmp: list[str | Sub] = [Sub(f"arn:${{AWS::Partition}}:iam::${{AWS::AccountId}}:role/{self.namespace}-*")]
         tmp.extend(self.variables["DenyAssumeRoleNotResources"])
         return tmp
 
@@ -134,9 +131,7 @@ class AdminPreventPrivilegeEscalation(Blueprint):
         """Statement to deny creation of role or user without approved boundary."""
         return Statement(
             Action=[awacs.iam.CreateRole, awacs.iam.CreateUser],
-            Condition=Condition(
-                StringNotEquals({"iam:PermissionsBoundary": self.approved_boundary_policies})
-            ),
+            Condition=Condition(StringNotEquals({"iam:PermissionsBoundary": self.approved_boundary_policies})),
             Effect=Deny,
             Resource=[
                 Sub("arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*"),
@@ -169,9 +164,7 @@ class AdminPreventPrivilegeEscalation(Blueprint):
                 awacs.iam.PutRolePermissionsBoundary,
                 awacs.iam.PutUserPermissionsBoundary,
             ],
-            Condition=Condition(
-                StringNotEquals({"iam:PermissionsBoundary": self.approved_boundary_policies})
-            ),
+            Condition=Condition(StringNotEquals({"iam:PermissionsBoundary": self.approved_boundary_policies})),
             Effect=Deny,
             Resource=[
                 Sub("arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*"),

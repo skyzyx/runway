@@ -132,6 +132,92 @@ metadata = false
 strict = true
 style = "pep440"
 
+[tool.zuban]
+mode = "default"
+exclude = [
+  "typings/",
+  "runway/templates/cdk-py/",
+  "runway/cfngin/hooks/staticsite/auth_at_edge/templates/",
+  "tests/functional/cfngin/hooks/test_awslambda/sample_app/",
+  "docs/",
+]
+
+[[tool.mypy.overrides]]
+module = "typings.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "runway.templates.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "runway.cfngin.hooks.staticsite.auth_at_edge.templates.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "tests.functional.cfngin.hooks.test_awslambda.sample_app.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "runway.aws_sso_botocore.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "runway.core.providers.aws.s3._helpers.*"
+disable_error_code = [
+  "arg-type",
+  "assignment",
+  "attr-defined",
+  "call-arg",
+  "call-overload",
+  "func-returns-value",
+  "index",
+  "literal-required",
+  "misc",
+  "operator",
+  "override",
+  "return-value",
+  "typeddict-item",
+  "typeddict-unknown-key",
+  "union-attr",
+  "unreachable",
+]
+
+[[tool.mypy.overrides]]
+module = "runway.core.providers.aws.s3._bucket"
+disable_error_code = ["arg-type", "call-arg", "typeddict-unknown-key", "unreachable"]
+
+[[tool.mypy.overrides]]
+module = [
+  "runway.cfngin.hooks.awslambda.deployment_package",
+  "runway.cfngin.hooks.awslambda.docker",
+]
+disable_error_code = ["arg-type", "misc", "return-value", "typeddict-item", "union-attr", "unreachable"]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disable_error_code = [
+  "abstract",
+  "arg-type",
+  "assignment",
+  "attr-defined",
+  "call-arg",
+  "call-overload",
+  "func-returns-value",
+  "index",
+  "list-item",
+  "method-assign",
+  "misc",
+  "operator",
+  "return-value",
+  "type-arg",
+  "type-var",
+  "typeddict-item",
+  "union-attr",
+  "unreachable",
+  "var-annotated",
+]
+
 [tool.pyright]
 exclude = [
   "**/.demo",

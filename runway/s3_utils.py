@@ -34,24 +34,18 @@ def _get_client(session: boto3.Session | None = None, region: str | None = None)
     return session.client("s3") if session else boto3.client("s3", region_name=region)
 
 
-def _get_resource(
-    session: boto3.Session | None = None, region: str | None = None
-) -> S3ServiceResource:
+def _get_resource(session: boto3.Session | None = None, region: str | None = None) -> S3ServiceResource:
     """Get S3 boto resource."""
     return session.resource("s3") if session else boto3.resource("s3", region_name=region)
 
 
-def purge_and_delete_bucket(
-    bucket_name: str, region: str = "us-east-1", session: boto3.Session | None = None
-) -> None:
+def purge_and_delete_bucket(bucket_name: str, region: str = "us-east-1", session: boto3.Session | None = None) -> None:
     """Delete all objects and versions in bucket, then delete bucket."""
     purge_bucket(bucket_name, region, session)
     delete_bucket(bucket_name, region, session)
 
 
-def purge_bucket(
-    bucket_name: str, region: str = "us-east-1", session: boto3.Session | None = None
-) -> None:
+def purge_bucket(bucket_name: str, region: str = "us-east-1", session: boto3.Session | None = None) -> None:
     """Delete all objects and versions in bucket."""
     if does_bucket_exist(bucket_name, region, session):
         s3_resource = _get_resource(session, region)
@@ -61,9 +55,7 @@ def purge_bucket(
         LOGGER.warning('bucket "%s" does not exist in region "%s"', bucket_name, region)
 
 
-def delete_bucket(
-    bucket_name: str, region: str = "us-east-1", session: boto3.Session | None = None
-) -> None:
+def delete_bucket(bucket_name: str, region: str = "us-east-1", session: boto3.Session | None = None) -> None:
     """Delete bucket."""
     if does_bucket_exist(bucket_name, region, session):
         LOGGER.verbose('delete bucket "%s"...', bucket_name)
@@ -75,9 +67,7 @@ def delete_bucket(
         LOGGER.warning('bucket "%s" does not exist in region "%s"', bucket_name, region)
 
 
-def does_bucket_exist(
-    bucket_name: str, region: str = "us-east-1", session: boto3.Session | None = None
-) -> bool:
+def does_bucket_exist(bucket_name: str, region: str = "us-east-1", session: boto3.Session | None = None) -> bool:
     """Check if bucket exists in S3."""
     s3_resource = _get_resource(session, region)
     try:
@@ -93,9 +83,7 @@ def does_bucket_exist(
     return False
 
 
-def ensure_bucket_exists(
-    bucket_name: str, region: str = "us-east-1", session: boto3.Session | None = None
-) -> None:
+def ensure_bucket_exists(bucket_name: str, region: str = "us-east-1", session: boto3.Session | None = None) -> None:
     """Ensure S3 bucket exists."""
     if not does_bucket_exist(bucket_name, region, session):
         LOGGER.info('creating bucket "%s" (in progress)', bucket_name)
@@ -157,9 +145,7 @@ def download(bucket: str, key: str, file_path: str, session: boto3.Session | Non
     return file_path
 
 
-def download_and_extract_to_mkdtemp(
-    bucket: str, key: str, session: boto3.Session | None = None
-) -> str:
+def download_and_extract_to_mkdtemp(bucket: str, key: str, session: boto3.Session | None = None) -> str:
     """Download zip archive and extract it to temporary directory."""
     filedes, temp_file = tempfile.mkstemp()
     os.close(filedes)

@@ -200,10 +200,7 @@ class RunwayModuleNpm(RunwayModule[_ModuleOptionsTypeVar]):
 
         """
         if not which("npm"):
-            logger.error(
-                '"npm" not found in path or is not executable; '
-                "please ensure it is installed correctly"
-            )
+            logger.error('"npm" not found in path or is not executable; please ensure it is installed correctly')
             raise NpmNotFound
 
     @staticmethod

@@ -1,4 +1,5 @@
 """Botocore with support for AWS SSO credential assets."""
+
 # Copyright 2012-2014 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
@@ -31,13 +32,14 @@ from botocore.credentials import (
     EnvProvider,
     InstanceMetadataFetcher,
     InstanceMetadataProvider,
-    JSONFileCache,  # type: ignore[attr-defined]
+    JSONFileCache,
     OriginalEC2Provider,
+    _get_client_creator,
+    _serialize_if_needed,
 )
 from botocore.credentials import (
     ProfileProviderBuilder as BotocoreProfileProviderBuilder,
 )
-from botocore.credentials import _get_client_creator, _serialize_if_needed  # type: ignore[attr-defined]
 from botocore.exceptions import InvalidConfigError
 from dateutil.tz import tzutc
 
@@ -73,9 +75,7 @@ def create_credential_resolver(session, cache=None, region_name=None):
         )
     )
 
-    profile_provider_builder = ProfileProviderBuilder(
-        session, cache=cache, region_name=region_name
-    )
+    profile_provider_builder = ProfileProviderBuilder(session, cache=cache, region_name=region_name)
     assume_role_provider = AssumeRoleProvider(
         load_config=lambda: session.full_config,
         client_creator=_get_client_creator(session, region_name),
@@ -92,7 +92,8 @@ def create_credential_resolver(session, cache=None, region_name=None):
         assume_role_provider,
     ]
     profile_providers = profile_provider_builder.providers(
-        profile_name=profile_name, disable_env_vars=disable_env_vars,
+        profile_name=profile_name,
+        disable_env_vars=disable_env_vars,
     )
     post_profile = [
         OriginalEC2Provider(),
@@ -119,10 +120,7 @@ def create_credential_resolver(session, cache=None, region_name=None):
         # EnvProvider does not return credentials, which is what we want
         # in this scenario.
         providers.remove(env_provider)
-        LOGGER.debug(
-            "Skipping environment variable credential check"
-            " because profile name was explicitly set."
-        )
+        LOGGER.debug("Skipping environment variable credential check because profile name was explicitly set.")
 
     return CredentialResolver(providers=providers)
 
@@ -138,20 +136,23 @@ class ProfileProviderBuilder(BotocoreProfileProviderBuilder):
     def providers(self, profile_name, disable_env_vars=False):
         """Return list of providers."""
         return [
-            self._create_web_identity_provider(profile_name, disable_env_vars,),  # type: ignore[attr-defined]
+            self._create_web_identity_provider(
+                profile_name,
+                disable_env_vars,
+            ),
             self._create_sso_provider(profile_name),
-            self._create_shared_credential_provider(profile_name),  # type: ignore[attr-defined]
-            self._create_process_provider(profile_name),  # type: ignore[attr-defined]
-            self._create_config_provider(profile_name),  # type: ignore[attr-defined]
+            self._create_shared_credential_provider(profile_name),
+            self._create_process_provider(profile_name),
+            self._create_config_provider(profile_name),
         ]
 
     def _create_sso_provider(self, profile_name):
         """AWS SSO credential provider."""
         return SSOProvider(
-            load_config=lambda: self._session.full_config,  # type: ignore[attr-defined]
-            client_creator=self._session.create_client,  # type: ignore[attr-defined]
+            load_config=lambda: self._session.full_config,
+            client_creator=self._session.create_client,
             profile_name=profile_name,
-            cache=self._cache,  # type: ignore[attr-defined]
+            cache=self._cache,
             token_cache=self._sso_token_cache,
         )
 
@@ -198,7 +199,7 @@ class SSOCredentialFetcher(CachedCredentialFetcher):
         # all fetchers should use the below caching scheme.
         args = json.dumps(args, sort_keys=True, separators=(",", ":"))
         argument_hash = sha1(args.encode("utf-8")).hexdigest()
-        return self._make_file_safe(argument_hash)  # type: ignore[attr-defined]
+        return self._make_file_safe(argument_hash)
 
     def _parse_timestamp(self, timestamp_ms):
         """Parse timestamp."""
@@ -209,7 +210,10 @@ class SSOCredentialFetcher(CachedCredentialFetcher):
 
     def _get_credentials(self):
         """Get credentials by calling SSO get role credentials."""
-        config = Config(signature_version=UNSIGNED, region_name=self._sso_region,)
+        config = Config(
+            signature_version=UNSIGNED,
+            region_name=self._sso_region,
+        )
         client = self._client_creator("sso", config=config)
 
         kwargs = {
@@ -248,9 +252,7 @@ class SSOProvider(CredentialProvider):
         "sso_account_id",
     ]
 
-    def __init__(
-        self, load_config, client_creator, profile_name, cache=None, token_cache=None
-    ):
+    def __init__(self, load_config, client_creator, profile_name, cache=None, token_cache=None):
         """Instantiate class."""
         if token_cache is None:
             token_cache = JSONFileCache(self._SSO_TOKEN_CACHE_DIR)
@@ -308,5 +310,6 @@ class SSOProvider(CredentialProvider):
         )
 
         return DeferredRefreshableCredentials(
-            method=self.METHOD, refresh_using=sso_fetcher.fetch_credentials,
+            method=self.METHOD,
+            refresh_using=sso_fetcher.fetch_credentials,
         )

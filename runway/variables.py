@@ -229,21 +229,15 @@ class VariableValue:
 
     @overload
     @classmethod
-    def parse_obj(
-        cls, obj: dict[str, Any], variable_type: VariableTypeLiteralTypeDef = ...
-    ) -> VariableValue: ...
+    def parse_obj(cls, obj: dict[str, Any], variable_type: VariableTypeLiteralTypeDef = ...) -> VariableValue: ...
 
     @overload
     @classmethod
-    def parse_obj(
-        cls, obj: list[Any], variable_type: VariableTypeLiteralTypeDef = ...
-    ) -> VariableValueList: ...
+    def parse_obj(cls, obj: list[Any], variable_type: VariableTypeLiteralTypeDef = ...) -> VariableValueList: ...
 
     @overload
     @classmethod
-    def parse_obj(
-        cls, obj: int, variable_type: VariableTypeLiteralTypeDef = ...
-    ) -> VariableValueLiteral[int]: ...
+    def parse_obj(cls, obj: int, variable_type: VariableTypeLiteralTypeDef = ...) -> VariableValueLiteral[int]: ...
 
     @overload
     @classmethod
@@ -265,9 +259,9 @@ class VariableValue:
         if isinstance(obj, BaseModel):
             return VariableValuePydanticModel(obj, variable_type=variable_type)
         if isinstance(obj, dict):
-            return VariableValueDict(obj, variable_type=variable_type)  # type: ignore
+            return VariableValueDict(obj, variable_type=variable_type)
         if isinstance(obj, list):
-            return VariableValueList(obj, variable_type=variable_type)  # type: ignore
+            return VariableValueList(obj, variable_type=variable_type)
         if not isinstance(obj, str):
             return VariableValueLiteral(obj, variable_type=variable_type)
 
@@ -302,7 +296,7 @@ class VariableValue:
                     variable_type=variable_type,
                 )
                 lookup = VariableValueLookup(
-                    lookup_name=tokens[cast("int", last_open) + 1],  # type: ignore
+                    lookup_name=tokens[cast("int", last_open) + 1],  # type: ignore[arg-type]
                     lookup_query=lookup_query,
                     variable_type=variable_type,
                 )
@@ -334,9 +328,7 @@ class VariableValue:
 class VariableValueDict(VariableValue, MutableMapping[str, VariableValue]):
     """A dict variable value."""
 
-    def __init__(
-        self, data: dict[str, Any], variable_type: VariableTypeLiteralTypeDef = "cfngin"
-    ) -> None:
+    def __init__(self, data: dict[str, Any], variable_type: VariableTypeLiteralTypeDef = "cfngin") -> None:
         """Instantiate class.
 
         Args:
@@ -437,9 +429,7 @@ class VariableValueList(VariableValue, MutableSequence[VariableValue]):
             variable_type: Type of variable (cfngin|runway).
 
         """
-        self._data: list[VariableValue] = [
-            self.parse_obj(i, variable_type=variable_type) for i in iterable
-        ]
+        self._data: list[VariableValue] = [self.parse_obj(i, variable_type=variable_type) for i in iterable]
         self.variable_type: VariableTypeLiteralTypeDef = variable_type
 
     @property
@@ -528,7 +518,7 @@ class VariableValueList(VariableValue, MutableSequence[VariableValue]):
         _value: list[VariableValue] | VariableValue,
     ) -> None:
         """Set item by index."""
-        self._data[_index] = _value  # type: ignore
+        self._data[_index] = _value  # type: ignore[call-overload]
 
     def __iter__(self) -> Iterator[VariableValue]:
         """Object iteration."""
@@ -546,9 +536,7 @@ class VariableValueList(VariableValue, MutableSequence[VariableValue]):
 class VariableValueLiteral(VariableValue, Generic[_LiteralValue]):
     """The literal value of a variable as provided."""
 
-    def __init__(
-        self, value: _LiteralValue, variable_type: VariableTypeLiteralTypeDef = "cfngin"
-    ) -> None:
+    def __init__(self, value: _LiteralValue, variable_type: VariableTypeLiteralTypeDef = "cfngin") -> None:
         """Instantiate class.
 
         Args:
@@ -629,14 +617,8 @@ class VariableValueConcatenation(VariableValue, Generic[_VariableValue]):
         for item in self:
             if isinstance(item, VariableValueLiteral) and item.value == "":
                 pass
-            elif (
-                isinstance(item, VariableValueLiteral)
-                and concat
-                and isinstance(concat[-1], VariableValueLiteral)
-            ):
-                concat[-1] = VariableValueLiteral(
-                    str(concat[-1].value) + str(item.value)  # type: ignore
-                )
+            elif isinstance(item, VariableValueLiteral) and concat and isinstance(concat[-1], VariableValueLiteral):
+                concat[-1] = VariableValueLiteral(str(concat[-1].value) + str(item.value))
             elif isinstance(item, VariableValueConcatenation):
                 concat.extend(iter(item.simplified))
             else:
@@ -875,9 +857,7 @@ class VariableValuePydanticModel(VariableValue, Generic[_PydanticModelTypeVar]):
             variable_type: Type of variable (cfngin|runway).
 
         """
-        self._data: dict[str, VariableValue] = {
-            k: self.parse_obj(v, variable_type=variable_type) for k, v in data
-        }
+        self._data: dict[str, VariableValue] = {k: self.parse_obj(v, variable_type=variable_type) for k, v in data}
         self._model_class = type(data)
         self.variable_type: VariableTypeLiteralTypeDef = variable_type
 
@@ -915,9 +895,7 @@ class VariableValuePydanticModel(VariableValue, Generic[_PydanticModelTypeVar]):
         into a pydantic model.
 
         """
-        return self._model_class.model_validate(
-            {field: value.value for field, value in self._data.items()}
-        )
+        return self._model_class.model_validate({field: value.value for field, value in self._data.items()})
 
     def resolve(
         self,
@@ -956,9 +934,7 @@ class VariableValuePydanticModel(VariableValue, Generic[_PydanticModelTypeVar]):
 
     def __repr__(self) -> str:
         """Return object representation."""
-        return (
-            self._model_class.__name__ + f"[{', '.join(f'{k}={v}' for k, v in self._data.items())}]"
-        )
+        return self._model_class.__name__ + f"[{', '.join(f'{k}={v}' for k, v in self._data.items())}]"
 
     def __setitem__(self, _key: str, _value: VariableValue) -> None:
         """Set item by index."""

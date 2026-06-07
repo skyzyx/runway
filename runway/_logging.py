@@ -30,7 +30,7 @@ class LogLevels(IntEnum):
 
 
 # Issue with this version of LoggerAdapter https://github.com/python/typeshed/issues/7855
-class PrefixAdaptor(logging.LoggerAdapter):  # type: ignore
+class PrefixAdaptor(logging.LoggerAdapter):
     """LoggerAdapter that adds prefixes to messages.
 
     Example:
@@ -70,9 +70,7 @@ class PrefixAdaptor(logging.LoggerAdapter):  # type: ignore
         """
         self.log(LogLevels.NOTICE, msg, *args, **kwargs)
 
-    def process(
-        self, msg: Exception | str, kwargs: MutableMapping[str, Any]
-    ) -> tuple[str, MutableMapping[str, Any]]:
+    def process(self, msg: Exception | str, kwargs: MutableMapping[str, Any]) -> tuple[str, MutableMapping[str, Any]]:
         """Process the message to append the prefix.
 
         Args:

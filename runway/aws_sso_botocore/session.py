@@ -1,4 +1,5 @@
 """Botocore with support for AWS SSO session assets."""
+
 # Copyright 2012-2014 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You
@@ -21,6 +22,4 @@ class Session(BotocoreSession):
 
     def _create_credential_resolver(self):
         """Replace the parent method with one that includes AWS SSO support."""
-        return create_credential_resolver(
-            self, region_name=self._last_client_region_used  # type: ignore[attr-defined]
-        )
+        return create_credential_resolver(self, region_name=self._last_client_region_used)

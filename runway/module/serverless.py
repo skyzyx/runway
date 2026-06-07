@@ -201,8 +201,7 @@ class Serverless(RunwayModuleNpm[ServerlessOptions]):
             )
         else:
             self.logger.info(
-                'skipped; package.json with "serverless" in devDependencies'
-                " is required for this module type"
+                'skipped; package.json with "serverless" in devDependencies is required for this module type'
             )
         return True
 
@@ -215,9 +214,7 @@ class Serverless(RunwayModuleNpm[ServerlessOptions]):
         """
         self.npm_install()  # doing this here for a cleaner log
         self.logger.info("extending Serverless config from runway.yml...")
-        final_yml = merge_dicts(
-            self.sls_print(skip_install=True), self.options.extend_serverless_yml
-        )
+        final_yml = merge_dicts(self.sls_print(skip_install=True), self.options.extend_serverless_yml)
         # using a unique name to prevent collisions when run in parallel
         tmp_file = self.path / f"{uuid.uuid4()}.tmp.serverless.yml"
 
@@ -273,9 +270,7 @@ class Serverless(RunwayModuleNpm[ServerlessOptions]):
                 logger=self.logger,
             )
 
-        return generate_node_command(
-            command="sls", command_opts=args, path=self.path, logger=self.logger
-        )
+        return generate_node_command(command="sls", command_opts=args, path=self.path, logger=self.logger)
 
     def sls_deploy(self, *, package: AnyPath | None = None, skip_install: bool = False) -> None:
         """Execute ``sls deploy`` command.
@@ -289,9 +284,7 @@ class Serverless(RunwayModuleNpm[ServerlessOptions]):
         if not skip_install:
             self.npm_install()
         run_module_command(
-            cmd_list=self.gen_cmd(
-                "deploy", args_list=["--package", str(package)] if package else []
-            ),
+            cmd_list=self.gen_cmd("deploy", args_list=["--package", str(package)] if package else []),
             env_vars=self.ctx.env.vars,
             logger=self.logger,
         )
@@ -322,9 +315,7 @@ class Serverless(RunwayModuleNpm[ServerlessOptions]):
         )
         return output_path
 
-    def sls_print(
-        self, *, item_path: str | None = None, skip_install: bool = False
-    ) -> dict[str, Any]:
+    def sls_print(self, *, item_path: str | None = None, skip_install: bool = False) -> dict[str, Any]:
         """Execute ``sls print`` command.
 
         Keyword Args:

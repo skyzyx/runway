@@ -34,9 +34,7 @@ class ChangesetExecutionError(Exception):
         self.stack_name = stack_name
         self.changeset_id = changeset_id
         self.reason = reason
-        super().__init__(
-            f"Failed to execute changeset '{changeset_id}' on stack '{stack_name}': {reason}"
-        )
+        super().__init__(f"Failed to execute changeset '{changeset_id}' on stack '{stack_name}': {reason}")
 
 
 class ChangesetExecutor:
@@ -140,9 +138,7 @@ class ChangesetExecutor:
             ChangesetExecutionError: If wait times out or stack fails.
 
         """
-        waiter_name = (
-            "stack_create_complete" if change_type == "CREATE" else "stack_update_complete"
-        )
+        waiter_name = "stack_create_complete" if change_type == "CREATE" else "stack_update_complete"
         waiter = self._cfn.get_waiter(waiter_name)  # type: ignore[call-overload]
 
         try:
@@ -155,23 +151,15 @@ class ChangesetExecutor:
             # Get stack events for debugging
             try:
                 events = self._cfn.describe_stack_events(StackName=stack_name)
-                failed_events = [
-                    e
-                    for e in events.get("StackEvents", [])
-                    if "FAILED" in e.get("ResourceStatus", "")
-                ]
+                failed_events = [e for e in events.get("StackEvents", []) if "FAILED" in e.get("ResourceStatus", "")]
                 if failed_events:
                     latest_failure = failed_events[0]
                     reason = latest_failure.get("ResourceStatusReason", "Unknown error")
-                    raise ChangesetExecutionError(
-                        stack_name, "", f"Stack operation failed: {reason}"
-                    ) from err
+                    raise ChangesetExecutionError(stack_name, "", f"Stack operation failed: {reason}") from err
             except ClientError:
                 pass  # Ignore errors when fetching events
 
-            raise ChangesetExecutionError(
-                stack_name, "", f"Stack operation timed out or failed: {err}"
-            ) from err
+            raise ChangesetExecutionError(stack_name, "", f"Stack operation timed out or failed: {err}") from err
 
 
 def execute_changesets_from_file(

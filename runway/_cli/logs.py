@@ -95,9 +95,7 @@ class LogSettings:
 
         result = LOG_FIELD_STYLES.copy()
         if self.ENV["field_styles"]:
-            result.update(
-                coloredlogs.parse_encoded_styles(self.ENV["field_styles"])  # type: ignore
-            )
+            result.update(coloredlogs.parse_encoded_styles(self.ENV["field_styles"]))
         return result
 
     @cached_property
@@ -113,9 +111,7 @@ class LogSettings:
 
         result = LOG_LEVEL_STYLES.copy()
         if self.ENV["level_styles"]:
-            result.update(
-                coloredlogs.parse_encoded_styles(self.ENV["level_styles"])  # type: ignore
-            )
+            result.update(coloredlogs.parse_encoded_styles(self.ENV["level_styles"]))
         return result
 
     @cached_property

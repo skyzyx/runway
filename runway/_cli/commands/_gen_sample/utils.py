@@ -48,9 +48,7 @@ def copy_sample(ctx: click.Context, src: Path, dest: Path) -> None:
     shutil.copytree(src, dest)
 
 
-def write_tfstate_template(
-    dest: Path, *, bucket_deletion_policy: Literal["Delete", "Retain"] = "Retain"
-) -> None:
+def write_tfstate_template(dest: Path, *, bucket_deletion_policy: Literal["Delete", "Retain"] = "Retain") -> None:
     """Write TfState blueprint as a YAML CFN template.
 
     Args:

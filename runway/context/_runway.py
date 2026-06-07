@@ -91,7 +91,7 @@ class RunwayContext(BaseContext):
             if isinstance(colorize, bool):  # pyright: ignore[reportUnnecessaryIsInstance]  # type: ignore[unreachable]
                 # catch False
                 return not colorize  # type: ignore[unreachable]
-            if colorize and isinstance(colorize, str):  # type: ignore
+            if colorize and isinstance(colorize, str):
                 return not str2bool(colorize)
         except ValueError:
             pass  # likely invalid RUNWAY_COLORIZE value
@@ -110,9 +110,7 @@ class RunwayContext(BaseContext):
         """
         if self.is_noninteractive:
             if not self.sys_info.os.is_posix:
-                LOGGER.warning(
-                    "parallel execution disabled; only POSIX systems are supported currently"
-                )
+                LOGGER.warning("parallel execution disabled; only POSIX systems are supported currently")
                 return False
             return True
         LOGGER.warning("parallel execution disabled; not running in CI mode")

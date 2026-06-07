@@ -126,9 +126,7 @@ class BaseContext(DelCachedPropMixin):
             )
         else:  # use explicit values or grab values from env vars
             aws_access_key_id = aws_access_key_id or self.env.vars.get("AWS_ACCESS_KEY_ID")
-            aws_secret_access_key = aws_secret_access_key or self.env.vars.get(
-                "AWS_SECRET_ACCESS_KEY"
-            )
+            aws_secret_access_key = aws_secret_access_key or self.env.vars.get("AWS_SECRET_ACCESS_KEY")
             aws_session_token = aws_session_token or self.env.vars.get("AWS_SESSION_TOKEN")
             if aws_access_key_id:
                 self.logger.debug(
@@ -144,8 +142,8 @@ class BaseContext(DelCachedPropMixin):
             region_name=region or self.env.aws_region,
             profile_name=profile,
         )
-        cred_provider = session._session.get_component("credential_provider")  # type: ignore
-        provider = cred_provider.get_provider("assume-role")  # type: ignore
+        cred_provider = session._session.get_component("credential_provider")
+        provider = cred_provider.get_provider("assume-role")
         provider.cache = BOTO3_CREDENTIAL_CACHE
         provider._prompter = ui.getpass  # noqa: SLF001
         return session

@@ -108,9 +108,7 @@ class CliContext:
             LOGGER.error(err)
         sys.exit(1)
 
-    def get_runway_context(
-        self, deploy_environment: DeployEnvironment | None = None
-    ) -> RunwayContext:
+    def get_runway_context(self, deploy_environment: DeployEnvironment | None = None) -> RunwayContext:
         """Get a Runway context object.
 
         Uses the location of the config file to set the working directory for Runway.
@@ -218,10 +216,7 @@ def select_deployments(
         click.secho("\nConfigured deployments\n", bold=True, underline=True)
         click.echo(deployment_menu)
         if ctx.command.name == "destroy":
-            click.echo(
-                '(operating in destroy mode -- "all" will destroy all '
-                "deployments in reverse order)\n"
-            )
+            click.echo('(operating in destroy mode -- "all" will destroy all deployments in reverse order)\n')
         choice = click.prompt(
             'Enter number of deployment to run (or "all")',
             default="all",
@@ -234,9 +229,7 @@ def select_deployments(
     return deployments
 
 
-def select_modules(
-    ctx: click.Context, modules: list[RunwayModuleDefinition]
-) -> list[RunwayModuleDefinition]:
+def select_modules(ctx: click.Context, modules: list[RunwayModuleDefinition]) -> list[RunwayModuleDefinition]:
     """Interactively select which modules to run.
 
     Args:
@@ -250,18 +243,14 @@ def select_modules(
     if len(modules) == 1:
         LOGGER.debug("only one module detected; no selection necessary")
         if ctx.command.name == "destroy":
-            LOGGER.info(
-                "Only one module detected; all modules automatically selected for deletion."
-            )
+            LOGGER.info("Only one module detected; all modules automatically selected for deletion.")
             if not click.confirm("Proceed?"):
                 ctx.exit(0)
         return modules
     click.secho("\nConfigured modules\n", bold=True, underline=True)
     click.echo(yaml.safe_dump({i + 1: m.menu_entry for i, m in enumerate(modules)}))
     if ctx.command.name == "destroy":
-        click.echo(
-            '(operating in destroy mode -- "all" will destroy all modules in reverse order)\n'
-        )
+        click.echo('(operating in destroy mode -- "all" will destroy all modules in reverse order)\n')
     choice = click.prompt(
         'Enter number of module to run (or "all")',
         default="all",
@@ -298,9 +287,7 @@ def select_modules_using_tags(
         modules_to_run: list[RunwayModuleDefinition] = []
         for module in deployment.modules:
             if module.child_modules:
-                module.child_modules = [  # type: ignore[assignment]
-                    c for c in module.child_modules if all(t in c.tags for t in tags)
-                ]
+                module.child_modules = [c for c in module.child_modules if all(t in c.tags for t in tags)]  # type: ignore[assignment]
                 if module.child_modules:
                     modules_to_run.append(module)
             elif all(t in module.tags for t in tags):
@@ -357,9 +344,7 @@ def select_modules_by_name(
                 else:
                     # Otherwise, filter child modules by name
                     module.child_modules = [  # type: ignore[assignment]
-                        c
-                        for c in module.child_modules
-                        if _module_name_matches(c.name, module_names)
+                        c for c in module.child_modules if _module_name_matches(c.name, module_names)
                     ]
                     if module.child_modules:
                         modules_to_run.append(module)

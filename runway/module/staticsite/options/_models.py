@@ -115,7 +115,7 @@ class RunwayStaticSiteSourceHashingDataModel(ConfigProperty):
     )
 
     directories: list[RunwayStaticSiteSourceHashingDirectoryDataModel] = [
-        RunwayStaticSiteSourceHashingDirectoryDataModel(path="./")  # type: ignore
+        RunwayStaticSiteSourceHashingDirectoryDataModel(path="./")  # type: ignore[arg-type]
     ]
     """Explicitly provide the directories to use when calculating the hash.
     If not provided, will default to the root of the module.
@@ -152,7 +152,5 @@ class RunwayStaticSiteModuleOptionsDataModel(ConfigProperty):
     pre_build_steps: list[RunwayStaticSitePreBuildStepDataModel] = []
     """Commands to be run prior to the build process."""
 
-    source_hashing: RunwayStaticSiteSourceHashingDataModel = (
-        RunwayStaticSiteSourceHashingDataModel()
-    )
+    source_hashing: RunwayStaticSiteSourceHashingDataModel = RunwayStaticSiteSourceHashingDataModel()
     """Overrides for source hash calculation and tracking."""

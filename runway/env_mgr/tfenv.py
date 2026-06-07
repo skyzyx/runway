@@ -97,9 +97,7 @@ def download_tf_release(
 
 def get_available_tf_versions(include_prerelease: bool = False) -> list[str]:
     """Return available Terraform versions."""
-    tf_releases = json.loads(
-        requests.get("https://releases.hashicorp.com/index.json", timeout=30).text
-    )["terraform"]
+    tf_releases = json.loads(requests.get("https://releases.hashicorp.com/index.json", timeout=30).text)["terraform"]
 
     # Remove versions that don't align with
     # PEP440 (https://peps.python.org/pep-0440/)
@@ -154,9 +152,7 @@ class TFEnvManager(EnvManager):
     """
 
     VERSION_REGEX: Final[str] = r"^(Terraform v)?(?P<version>[0-9]+\.[0-9]+\.[0-9]+\S*)"
-    VERSION_OUTPUT_REGEX: Final[str] = (
-        r"^Terraform v(?P<version>[0-9]*\.[0-9]*\.[0-9]*)(?P<suffix>-.*)?"
-    )
+    VERSION_OUTPUT_REGEX: Final[str] = r"^Terraform v(?P<version>[0-9]*\.[0-9]*\.[0-9]*)(?P<suffix>-.*)?"
 
     def __init__(self, path: Path | None = None) -> None:
         """Initialize class."""
@@ -169,9 +165,7 @@ class TFEnvManager(EnvManager):
         # data to make it easier to work with
         return next(
             {"type": k, "config": v}
-            for k, v in self.terraform_block.get(
-                "backend", {None: cast("dict[str, str]", {})}
-            ).items()
+            for k, v in self.terraform_block.get("backend", {None: cast("dict[str, str]", {})}).items()
         )
 
     @cached_property
@@ -214,16 +208,14 @@ class TFEnvManager(EnvManager):
             return cast("dict[str, Any]", data)
 
         try:
-            result: dict[str, Any] | list[dict[str, Any]] = load_terraform_module(
-                hcl2, self.path
-            ).get("terraform", cast("dict[str, Any]", {}))
+            result: dict[str, Any] | list[dict[str, Any]] = load_terraform_module(hcl2, self.path).get(
+                "terraform", cast("dict[str, Any]", {})
+            )
         except HclParserError as exc:
             LOGGER.warning(exc)
             LOGGER.warning("failed to parse as HCL2; trying HCL...")
             try:
-                result = load_terraform_module(hcl, self.path).get(
-                    "terraform", cast("dict[str, Any]", {})
-                )
+                result = load_terraform_module(hcl, self.path).get("terraform", cast("dict[str, Any]", {}))
             except HclParserError as exc2:
                 LOGGER.warning(exc2)
                 # return an empty dict if we can't parse HCL
@@ -248,7 +240,7 @@ class TFEnvManager(EnvManager):
             version_requested = self.get_min_required()
 
         if re.match(r"^latest:.*$", version_requested):
-            regex = re.search(r"latest:(.*)", version_requested).group(1)  # type: ignore
+            regex = re.search(r"latest:(.*)", version_requested).group(1)  # type: ignore[union-attr]
             include_prerelease_versions = False
         elif re.match(r"^latest$", version_requested):
             regex = r"^[0-9]+\.[0-9]+\.[0-9]+$"
@@ -263,11 +255,7 @@ class TFEnvManager(EnvManager):
                 return self.parse_version_string(self.current_version)
 
         try:
-            version = next(
-                i
-                for i in get_available_tf_versions(include_prerelease_versions)
-                if re.match(regex, i)
-            )
+            version = next(i for i in get_available_tf_versions(include_prerelease_versions) if re.match(regex, i))
         except StopIteration:
             LOGGER.error("unable to find a Terraform version matching regex: %s", regex)
             sys.exit(1)
@@ -301,8 +289,7 @@ class TFEnvManager(EnvManager):
         if version:
             if re.match(r"^!=.+", version):
                 LOGGER.error(
-                    "min required Terraform version is a negation (%s) "
-                    "- unable to determine required version",
+                    "min required Terraform version is a negation (%s) - unable to determine required version",
                     version,
                 )
                 sys.exit(1)
@@ -326,9 +313,7 @@ class TFEnvManager(EnvManager):
         """
         file_path = file_path or self.version_file
         if file_path and file_path.is_file():
-            return file_path.read_text(
-                encoding=locale.getpreferredencoding(do_setlocale=False)
-            ).strip()
+            return file_path.read_text(encoding=locale.getpreferredencoding(do_setlocale=False)).strip()
         LOGGER.debug("file path not provided and version file could not be found")
         return None
 
@@ -338,9 +323,7 @@ class TFEnvManager(EnvManager):
             self.set_version(version_requested)
 
         if not self.version:
-            raise ValueError(
-                f"version not provided and unable to find a {TF_VERSION_FILENAME} file"
-            )
+            raise ValueError(f"version not provided and unable to find a {TF_VERSION_FILENAME} file")
 
         # Now that a version has been selected, skip downloading if it's
         # already been downloaded

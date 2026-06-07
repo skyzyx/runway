@@ -37,9 +37,7 @@ class AuthAtEdge(StaticSite):
         "RedirectPathSignIn": {
             "type": str,
             "default": "/parseauth",
-            "description": "Auth@Edge: The URL that should "
-            "handle the redirect from Cognito "
-            "after sign-in.",
+            "description": "Auth@Edge: The URL that should handle the redirect from Cognito after sign-in.",
         },
         "RedirectPathAuthRefresh": {
             "type": str,
@@ -83,9 +81,7 @@ class AuthAtEdge(StaticSite):
     def create_template(self) -> None:
         """Create the Blueprinted template for Auth@Edge."""
         self.template.set_version("2010-09-09")
-        self.template.set_description(
-            "Authorization@Edge Static Website - Bucket, Lambdas, and Distribution"
-        )
+        self.template.set_description("Authorization@Edge Static Website - Bucket, Lambdas, and Distribution")
 
         # Resources
         bucket = self.add_bucket()
@@ -169,9 +165,7 @@ class AuthAtEdge(StaticSite):
         function = self.get_auth_at_edge_lambda(title, description, handle, role)
         return {"function": function, "version": self.add_version(title, function)}
 
-    def get_auth_at_edge_lambda(
-        self, title: str, description: str, handler: str, role: iam.Role
-    ) -> awslambda.Function:
+    def get_auth_at_edge_lambda(self, title: str, description: str, handler: str, role: iam.Role) -> awslambda.Function:
         """Create an Auth@Edge lambda resource.
 
         Args:
@@ -272,9 +266,7 @@ class AuthAtEdge(StaticSite):
                 cloudfront.Origin(
                     DomainName=Join(".", [bucket.ref(), "s3.amazonaws.com"]),
                     S3OriginConfig=cloudfront.S3OriginConfig(
-                        OriginAccessIdentity=Join(
-                            "", ["origin-access-identity/cloudfront/", oai.ref()]
-                        )
+                        OriginAccessIdentity=Join("", ["origin-access-identity/cloudfront/", oai.ref()])
                     ),
                     Id="protected-bucket",
                 )
@@ -357,11 +349,7 @@ class AuthAtEdge(StaticSite):
             ]
         if self.variables["NonSPAMode"]:
             return []
-        return [
-            cloudfront.CustomErrorResponse(
-                ErrorCode=404, ResponseCode=200, ResponsePagePath="/index.html"
-            )
-        ]
+        return [cloudfront.CustomErrorResponse(ErrorCode=404, ResponseCode=200, ResponsePagePath="/index.html")]
 
     def _get_cloudfront_bucket_policy_statements(  # pyright: ignore [reportIncompatibleMethodOverride]  # type: ignore[override]
         self, bucket: s3.Bucket, oai: cloudfront.CloudFrontOriginAccessIdentity

@@ -73,7 +73,7 @@ class CfnLookup(LookupHandler["CfnginContext | RunwayContext"]):
         stack = client.describe_stacks(StackName=query.stack_name)["Stacks"][0]
         outputs = {
             # these should always exist even though the schema says they are not required
-            output["OutputKey"]: output["OutputValue"]  # type: ignore
+            output["OutputKey"]: output["OutputValue"]
             for output in stack.get("Outputs", [])
         }
         LOGGER.debug("%s stack outputs: %s", stack["StackName"], json.dumps(outputs))
@@ -107,9 +107,7 @@ class CfnLookup(LookupHandler["CfnginContext | RunwayContext"]):
         try:
             query = OutputQuery(*raw_query.split("."))
         except TypeError as exc:
-            raise ValueError(
-                f'query must be <stack-name>.<output-name>; got "{raw_query}"'
-            ) from exc
+            raise ValueError(f'query must be <stack-name>.<output-name>; got "{raw_query}"') from exc
 
         try:
             # dict is not preserved in mock call so it must be a copy of
@@ -118,9 +116,7 @@ class CfnLookup(LookupHandler["CfnginContext | RunwayContext"]):
                 # this will only happen when used from cfngin
                 result = cast("Provider", provider).get_output(query.stack_name, query.output_name)
             else:
-                cfn_client = context.get_session(
-                    region=cast("str | None", args.get("region"))
-                ).client("cloudformation")
+                cfn_client = context.get_session(region=cast("str | None", args.get("region"))).client("cloudformation")
                 result = cls.get_stack_output(cfn_client, query)
         except (ClientError, KeyError, StackDoesNotExist) as exc:
             # StackDoesNotExist is only raised by provider
