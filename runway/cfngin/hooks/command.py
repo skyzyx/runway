@@ -1,4 +1,9 @@
-"""Command hook."""
+"""Command hook.
+
+This module provides a generic shell command execution hook so that arbitrary
+CLI operations (file copies, git commands, npm installs) can be orchestrated
+as part of the CFNgin hook lifecycle without writing custom Python hooks.
+"""
 
 from __future__ import annotations
 
@@ -16,7 +21,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class RunCommandHookArgs(BaseModel):
-    """Hook arguments for ``run_command``."""
+    """Hook arguments for ``run_command``.
+
+    Provides a validated schema for the many subprocess options so that YAML
+    hook configurations are caught at parse time rather than failing mid-deploy.
+    """
 
     capture: bool = False
     """If enabled, capture the command's stdout and stderr, and return them in the hook result."""
@@ -94,11 +103,13 @@ def run_command(*_args: Any, **kwargs: Any) -> RunCommandResponseTypeDef:  # noq
     """
     args = RunCommandHookArgs.model_validate(kwargs)
 
-    # remove parsed args from kwargs
+    # Strip known fields so only extra kwargs (like cwd, shell) are
+    # forwarded to Popen, giving users escape-hatch control over subprocess.
     for field in RunCommandHookArgs.model_fields:
         kwargs.pop(field, None)
 
-    # remove unneeded args from kwargs
+    # Context and provider are injected by the hook runner but are not
+    # valid Popen arguments, so they must be removed before forwarding.
     kwargs.pop("context", None)
     kwargs.pop("provider", None)
 
@@ -108,6 +119,8 @@ def run_command(*_args: Any, **kwargs: Any) -> RunCommandResponseTypeDef:  # noq
             ValueError("Cannot enable `quiet` and `capture` options simultaneously"),
         )
 
+    # Open devnull once for the lifetime of the subprocess to avoid
+    # repeated file opens when silencing output or disconnecting stdin.
     with open(os.devnull, "wb") as devnull:  # noqa: PTH123
         if args.quiet:
             out_err_type = devnull
@@ -123,6 +136,9 @@ def run_command(*_args: Any, **kwargs: Any) -> RunCommandResponseTypeDef:  # noq
         else:
             in_type = devnull
 
+        # Merge user-supplied env vars with the current environment so that
+        # the subprocess inherits PATH and other essentials while allowing
+        # overrides for project-specific variables.
         if args.env:
             full_env = os.environ.copy()
             full_env.update(args.env)

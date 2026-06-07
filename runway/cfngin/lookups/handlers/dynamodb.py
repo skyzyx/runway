@@ -1,4 +1,10 @@
-"""DynamoDB lookup."""
+"""DynamoDB lookup.
+
+Enables stacks to read configuration values from DynamoDB tables at deploy
+time, supporting dynamic per-environment configuration without baking values
+into static config files.
+
+"""
 
 from __future__ import annotations
 
@@ -19,6 +25,9 @@ if TYPE_CHECKING:
     from ....lookups.handlers.base import ParsedArgsTypeDef
 
 
+# Verbose regex encodes the compact lookup DSL grammar in a single pattern,
+# making the expected syntax self-documenting and enabling precise error
+# messages when users provide malformed queries.
 _QUERY_PATTERN = r"""(?x)  # <table_name>@<partition_key>:<partition_key_value>.<attribute>
 ^(?P<table_name>[a-zA-Z0-9\-_\.]{3,255})  # name of the DynamoDB Table
 @  # delimiter
@@ -38,14 +47,24 @@ _QUERY_PATTERN = r"""(?x)  # <table_name>@<partition_key>:<partition_key_value>.
 
 
 class ArgsDataModel(BaseModel):
-    """Arguments data model."""
+    """Arguments data model.
+
+    Separates the optional region override from the DynamoDB query so the
+    lookup can target tables in different regions than the stack's default.
+
+    """
 
     region: str | None = None
     """AWS region."""
 
 
 class QueryDataModel(BaseModel):
-    """Arguments data model."""
+    """Arguments data model.
+
+    Models the structured query components extracted from the lookup string,
+    ensuring each part is validated before hitting the DynamoDB API.
+
+    """
 
     attribute: str
     """The attribute to be returned by this lookup.
@@ -65,6 +84,10 @@ class QueryDataModel(BaseModel):
     @property
     def item_key(self) -> dict[str, AttributeValueTypeDef]:
         """Value to pass to boto3 ``.get_item()`` call as the ``Key`` argument.
+
+        Parses the optional DynamoDB type annotation (e.g. ``[N]``) from the
+        partition key value so callers can specify non-string key types in the
+        compact lookup syntax.
 
         Raises:
             ValueError: The value of ``partition_key_value`` doesn't match the
@@ -87,7 +110,13 @@ class QueryDataModel(BaseModel):
 
 
 class DynamodbLookup(LookupHandler["CfnginContext"]):
-    """DynamoDB lookup."""
+    """DynamoDB lookup.
+
+    Provides a declarative way for stacks to pull configuration from DynamoDB,
+    keeping environment-specific settings centralized in a table rather than
+    scattered across config files or environment variables.
+
+    """
 
     TYPE_NAME: ClassVar[str] = "dynamodb"
     """Name that the Lookup is registered as."""
@@ -97,6 +126,8 @@ class DynamodbLookup(LookupHandler["CfnginContext"]):
         """Parse the value passed to the lookup.
 
         This overrides the default parsing to account for special requirements.
+        The DynamoDB lookup uses ``@`` as a table-name delimiter and ``:`` for
+        the optional region prefix, which conflicts with the standard parsing.
 
         Args:
             value: The raw value passed to a lookup.
@@ -126,6 +157,9 @@ class DynamodbLookup(LookupHandler["CfnginContext"]):
     @classmethod
     def parse_query(cls, value: str) -> QueryDataModel:
         """Parse query string to extract. Does not support arguments in ``value``.
+
+        Uses a verbose regex to decompose the compact lookup syntax into
+        validated components before making the API call.
 
         Raises:
             ValueError: The argument provided does not match the expected format defined
@@ -196,6 +230,10 @@ class ParsedLookupKey(TypedDict):
 def _lookup_key_parse(table_keys: list[str]) -> ParsedLookupKey:
     """Return the order in which the stacks should be executed.
 
+    Separates DynamoDB type annotations (``[S]``, ``[N]``, ``[L]``, ``[M]``)
+    from key names so the traversal logic can navigate nested DynamoDB items
+    while the projection expression uses clean key names.
+
     Args:
         table_keys: List of keys a table.
 
@@ -235,6 +273,9 @@ def _get_val_from_ddb_data(
 ) -> Any:
     """Return the value of the lookup.
 
+    Traverses a nested DynamoDB item structure using the type-annotated keylist,
+    converting the final value from DynamoDB's wire format into a native Python type.
+
     Args:
         data: The raw DynamoDB data.
         keylist: A list of keys to lookup. This must include the datatype.
@@ -267,6 +308,9 @@ def _get_val_from_ddb_data(
 
 def _convert_ddb_list_to_list(conversion_list: list[dict[str, Any]]) -> list[Any]:
     """Return a python list without the DynamoDB datatypes.
+
+    Strips the single-key type wrappers (``{"S": "val"}``) that DynamoDB uses
+    for list elements, returning plain Python values for use in templates.
 
     Args:
         conversion_list: A DynamoDB list which includes the datatypes.

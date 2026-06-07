@@ -34,7 +34,12 @@ MODULE = "runway.cfngin.hooks.awslambda.docker"
 
 
 class TestDockerDependencyInstaller:
-    """Test DockerDependencyInstaller."""
+    """Test DockerDependencyInstaller.
+
+    Validates the Docker-based dependency installation system including
+    container lifecycle management, bind mount setup, image resolution
+    (build vs pull), and command execution within the container.
+    """
 
     def test___init__(self, cfngin_context: CfnginContext, mocker: MockerFixture) -> None:
         """Test __init__."""
@@ -157,7 +162,11 @@ class TestDockerDependencyInstaller:
         assert result.project == project
 
     def test_from_project_disabled(self) -> None:
-        """Test from_project disabled."""
+        """Test from_project disabled.
+
+        Returns None when Docker is explicitly disabled, allowing the
+        project to fall back to local pip installation.
+        """
         assert not DockerDependencyInstaller.from_project(
             Mock(args=Mock(docker=DockerOptions(disabled=True)))
         )
@@ -174,7 +183,11 @@ class TestDockerDependencyInstaller:
     def test_from_project_handle_connection_refused(
         self, error_msg: str, mocker: MockerFixture
     ) -> None:
-        """Test from_project handle DockerException connection refused."""
+        """Test from_project handle DockerException connection refused.
+
+        Wraps raw DockerException into a user-friendly error when the
+        Docker daemon is unreachable, guiding operators to start Docker.
+        """
         mocker.patch(
             f"{MODULE}.DockerClient.from_env",
             side_effect=DockerException(error_msg),
@@ -479,7 +492,12 @@ class TestDockerDependencyInstaller:
         container.remove.assert_called_once_with(force=True)
 
     def test_run_command_container_nonzero_exit_code(self, mocker: MockerFixture) -> None:
-        """Test run_command container non-zero exit code."""
+        """Test run_command container non-zero exit code.
+
+        Ensures non-zero exit codes from the container raise
+        DockerExecFailedError with the error message, rather than
+        silently returning stale dependencies.
+        """
         error_msg = "error msg"
         container = Mock(
             logs=Mock(return_value="log-stream"),

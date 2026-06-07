@@ -1,3 +1,4 @@
+---
 AWSTemplateFormatVersion: "2010-09-09"
 Description: TestTemplate
 Parameters:
@@ -12,8 +13,8 @@ Resources:
     Properties:
       BucketName: !Join
         - "-"
-        -   - !Ref "AWS::StackName"
-            - !Ref "AWS::Region"
+        - - !Ref "AWS::StackName"
+          - !Ref "AWS::Region"
   Dummy:
     Type: AWS::CloudFormation::WaitConditionHandle
 Outputs:

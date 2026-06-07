@@ -14,7 +14,11 @@ if TYPE_CHECKING:
 
 
 def test_purge_bucket(cfngin_context: MockCfnginContext) -> None:
-    """Test purge_bucket."""
+    """Test purge_bucket.
+
+    Validates the happy path where the bucket exists and is empty, ensuring
+    the hook returns success after listing object versions.
+    """
     stub = cfngin_context.add_stubber("s3")
 
     stub.add_response("head_bucket", {}, {"Bucket": "foo"})
@@ -25,7 +29,11 @@ def test_purge_bucket(cfngin_context: MockCfnginContext) -> None:
 
 
 def test_purge_bucket_does_not_exist(cfngin_context: MockCfnginContext) -> None:
-    """Test purge_bucket Bucket doesn't exist."""
+    """Test purge_bucket Bucket doesn't exist.
+
+    Ensures the hook gracefully handles a missing bucket (404) rather than
+    raising, since the desired end state (no bucket content) is already met.
+    """
     stub = cfngin_context.add_stubber("s3")
 
     stub.add_client_error("head_bucket", service_error_code="404")
@@ -35,7 +43,12 @@ def test_purge_bucket_does_not_exist(cfngin_context: MockCfnginContext) -> None:
 
 
 def test_purge_bucket_unhandled_exception(cfngin_context: MockCfnginContext) -> None:
-    """Test purge_bucket with unhandled exception."""
+    """Test purge_bucket with unhandled exception.
+
+    Verifies that non-404 errors (e.g. 403 permission denied) propagate as
+    exceptions so callers are alerted to access issues rather than silently
+    succeeding.
+    """
     stub = cfngin_context.add_stubber("s3")
 
     stub.add_client_error("head_bucket", service_error_code="403")

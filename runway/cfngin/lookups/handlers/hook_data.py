@@ -1,4 +1,9 @@
-"""Hook data lookup."""
+"""Hook data lookup.
+
+This lookup bridges the gap between hook execution and stack configuration,
+allowing hooks (which run before stacks) to pass computed values into stack
+parameters without requiring intermediate config file modifications.
+"""
 
 from __future__ import annotations
 
@@ -17,7 +22,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 class HookDataLookup(LookupHandler["CfnginContext"]):
-    """Hook data lookup."""
+    """Hook data lookup.
+
+    Retrieves values stored by pre_deploy hooks into the context's hook_data
+    dict, enabling data flow between the hook phase and the stack phase without
+    coupling the two through config file changes.
+    """
 
     TYPE_NAME: ClassVar[str] = "hook_data"
     """Name that the Lookup is registered as."""
@@ -37,6 +47,8 @@ class HookDataLookup(LookupHandler["CfnginContext"]):
 
         result = hook_data.find(query, args.get("default"))
 
+        # Auto-detect Troposphere objects and set load="troposphere" so that
+        # format_results can serialize them correctly for CloudFormation.
         if isinstance(result, BaseAWSObject) and args.get("get") and not args.get("load"):
             args["load"] = "troposphere"
 

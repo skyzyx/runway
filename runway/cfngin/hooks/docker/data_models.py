@@ -3,6 +3,10 @@
 These are makeshift data models for use until Runway v2 is released and pydantic
 can be used.
 
+Typed models centralize validation and URI construction for Docker/ECR
+resources, preventing raw dict manipulation from scattering registry-specific
+logic across multiple hook functions.
+
 """
 
 from __future__ import annotations
@@ -22,7 +26,12 @@ ECR_REPO_FQN_TEMPLATE = "{aws_account_id}.dkr.ecr.{aws_region}.amazonaws.com/{re
 
 
 class ElasticContainerRegistry(BaseModel):
-    """AWS Elastic Container Registry."""
+    """AWS Elastic Container Registry.
+
+    Encapsulates the public/private ECR distinction so that hook callers
+    provide registry details declaratively and the model constructs the
+    correct URI format automatically.
+    """
 
     PUBLIC_URI_TEMPLATE: ClassVar[str] = "public.ecr.aws/{registry_alias}/"
     URI_TEMPLATE: ClassVar[str] = "{aws_account_id}.dkr.ecr.{aws_region}.amazonaws.com/"
@@ -51,7 +60,12 @@ class ElasticContainerRegistry(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def _set_defaults(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """Set default values based on other values."""
+        """Set default values based on other values.
+
+        Derives public/private state and resolves account_id/region from the
+        CFNgin context when not explicitly provided, so callers only need to
+        supply the minimum required configuration.
+        """
         values.setdefault("public", bool(values.get("alias")))
 
         if not values["public"]:
@@ -69,7 +83,12 @@ class ElasticContainerRegistry(BaseModel):
 
 
 class DockerImage(BaseModel):
-    """Wrapper for :class:`docker.models.images.Image`."""
+    """Wrapper for :class:`docker.models.images.Image`.
+
+    Provides a stable, serializable interface over the Docker SDK's Image
+    object so that downstream hooks can access tags and URIs without coupling
+    to the SDK's mutable attrs dict.
+    """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -83,7 +102,11 @@ class DockerImage(BaseModel):
 
     @property
     def repo(self) -> str:
-        """Repository URI."""
+        """Repository URI.
+
+        Extracts the repo from the first RepoTag because the Docker SDK does
+        not expose the repository name as a dedicated attribute.
+        """
         if not self._repo:
             self._repo = self.image.attrs["RepoTags"][0].rsplit(":", 1)[0]
         return cast("str", self._repo)
@@ -95,13 +118,21 @@ class DockerImage(BaseModel):
 
     @property
     def tags(self) -> list[str]:
-        """List of image tags."""
+        """List of image tags.
+
+        Calls reload() to pick up any tags applied after the image was first
+        built, since the Docker SDK caches the initial state.
+        """
         self.image.reload()
         return [uri.split(":")[-1] for uri in self.image.tags]
 
     @property
     def uri(self) -> MutableMap:
-        """Return a mapping of tag to image URI."""
+        """Return a mapping of tag to image URI.
+
+        Presents tags as a MutableMap so CFNgin lookups can reference
+        individual image URIs by tag name (e.g. hook_data docker.image.uri.latest).
+        """
         return MutableMap(**{uri.split(":")[-1]: uri for uri in self.image.tags})
 
     def __bool__(self) -> bool:
@@ -110,7 +141,12 @@ class DockerImage(BaseModel):
 
 
 class ElasticContainerRegistryRepository(BaseModel):
-    """AWS Elastic Container Registry (ECR) Repository."""
+    """AWS Elastic Container Registry (ECR) Repository.
+
+    Combines a registry reference with a repository name so that the fully
+    qualified image URI can be derived without manual string concatenation
+    in hook configurations.
+    """
 
     model_config = ConfigDict(populate_by_name=True)
 

@@ -9,7 +9,11 @@ from runway.cfngin.hooks.awslambda.models.responses import AwsLambdaHookDeployRe
 
 
 class TestAwsLambdaHookDeployResponse:
-    """Test AwsLambdaHookDeployResponse."""
+    """Test AwsLambdaHookDeployResponse.
+
+    Ensures the response model rejects extra fields, maintaining a strict
+    contract for data passed to CloudFormation output resolution.
+    """
 
     def test_extra(self) -> None:
         """Test extra fields."""

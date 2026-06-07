@@ -3,6 +3,9 @@
 Responsible for updating the User Pool Client with the generated
 distribution url + callback url paths.
 
+This post-hook runs after the CloudFront distribution is created so the
+actual distribution domain can replace the placeholder callback URLs that
+were needed during initial Cognito client creation.
 """
 
 from __future__ import annotations
@@ -19,7 +22,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class HookArgs(HookArgsBaseModel):
-    """Hook arguments."""
+    """Hook arguments.
+
+    Collects all parameters needed to construct the full set of OAuth
+    redirect URIs from the CloudFront distribution and any alternate domains.
+    """
 
     alternate_domains: list[str]
     """A list of any alternate domains that need to be listed with the primary
@@ -49,7 +56,11 @@ class HookArgs(HookArgsBaseModel):
 def get_redirect_uris(
     domains: list[str], redirect_path_sign_in: str, redirect_path_sign_out: str
 ) -> dict[str, list[str]]:
-    """Create dict of redirect URIs for AppClient."""
+    """Create dict of redirect URIs for AppClient.
+
+    Cognito requires the full set of valid redirect URIs for both sign-in and
+    sign-out flows, so every configured domain must be paired with each path.
+    """
     return {
         "sign_in": [f"{domain}{redirect_path_sign_in}" for domain in domains],
         "sign_out": [f"{domain}{redirect_path_sign_out}" for domain in domains],
@@ -74,7 +85,8 @@ def update(context: CfnginContext, *_args: Any, **kwargs: Any) -> bool:
     session = context.get_session()
     cognito_client = session.client("cognito-idp")
 
-    # Combine alternate domains with main distribution
+    # Combine alternate domains with main distribution so all valid
+    # origins are registered as allowed redirect targets in Cognito.
     redirect_domains = [*args.alternate_domains, "https://" + args.distribution_domain]
 
     # Create a list of all domains with their redirect paths
@@ -82,6 +94,8 @@ def update(context: CfnginContext, *_args: Any, **kwargs: Any) -> bool:
         redirect_domains, args.redirect_path_sign_in, args.redirect_path_sign_out
     )
     # Update the user pool client
+    # The "code" OAuth flow is required for Lambda@Edge auth because it
+    # supports server-side token exchange without exposing tokens to the browser.
     try:
         cognito_client.update_user_pool_client(
             AllowedOAuthScopes=args.oauth_scopes,

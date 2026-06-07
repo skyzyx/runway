@@ -20,14 +20,24 @@ LOGGER = logging.getLogger(__name__)
 
 
 class OutputQuery(NamedTuple):
-    """Output query NamedTuple."""
+    """Output query NamedTuple.
+
+    Provides a typed container for the two-part lookup query so downstream code
+    can access stack_name and output_name by name rather than relying on
+    positional string splitting.
+    """
 
     stack_name: str
     output_name: str
 
 
 class OutputLookup(LookupHandler["CfnginContext"]):
-    """AWS CloudFormation Output lookup."""
+    """AWS CloudFormation Output lookup.
+
+    Resolves cross-stack references within the same CFNgin config file,
+    creating implicit DAG dependencies so that stacks producing outputs are
+    always built before stacks consuming them.
+    """
 
     DEPRECATION_MSG = (
         'lookup query syntax "<relative-stack-name>::<OutputName>" has been deprecated; '
@@ -93,6 +103,11 @@ class OutputLookup(LookupHandler["CfnginContext"]):
 
         Note that lookup_query may not be (completely) resolved at this time.
 
+        Returns the stack names this lookup depends on so the DAG builder can
+        add edges ensuring dependent stacks deploy first. Early-returns an empty
+        set when encountering unresolved substitutions because the dependency
+        cannot be statically determined until runtime.
+
         Args:
             lookup_query: Parameter(s) given to this lookup.
 
@@ -110,6 +125,8 @@ class OutputLookup(LookupHandler["CfnginContext"]):
                 # Stop here
                 return set()
             stack_name += data_item.value
+            # Look for the separator between stack name and output name;
+            # once found, we have enough to declare the dependency.
             match = re.search(r"(::|\.)", stack_name)
             if match:
                 stack_name = stack_name[0 : match.start()]
@@ -122,7 +139,12 @@ class OutputLookup(LookupHandler["CfnginContext"]):
 
 
 def deconstruct(value: str) -> OutputQuery:  # TODO (kyle): remove in next major release
-    """Deconstruct the value."""
+    """Deconstruct the value.
+
+    Supports the legacy ``stack::output`` separator syntax so existing configs
+    continue to work during the deprecation period before the dot-separated
+    format becomes mandatory.
+    """
     try:
         stack_name, output_name = value.split("::")
     except ValueError:

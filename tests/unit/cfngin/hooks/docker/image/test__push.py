@@ -31,7 +31,11 @@ def test_push(
     mock_docker_client: DockerClient,
     mocker: MockerFixture,
 ) -> None:
-    """Test push."""
+    """Test push.
+
+    Validates that all specified tags are pushed individually and the
+    context is updated after push completes.
+    """
     args = ImagePushArgs(repo="dkr.test.com/image", tags=["latest", "oldest"])
     mocker.patch.object(ImagePushArgs, "model_validate", return_value=args)
     mocker.patch.object(DockerHookData, "client", mock_docker_client)
@@ -52,7 +56,11 @@ def test_push(
 
 
 class TestImagePushArgs:
-    """Test runway.cfngin.hooks.docker.image._push.ImagePushArgs."""
+    """Test runway.cfngin.hooks.docker.image._push.ImagePushArgs.
+
+    Validates push argument resolution from ECR repos, DockerImage
+    instances, and explicit values.
+    """
 
     def test__set_ecr_repo_from_dict(self) -> None:
         """Test _set_ecr_repo from Dict."""

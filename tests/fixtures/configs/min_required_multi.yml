@@ -1,3 +1,4 @@
+---
 deployments:
   - modules:
       - sampleapp-01.cfn

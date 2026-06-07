@@ -1,4 +1,10 @@
-"""Source code."""
+"""Source code.
+
+This module provides deterministic content hashing of Lambda source trees so
+that cfngin can detect changes and skip unnecessary rebuilds/uploads when the
+code has not changed.
+
+"""
 
 from __future__ import annotations
 
@@ -21,7 +27,13 @@ LOGGER = logging.getLogger(__name__)
 
 
 class SourceCode:
-    """Source code iterable."""
+    """Source code iterable.
+
+    Provides a file-system abstraction that yields only relevant source files
+    (excluding VCS metadata and build artifacts) and produces a stable content
+    hash, enabling the deployment package to detect when a rebuild is needed.
+
+    """
 
     gitignore_filter: igittigitt.IgnoreParser
     """Filter to use when zipping dependencies.
@@ -75,6 +87,9 @@ class SourceCode:
         )
 
         if not gitignore_filter:
+            # Auto-populate the ignore filter with the project's .gitignore
+            # rules and always exclude VCS metadata to match developer
+            # expectations about what constitutes "source code."
             self.gitignore_filter.parse_rule_files(self.root_directory)
             self.gitignore_filter.add_rule(".git/", self.root_directory)
             self.gitignore_filter.add_rule(".gitignore", self.root_directory)
@@ -85,8 +100,14 @@ class SourceCode:
 
         This can be resource intensive depending on the size of the project.
 
+        Hashes files in sorted order and relative to ``project_root`` so that
+        the digest is deterministic regardless of filesystem traversal order
+        or absolute path differences between machines.
+
         """
         sorted_files = list(self.sorted())
+        # Include dependency lock files (e.g. poetry.lock) that live outside
+        # the source tree but affect the deployed artifact.
         for include_file in self._include_files_in_hash:
             if include_file not in sorted_files:
                 sorted_files.append(include_file)
@@ -135,9 +156,9 @@ class SourceCode:
         """
         for child in self.root_directory.rglob("*"):
             if child.is_dir():
-                continue  # ignore directories
+                continue  # directories themselves are not Lambda artifacts
             if self.gitignore_filter.match(child):
-                continue  # ignore files that match the filter
+                continue  # excluded by project-defined ignore rules
             yield child
 
     def __str__(self) -> str:

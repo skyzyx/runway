@@ -1,4 +1,9 @@
-"""CFNgin directed acyclic graph (DAG) implementation."""
+"""CFNgin directed acyclic graph (DAG) implementation.
+
+This module is the foundation of CFNgin's execution model. CloudFormation stacks
+have inter-stack dependencies (outputs feeding inputs), so a DAG enforces correct
+ordering while enabling maximum parallelism for independent stacks.
+"""
 
 from __future__ import annotations
 
@@ -19,11 +24,20 @@ LOGGER = logging.getLogger(__name__)
 
 
 class DAGValidationError(Exception):
-    """Raised when DAG validation fails."""
+    """Raised when DAG validation fails.
+
+    Separate from KeyError so callers can distinguish structural graph
+    violations (cycles) from simple missing-node errors.
+    """
 
 
 class DAG:
-    """Directed acyclic graph implementation."""
+    """Directed acyclic graph implementation.
+
+    Models stack dependencies as nodes and edges so the planner can derive
+    execution order via topological sort and detect invalid circular references
+    before any AWS calls are made.
+    """
 
     graph: OrderedDict[str, set[str]]
 
@@ -33,6 +47,9 @@ class DAG:
 
     def add_node(self, node_name: str) -> None:
         """Add a node if it does not exist yet, or error out.
+
+        Strict insertion prevents silent overwrites of an existing node's edges,
+        which would corrupt the dependency graph.
 
         Args:
             node_name: The unique name of the node to add.
@@ -50,6 +67,9 @@ class DAG:
     def add_node_if_not_exists(self, node_name: str) -> None:
         """Add a node if it does not exist yet, ignoring duplicates.
 
+        Used during graph construction from config where the same stack may
+        appear as both a dependency target and an explicit definition.
+
         Args:
             node_name: The name of the node to add.
 
@@ -59,6 +79,9 @@ class DAG:
 
     def delete_node(self, node_name: str) -> None:
         """Delete this node and all edges referencing it.
+
+        Removing dangling edges ensures the graph remains internally consistent
+        after a stack is excluded from a plan (e.g., via filtering).
 
         Args:
             node_name: The name of the node to delete.
@@ -91,6 +114,10 @@ class DAG:
 
     def add_edge(self, ind_node: str, dep_node: str) -> None:
         """Add an edge (dependency) between the specified nodes.
+
+        Validates against cycles by testing on a deep copy first, because
+        introducing a cycle would make topological sort impossible and deadlock
+        the threaded walker.
 
         Args:
             ind_node: The independent node to add an edge to.
@@ -134,7 +161,12 @@ class DAG:
         graph[ind_node].remove(dep_node)
 
     def transpose(self) -> DAG:
-        """Build a new graph with the edges reversed."""
+        """Build a new graph with the edges reversed.
+
+        Used to derive "depended-on-by" relationships from the stored
+        "depends-on" edges, enabling efficient predecessor lookups for
+        destroy-order planning.
+        """
         graph = self.graph
         transposed = DAG()
         for node in graph:
@@ -147,6 +179,10 @@ class DAG:
 
     def walk(self, walk_func: Callable[[str], Any]) -> None:
         """Walk each node of the graph in reverse topological order.
+
+        Serial execution guarantees that each node's dependencies are fully
+        resolved before it runs. Used as the simple single-threaded fallback
+        when parallelism is not needed.
 
         This can be used to perform a set of operations, where the next
         operation depends on the previous operation. It's important to note
@@ -165,6 +201,10 @@ class DAG:
 
     def transitive_reduction(self) -> None:
         """Perform a transitive reduction on the DAG.
+
+        Removes redundant edges so only direct dependencies remain. This
+        simplifies plan visualization and avoids unnecessary waits in the
+        threaded walker when a dependency is already implied transitively.
 
         The transitive reduction of a graph is a graph with as few edges as
         possible with the same reachability as the original graph.
@@ -197,6 +237,9 @@ class DAG:
     def rename_edges(self, old_node_name: str, new_node_name: str) -> None:
         """Change references to a node in existing edges.
 
+        Supports stack renaming without rebuilding the entire graph, preserving
+        existing dependency relationships.
+
         Args:
             old_node_name: The old name for the node.
             new_node_name: The new name for the node.
@@ -215,6 +258,9 @@ class DAG:
     def predecessors(self, node: str) -> list[str]:
         """Return a list of all immediate predecessors of the given node.
 
+        Identifies which stacks depend on this node, used to propagate
+        failure status upstream through the execution plan.
+
         Args:
             node (str): The node whose predecessors you want to find.
 
@@ -227,6 +273,9 @@ class DAG:
 
     def downstream(self, node: str) -> list[str]:
         """Return a list of all nodes this node has edges towards.
+
+        Returns direct dependencies of a stack, used by the threaded walker
+        to determine what must complete before this node can execute.
 
         Args:
             node: The node whose downstream nodes you want to find.
@@ -242,6 +291,9 @@ class DAG:
 
     def all_downstreams(self, node: str) -> list[str]:
         """Return a list of all nodes downstream in topological order.
+
+        Computes the full transitive closure of dependencies so the threaded
+        walker knows all nodes that must finish before this one can start.
 
         Args:
              node: The node whose downstream nodes you want to find.
@@ -264,6 +316,9 @@ class DAG:
     def filter(self, nodes: list[str]) -> DAG:
         """Return a new DAG with only the given nodes and their dependencies.
 
+        Enables targeted deploys where the user specifies a subset of stacks
+        and the planner automatically includes transitive dependencies.
+
         Args:
             nodes: The nodes you are interested in.
 
@@ -284,12 +339,19 @@ class DAG:
         return filtered_dag
 
     def all_leaves(self) -> list[str]:
-        """Return a list of all leaves (nodes with no downstreams)."""
+        """Return a list of all leaves (nodes with no downstreams).
+
+        Leaf nodes are stacks with no dependencies and can execute first,
+        forming the starting wave of parallel deployment.
+        """
         graph = self.graph
         return [key for key in graph if not graph[key]]
 
     def from_dict(self, graph_dict: dict[str, Iterable[str] | Any]) -> None:
         """Reset the graph and build it from the passed dictionary.
+
+        Provides a convenient initialization path from parsed configuration
+        files where dependencies are expressed as adjacency lists.
 
         The dictionary takes the form of {node_name: [directed edges]}
 
@@ -314,7 +376,11 @@ class DAG:
         self.graph = collections.OrderedDict()
 
     def ind_nodes(self) -> list[str]:
-        """Return a list of all nodes in the graph with no dependencies."""
+        """Return a list of all nodes in the graph with no dependencies.
+
+        Independent nodes are the entry points for execution — stacks that
+        can begin immediately because nothing else needs to finish first.
+        """
         graph = self.graph
 
         dependent_nodes = {node for dependents in graph.values() for node in dependents}
@@ -322,7 +388,11 @@ class DAG:
         return [node_ for node_ in graph if node_ not in dependent_nodes]
 
     def validate(self) -> tuple[bool, str]:
-        """Return (Boolean, message) of whether DAG is valid."""
+        """Return (Boolean, message) of whether DAG is valid.
+
+        Catches cycles and isolated graphs early, before the planner
+        attempts execution which would deadlock or produce undefined order.
+        """
         if not self.ind_nodes():
             return (False, "no independent nodes detected")
         try:
@@ -333,6 +403,10 @@ class DAG:
 
     def topological_sort(self) -> list[str]:
         """Return a topological ordering of the DAG.
+
+        Kahn's algorithm is used because it naturally detects cycles (remaining
+        nodes with non-zero in-degree) and produces a deterministic order when
+        ties are broken alphabetically via sorted().
 
         Raises:
             ValueError: Raised if the graph is not acyclic.
@@ -378,7 +452,11 @@ def walk(dag: DAG, walk_func: Callable[[str], Any]) -> None:
 
 
 class UnlimitedSemaphore:
-    """threading.Semaphore, but acquire always succeeds."""
+    """threading.Semaphore, but acquire always succeeds.
+
+    Used as the default when no parallelism limit is configured, avoiding
+    conditional semaphore logic throughout the walker code.
+    """
 
     def acquire(self, *args: Any) -> Any:
         """Do nothing."""
@@ -388,7 +466,12 @@ class UnlimitedSemaphore:
 
 
 class ThreadedWalker:
-    """Walk a DAG as quickly as the graph topology allows, using threads."""
+    """Walk a DAG as quickly as the graph topology allows, using threads.
+
+    Enables independent stacks (those with no mutual dependencies) to execute
+    concurrently, dramatically reducing total deploy time for wide graphs while
+    respecting dependency ordering for connected stacks.
+    """
 
     def __init__(self, semaphore: threading.Semaphore | UnlimitedSemaphore) -> None:
         """Instantiate class.
@@ -407,9 +490,8 @@ class ThreadedWalker:
         satisfied.
 
         """
-        # First, we'll topologically sort all of the nodes, with nodes that
-        # have no dependencies first. We do this to ensure that we don't call
-        # .join on a thread that hasn't yet been started.
+        # Topological sort with reversal ensures threads are allocated for
+        # leaf nodes (no deps) first, preventing join() on unstarted threads.
         #
         # TODO(ejholmes): An alternative would be to ensure that Thread.join
         # blocks if the thread has not yet been started.
@@ -419,8 +501,8 @@ class ThreadedWalker:
         # This maps a node name to a thread of execution.
         threads: dict[str, Any] = {}
 
-        # Blocks until all of the given nodes have completed execution (whether
-        # successfully, or errored). Returns True if all nodes returned True.
+        # Polling with a 0.5s timeout instead of blocking join() allows the
+        # walker to remain responsive and detect deadlocks or interrupts.
         def wait_for(nodes: list[str]) -> None:
             """Wait for nodes."""
             for node in nodes:
@@ -428,9 +510,9 @@ class ThreadedWalker:
                 while thread.is_alive():
                     threads[node].join(0.5)
 
-        # For each node in the graph, we're going to allocate a thread to
-        # execute. The thread will block executing walk_func, until all of the
-        # nodes dependencies have executed.
+        # Each node gets its own thread so independent stacks execute
+        # concurrently. The semaphore limits active concurrent operations
+        # to avoid overwhelming AWS API rate limits.
         for node in nodes:
 
             def _fn(node_: str, deps: list[str]) -> Any:

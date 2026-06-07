@@ -1,4 +1,9 @@
-"""Tests for runway.cfngin.environment."""
+"""Tests for runway.cfngin.environment.
+
+Validates that cfngin's environment file parser correctly handles the
+key:value format used for stack configuration, including edge cases like
+colons in values, special characters, blank values, and comment lines.
+"""
 
 # pyright: reportUnnecessaryIsInstance=none
 import pytest
@@ -28,10 +33,20 @@ error
 
 
 class TestEnvironment:
-    """Tests for runway.cfngin.environment."""
+    """Tests for runway.cfngin.environment.
+
+    Environment files are the primary mechanism for injecting per-environment
+    values (dev vs prod) into cfngin configs, so parsing correctness is
+    critical for reliable deployments.
+    """
 
     def test_simple_key_value_parsing(self) -> None:
-        """Test simple key value parsing."""
+        """Test simple key value parsing.
+
+        Verifies the parser handles realistic environment files containing
+        comments, blank lines, colons within values, and special characters
+        — all patterns that occur in real deployment configurations.
+        """
         parsed_env = parse_environment(TEST_ENV)
         assert isinstance(parsed_env, dict)
         assert parsed_env["key1"] == "value1"
@@ -42,12 +57,20 @@ class TestEnvironment:
         assert len(parsed_env) == 5
 
     def test_simple_key_value_parsing_exception(self) -> None:
-        """Test simple key value parsing exception."""
+        """Test simple key value parsing exception.
+
+        Lines without a colon separator are invalid; the parser must reject
+        them early so users get clear errors instead of silent misconfiguration.
+        """
         with pytest.raises(ValueError):  # noqa: PT011
             parse_environment(TEST_ERROR_ENV)
 
     def test_blank_value(self) -> None:
-        """Test blank value."""
+        """Test blank value.
+
+        Keys with empty values are valid and represent intentional overrides
+        (e.g., clearing a default), so the parser must accept them without error.
+        """
         env = """key1:"""
         parsed = parse_environment(env)
         assert not parsed["key1"]

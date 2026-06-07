@@ -1,3 +1,4 @@
+---
 deployments:
   - modules:
       - path: git::https://github.com/rackspace/runway.git//tests/functional/cfngin/test_simple_build/simple-build.cfn?branch=master

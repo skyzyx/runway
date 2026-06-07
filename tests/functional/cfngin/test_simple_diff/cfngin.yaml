@@ -1,3 +1,4 @@
+---
 namespace: ${namespace}
 cfngin_bucket: ''
 sys_path: ./

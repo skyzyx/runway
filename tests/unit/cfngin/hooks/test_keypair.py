@@ -29,7 +29,11 @@ KEY_PAIR_NAME = "FakeKey"
 
 
 class SSHKey(NamedTuple):
-    """SSHKey."""
+    """SSHKey.
+
+    Groups related SSH key components for test fixture reuse across
+    all keypair tests that need consistent key material.
+    """
 
     fingerprint: str
     private_key: bytes
@@ -97,7 +101,12 @@ def assert_key_present(hook_result: KeyPairInfo, key_name: str, fingerprint: str
 
 
 def test_param_validation(context: CfnginContext) -> None:
-    """Test param validation."""
+    """Test param validation.
+
+    Ensures mutually exclusive parameters (ssm_parameter_name and
+    public_key_path) cause the hook to return an empty dict rather
+    than proceeding with ambiguous configuration.
+    """
     result = ensure_keypair_exists(
         context,
         keypair=KEY_PAIR_NAME,
@@ -108,7 +117,11 @@ def test_param_validation(context: CfnginContext) -> None:
 
 
 def test_keypair_exists(context: CfnginContext) -> None:
-    """Test keypair exists."""
+    """Test keypair exists.
+
+    Validates idempotent behavior: if the key pair already exists in EC2,
+    the hook returns status "exists" without modifying anything.
+    """
     ec2 = boto3.client("ec2")
     keypair = ec2.create_key_pair(KeyName=KEY_PAIR_NAME)
 
@@ -122,7 +135,12 @@ def test_keypair_exists(context: CfnginContext) -> None:
 
 
 def test_import_file(tmp_path: Path, context: CfnginContext, ssh_key: SSHKey) -> None:
-    """Test import file."""
+    """Test import file.
+
+    Confirms that a valid public key file is imported into EC2 and the
+    returned fingerprint matches, verifying the import path works
+    end-to-end without user interaction.
+    """
     pub_key = tmp_path / "id_rsa.pub"
     pub_key.write_bytes(ssh_key.public_key)
 
@@ -132,7 +150,11 @@ def test_import_file(tmp_path: Path, context: CfnginContext, ssh_key: SSHKey) ->
 
 
 def test_import_bad_key_data(tmp_path: Path, context: CfnginContext) -> None:
-    """Test import bad key data."""
+    """Test import bad key data.
+
+    Ensures that invalid key material (garbage data) causes the hook to
+    return empty dict rather than raising, providing graceful failure.
+    """
     pub_key = tmp_path / "id_rsa.pub"
     pub_key.write_text("garbage")
 
@@ -142,7 +164,12 @@ def test_import_bad_key_data(tmp_path: Path, context: CfnginContext) -> None:
 
 @pytest.mark.parametrize("ssm_key_id", ["my-key"])
 def test_create_in_ssm(context: CfnginContext, ssh_key: SSHKey, ssm_key_id: str) -> None:
-    """Test create in ssm."""
+    """Test create in ssm.
+
+    Validates the SSM storage path: key pair is created in EC2 and the
+    private key is stored as a SecureString in SSM with the specified
+    KMS key, enabling secure retrieval without local file storage.
+    """
     result = ensure_keypair_exists(
         context,
         keypair=KEY_PAIR_NAME,
@@ -170,7 +197,11 @@ def test_create_in_ssm(context: CfnginContext, ssh_key: SSHKey, ssm_key_id: str)
 
 
 def test_interactive_non_terminal_input(context: CfnginContext) -> None:
-    """Test interactive non terminal input."""
+    """Test interactive non terminal input.
+
+    Ensures the hook does not prompt when stdin is not a TTY (e.g. CI/CD),
+    preventing hangs in non-interactive environments.
+    """
     with mock_input(isatty=False) as _input:
         result = ensure_keypair_exists(context, keypair=KEY_PAIR_NAME)
         _input.assert_not_called()
@@ -178,7 +209,11 @@ def test_interactive_non_terminal_input(context: CfnginContext) -> None:
 
 
 def test_interactive_retry_cancel(context: CfnginContext) -> None:
-    """Test interactive retry cancel."""
+    """Test interactive retry cancel.
+
+    Validates that invalid input followed by "cancel" exits gracefully
+    after retrying, testing the input loop's termination condition.
+    """
     lines = ("garbage", "cancel")
     with mock_input(lines) as _input:
         result = ensure_keypair_exists(context, keypair=KEY_PAIR_NAME)
@@ -187,7 +222,11 @@ def test_interactive_retry_cancel(context: CfnginContext) -> None:
 
 
 def test_interactive_import(tmp_path: Path, context: CfnginContext, ssh_key: SSHKey) -> None:
-    """."""
+    """Test interactive import via user prompt.
+
+    Validates the interactive "import" flow where the user provides a
+    path to an existing public key file through stdin.
+    """
     key_file = tmp_path / "id_rsa.pub"
     key_file.write_bytes(ssh_key.public_key)
 
@@ -200,7 +239,11 @@ def test_interactive_import(tmp_path: Path, context: CfnginContext, ssh_key: SSH
 
 
 def test_interactive_create(tmp_path: Path, context: CfnginContext, ssh_key: SSHKey) -> None:
-    """Test interactive create."""
+    """Test interactive create.
+
+    Validates the interactive "create" flow where a new key pair is
+    generated and the private key is written to a user-specified directory.
+    """
     key_dir = tmp_path / "keys"
     key_dir.mkdir(parents=True, exist_ok=True)
     key_file = key_dir / f"{KEY_PAIR_NAME}.pem"
@@ -216,7 +259,11 @@ def test_interactive_create(tmp_path: Path, context: CfnginContext, ssh_key: SSH
 
 
 def test_interactive_create_bad_dir(tmp_path: Path, context: CfnginContext) -> None:
-    """Test interactive create bad dir."""
+    """Test interactive create bad dir.
+
+    Ensures the hook returns empty dict when the user specifies a
+    non-existent output directory, preventing filesystem errors.
+    """
     key_dir = tmp_path / "missing"
 
     lines = ("create", str(key_dir))
@@ -227,7 +274,11 @@ def test_interactive_create_bad_dir(tmp_path: Path, context: CfnginContext) -> N
 
 
 def test_interactive_create_existing_file(tmp_path: Path, context: CfnginContext) -> None:
-    """Test interactive create existing file."""
+    """Test interactive create existing file.
+
+    Prevents accidental overwrite of an existing private key file by
+    returning empty dict instead of clobbering user data.
+    """
     key_dir = tmp_path / "keys"
     key_dir.mkdir(exist_ok=True, parents=True)
     key_file = key_dir / f"{KEY_PAIR_NAME}.pem"

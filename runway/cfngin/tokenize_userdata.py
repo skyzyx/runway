@@ -1,12 +1,24 @@
-"""Resources to tokenize userdata."""
+"""Resources to tokenize userdata.
+
+This module converts raw EC2 userdata strings containing CloudFormation
+pseudo-function references (e.g. ``Ref(Foo)``) into troposphere objects,
+enabling use with ``Fn::Join``/``Base64`` in generated templates.
+"""
 
 import re
 
 from troposphere import GetAtt, Ref
 
+# Map of supported CloudFormation helper function names to their
+# troposphere constructors. Only these functions are recognized during
+# tokenization; extending this dict adds support for new intrinsics.
 HELPERS = {"Ref": Ref, "Fn::GetAtt": GetAtt}
 
+# Regex to split the userdata string at each recognized helper invocation,
+# preserving both the literal text segments and the helper expressions as
+# separate list items for reconstruction via Fn::Join.
 SPLIT_STRING = "(" + "|".join(rf"{h}\([^)]+\)" for h in HELPERS) + ")"
+# Regex to extract the helper name and its arguments from a matched segment.
 REPLACE_STRING = rf"(?P<helper>{'|'.join(HELPERS)})\((?P<args>['\"]?[^)]+['\"]?)+\)"
 
 SPLIT_RE = re.compile(SPLIT_STRING)
@@ -23,6 +35,10 @@ def cf_tokenize(raw_userdata: str) -> list[str]:
     It breaks apart the given string at each recognized function (see
     ``HELPERS`` global variable) and instantiates the helper function objects
     in place of those.
+
+    This two-pass approach (split then replace) allows blueprint authors to
+    write userdata as a plain string with inline references, rather than
+    manually constructing nested Fn::Join calls in Python.
 
     Args:
         raw_userdata: Unparsed userdata data string.

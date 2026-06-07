@@ -1,3 +1,4 @@
+---
 cfngin_bucket: ''
 namespace: ${namespace}
 service_role: null

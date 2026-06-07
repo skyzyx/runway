@@ -1,4 +1,9 @@
-"""CFNgin utilities."""
+"""CFNgin utilities.
+
+This module centralizes cross-cutting helper functions used by actions, providers,
+hooks, and the Plan to avoid duplicating common logic like S3 operations, naming
+conventions, template key generation, and package source management.
+"""
 
 from __future__ import annotations
 
@@ -51,6 +56,10 @@ LOGGER = logging.getLogger(__name__)
 def camel_to_snake(name: str) -> str:
     """Convert CamelCase to snake_case.
 
+    CloudFormation resource names use CamelCase while Python conventions use
+    snake_case, so this bridges the naming gap when generating Python identifiers
+    from AWS resource types.
+
     Args:
         name (str): The name to convert from CamelCase to snake_case.
 
@@ -58,12 +67,17 @@ def camel_to_snake(name: str) -> str:
         str: Converted string.
 
     """
+    # Two-pass regex: first handles sequences like "CamelCase" -> "Camel_Case",
+    # second handles transitions like "getHTTPResponse" -> "get_HTTP_Response".
     sub_str_1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
     return re.sub("([a-z0-9])([A-Z])", r"\1_\2", sub_str_1).lower()
 
 
 def convert_class_name(kls: type) -> str:
     """Get a string that represents a given class.
+
+    This provides a consistent convention for deriving identifiers from class
+    objects, used when registering blueprints or lookups by their class type.
 
     Args:
         kls: The class being analyzed for its name.
@@ -76,12 +90,19 @@ def convert_class_name(kls: type) -> str:
 
 
 def parse_zone_id(full_zone_id: str) -> str:
-    """Parse the returned hosted zone id and returns only the ID itself."""
+    """Parse the returned hosted zone id and returns only the ID itself.
+
+    AWS returns zone IDs as full paths (e.g. "/hostedzone/Z123"), but API
+    calls require only the bare ID portion.
+    """
     return full_zone_id.split("/")[2]
 
 
 def get_hosted_zone_by_name(client: Route53Client, zone_name: str) -> str | None:
     """Get the zone id of an existing zone by name.
+
+    Route53 has no direct "get zone by name" API, so this paginates through
+    all hosted zones to find a match, enabling idempotent zone creation.
 
     Args:
         client: The connection used to interact with Route53's API.
@@ -104,6 +125,9 @@ def get_hosted_zone_by_name(client: Route53Client, zone_name: str) -> str | None
 def get_or_create_hosted_zone(client: Route53Client, zone_name: str) -> str:
     """Get the Id of an existing zone, or create it.
 
+    This implements an idempotent "ensure zone exists" pattern so that CFNgin
+    runs are safe to retry without creating duplicate zones.
+
     Args:
         client: The connection used to interact with Route53's API.
         zone_name: The name of the DNS hosted zone to create.
@@ -118,6 +142,8 @@ def get_or_create_hosted_zone(client: Route53Client, zone_name: str) -> str:
 
     LOGGER.debug("zone %s does not exist; creating", zone_name)
 
+    # CallerReference must be unique per create call to ensure idempotency;
+    # a random UUID satisfies this requirement.
     reference = uuid.uuid4().hex
 
     response = client.create_hosted_zone(Name=zone_name, CallerReference=reference)
@@ -126,7 +152,12 @@ def get_or_create_hosted_zone(client: Route53Client, zone_name: str) -> str:
 
 
 class SOARecordText:
-    """Represents the actual body of an SOARecord."""
+    """Represents the actual body of an SOARecord.
+
+    Encapsulates the individual fields of an SOA record's text value so they
+    can be modified independently (e.g. changing min_ttl) and reassembled into
+    a valid record string for Route53 API calls.
+    """
 
     def __init__(self, record_text: str) -> None:
         """Instantiate class."""
@@ -149,7 +180,12 @@ class SOARecordText:
 
 
 class SOARecord:
-    """Represents an SOA record."""
+    """Represents an SOA record.
+
+    Provides a structured wrapper around the raw Route53 response so that
+    individual SOA fields can be inspected and modified for zone configuration
+    updates (e.g. negative cache TTL tuning).
+    """
 
     def __init__(self, record: ResourceRecordSetOutputTypeDef) -> None:
         """Instantiate class."""
@@ -160,6 +196,9 @@ class SOARecord:
 
 def get_soa_record(client: Route53Client, zone_id: str, zone_name: str) -> SOARecord:
     """Get the SOA record for zone_name from zone_id.
+
+    This retrieves the current SOA record so its fields can be inspected or
+    modified (e.g. to lower the negative cache TTL for faster DNS propagation).
 
     Args:
         client: The connection used to interact with Route53's API.
@@ -184,6 +223,10 @@ def create_route53_zone(client: Route53Client, zone_name: str) -> str:
 
     Also sets the SOA negative caching TTL to something short (300 seconds).
 
+    A short negative cache TTL (300s) ensures that newly created DNS records
+    become resolvable quickly, which is critical during stack deployments where
+    services depend on DNS propagation.
+
     Args:
         client: The connection used to interact with Route53's API.
         zone_name: The name of the DNS hosted zone to create.
@@ -192,6 +235,7 @@ def create_route53_zone(client: Route53Client, zone_name: str) -> str:
         The zone id returned from AWS for the existing, or newly created zone.
 
     """
+    # Route53 requires fully-qualified domain names (trailing dot).
     if not zone_name.endswith("."):
         zone_name += "."
     zone_id = get_or_create_hosted_zone(client, zone_name)
@@ -230,6 +274,11 @@ def yaml_to_ordered_dict(  # noqa: C901
 ) -> OrderedDict[str, Any]:
     """yaml.load alternative with preserved dictionary order.
 
+    CFNgin requires deterministic stack ordering to maintain consistent
+    dependency resolution across runs. Standard Python dicts lost insertion
+    order in older Python versions, and this function also adds duplicate-key
+    validation that PyYAML lacks by default.
+
     Args:
         stream: YAML string to load.
         loader: PyYAML loader class. Defaults to safe load.
@@ -238,6 +287,10 @@ def yaml_to_ordered_dict(  # noqa: C901
 
     class OrderedUniqueLoader(loader):  # type: ignore
         """Subclasses the given pyYAML `loader` class.
+
+        Extends the base loader to enforce unique keys for critical CFNgin
+        configuration sections (stacks, class_path), preventing silent
+        overwrites that would cause hard-to-debug deployment issues.
 
         Validates all sibling keys to insure no duplicates.
 
@@ -341,6 +394,10 @@ def cf_safe_name(name: str) -> str:
     Given a string, returns a name that is safe for use as a CloudFormation
     Resource. (ie: Only alphanumeric characters)
 
+    CloudFormation logical IDs only allow alphanumeric characters. This
+    sanitization ensures user-provided stack names can be used as resource
+    identifiers without causing template validation failures.
+
     """
     alphanumeric = r"[a-zA-Z0-9]+"
     parts = re.findall(alphanumeric, name)
@@ -351,6 +408,10 @@ def read_value_from_path(value: str, *, root_path: Path | None = None) -> str:
     """Enable translators to read values from files.
 
     The value can be referred to with the `file://` prefix.
+
+    This allows secrets and large values (like certificates) to be stored in
+    separate files rather than inlined in configuration, supporting both
+    security best practices and readability.
 
     Example:
         ::
@@ -376,6 +437,9 @@ def read_value_from_path(value: str, *, root_path: Path | None = None) -> str:
 def get_client_region(client: Any) -> str:
     """Get the region from a boto3 client.
 
+    Accesses the private _client_config because boto3 does not expose a public
+    API for retrieving the configured region from an existing client instance.
+
     Args:
         client: The client to get the region from.
 
@@ -388,6 +452,9 @@ def get_client_region(client: Any) -> str:
 
 def get_s3_endpoint(client: Any) -> str:
     """Get the s3 endpoint for the given boto3 client.
+
+    Accesses the private _endpoint because boto3 does not expose a public
+    API for retrieving the endpoint URL from an existing client instance.
 
     Args:
         client: The client to get the endpoint from.
@@ -405,6 +472,9 @@ def s3_bucket_location_constraint(region: str | None) -> str | None:
     When creating a bucket in a region OTHER than us-east-1, you need to
     specify a LocationConstraint inside the CreateBucketConfiguration argument.
     This function helps you determine the right value given a given client.
+
+    The us-east-1 special case exists because it is the S3 default region and
+    AWS returns an error if you explicitly specify it as a LocationConstraint.
 
     Args:
         region: The region where the bucket will be created in.
@@ -427,6 +497,10 @@ def ensure_s3_bucket(
     persist_graph: bool = False,
 ) -> None:
     """Ensure an s3 bucket exists, if it does not then create it.
+
+    CFNgin stores compiled templates and persistent graph state in S3, so this
+    idempotent helper guarantees the bucket is ready before any upload
+    operations occur.
 
     Args:
         s3_client: An s3 client used to verify and create the bucket.
@@ -460,8 +534,9 @@ def ensure_s3_bucket(
                 )
     except botocore.exceptions.ClientError as err:
         if err.response["Error"]["Message"] == "Not Found" and create:
-            # can't use s3_client.exceptions.NoSuchBucket here.
-            # it does not work if the bucket was recently deleted.
+            # can't use s3_client.exceptions.NoSuchBucket here because
+            # it does not work if the bucket was recently deleted (AWS
+            # returns a generic "Not Found" rather than a typed exception).
             LOGGER.debug("creating bucket %s", bucket_name)
             create_args: dict[str, Any] = {"Bucket": bucket_name}
             location_constraint = s3_bucket_location_constraint(bucket_region)
@@ -490,6 +565,9 @@ def parse_cloudformation_template(template: str) -> dict[str, Any]:
 
     Leverages the vendored aws-cli yamlhelper to handle JSON or YAML templates.
 
+    Using the vendored aws-cli parser ensures CFNgin handles templates with the
+    same YAML tag semantics (e.g. !Ref, !Sub) as the AWS CLI itself.
+
     Args:
         template: The template body.
 
@@ -501,6 +579,9 @@ def is_within_directory(directory: Path | str, target: str) -> bool:
     """Check if file is in directory.
 
     Determines if the provided path is within a specific directory or its subdirectories.
+
+    This is a security check used to prevent path traversal attacks when
+    extracting archive files (CVE-2007-4559).
 
     Args:
         directory: Path of the directory we're checking.
@@ -528,6 +609,10 @@ def safe_tar_extract(
     This code is modified from a PR provided to Runway project
     to address CVE-2007-4559.
 
+    Wraps tarfile.extractall with a traversal check because Python's tarfile
+    module does not guard against path traversal by default, allowing malicious
+    archives to write files outside the intended extraction directory.
+
     Args:
         tar: The tar file object that will be extracted.
         path: The directory to extract the tar into.
@@ -546,7 +631,12 @@ def safe_tar_extract(
 
 
 class Extractor:
-    """Base class for extractors."""
+    """Base class for extractors.
+
+    Provides a common interface for archive extraction so that SourceProcessor
+    can handle tar, gzip, and zip archives uniformly without caring about the
+    underlying format.
+    """
 
     extension: ClassVar[str] = ""
 
@@ -570,7 +660,11 @@ class Extractor:
 
 
 class TarExtractor(Extractor):
-    """Extracts tar archives."""
+    """Extracts tar archives.
+
+    Handles uncompressed tar files, delegating the actual extraction to
+    safe_tar_extract to guard against path traversal attacks.
+    """
 
     extension: ClassVar[str] = ".tar"
 
@@ -581,7 +675,11 @@ class TarExtractor(Extractor):
 
 
 class TarGzipExtractor(Extractor):
-    """Extracts compressed tar archives."""
+    """Extracts compressed tar archives.
+
+    Handles gzip-compressed tar files, the most common format for source
+    packages distributed via S3.
+    """
 
     extension: ClassVar[str] = ".tar.gz"
 
@@ -592,7 +690,11 @@ class TarGzipExtractor(Extractor):
 
 
 class ZipExtractor(Extractor):
-    """Extracts zip archives."""
+    """Extracts zip archives.
+
+    Handles zip files, commonly used for AWS Lambda deployment packages and
+    Windows-originated source distributions.
+    """
 
     extension: ClassVar[str] = ".zip"
 
@@ -604,7 +706,12 @@ class ZipExtractor(Extractor):
 
 
 class SourceProcessor:
-    """Makes remote python package sources available in current environment."""
+    """Makes remote python package sources available in current environment.
+
+    CFNgin allows users to reference blueprints and hooks from external
+    repositories (git, S3, local). This class handles downloading, caching, and
+    making those packages importable by manipulating sys.path at runtime.
+    """
 
     ISO8601_FORMAT = "%Y%m%dT%H%M%SZ"
 
@@ -631,7 +738,12 @@ class SourceProcessor:
         self.package_cache_dir.mkdir(parents=True, exist_ok=True)
 
     def get_package_sources(self) -> None:
-        """Make remote python packages available for local use."""
+        """Make remote python packages available for local use.
+
+        Processes sources in a specific order (local, S3, git) to ensure
+        locally-available packages take precedence and are on sys.path before
+        remote ones are fetched.
+        """
         # Checkout local modules
         for config in self.sources.local:
             self.fetch_local_package(config=config)
@@ -645,6 +757,9 @@ class SourceProcessor:
     def fetch_local_package(self, config: LocalCfnginPackageSourceDefinitionModel) -> None:
         """Make a local path available to current CFNgin config.
 
+        Local packages require no download step; only sys.path manipulation
+        is needed to make them importable by the current CFNgin execution.
+
         Args:
             config: Package source config.
 
@@ -656,6 +771,10 @@ class SourceProcessor:
 
     def fetch_s3_package(self, config: S3CfnginPackageSourceDefinitionModel) -> None:
         """Make a remote S3 archive available for local use.
+
+        Downloads and extracts an S3-hosted archive to the local cache,
+        enabling CFNgin to import blueprints/hooks distributed as packages
+        stored in S3 buckets.
 
         Args:
             config: Package source config.
@@ -765,6 +884,9 @@ class SourceProcessor:
     def fetch_git_package(self, config: GitCfnginPackageSourceDefinitionModel) -> None:
         """Make a remote git repository available for local use.
 
+        Clones and checks out a specific ref so that blueprints and hooks from
+        external repositories can be imported during CFNgin execution.
+
         Args:
             config: Package source config.
 
@@ -816,6 +938,10 @@ class SourceProcessor:
     ) -> None:
         """Handle remote source defined sys.paths & configs.
 
+        This is the final step after fetching a package: it adds the package
+        directory to sys.path so Python can import from it, and queues any
+        extra config files for merging into the current CFNgin configuration.
+
         Args:
             config: Package source config.
             pkg_dir_name: Directory name of the CFNgin archive.
@@ -845,6 +971,10 @@ class SourceProcessor:
     def git_ls_remote(uri: str, ref: str) -> str:
         """Determine the latest commit id for a given ref.
 
+        Uses the git ls-remote command to resolve a branch/tag to a commit ID
+        without cloning the entire repository, which is much faster for large
+        repos.
+
         Args:
             uri: Git URI.
             ref: Git ref.
@@ -864,6 +994,9 @@ class SourceProcessor:
     ) -> str:
         """Determine the ref to be used with the "git ls-remote" command.
 
+        Translates the user's branch config into a fully-qualified ref because
+        git ls-remote requires the full refs/heads/ prefix to match branches.
+
         Args:
             config: Git package source config.
 
@@ -875,6 +1008,10 @@ class SourceProcessor:
 
     def determine_git_ref(self, config: GitCfnginPackageSourceDefinitionModel) -> str:
         """Determine the ref to be used for ``git checkout``.
+
+        Prioritizes commit > tag > branch resolution so that pinned
+        dependencies (commit/tag) take precedence over floating branch refs
+        for reproducible deployments.
 
         Args:
             config: Git package source config.
@@ -895,6 +1032,9 @@ class SourceProcessor:
     def sanitize_uri_path(uri: str) -> str:
         """Take a URI and converts it to a directory safe path.
 
+        Replaces characters that are valid in URIs but invalid or problematic
+        in filesystem paths so that cached packages have safe directory names.
+
         Args:
             uri: URI to sanitize.
 
@@ -908,6 +1048,10 @@ class SourceProcessor:
 
     def sanitize_git_path(self, uri: str, ref: str | None = None) -> str:
         """Take a git URI and ref and converts it to a directory safe path.
+
+        Combines the sanitized URI with the ref to produce a unique cache
+        directory name, ensuring different refs of the same repo are cached
+        separately.
 
         Args:
             uri: Git URI. (e.g. ``git@github.com:foo/bar.git``)
@@ -926,6 +1070,10 @@ class SourceProcessor:
 
 def stack_template_key_name(blueprint: Blueprint) -> str:
     """Given a blueprint, produce an appropriate key name.
+
+    Generates a deterministic S3 key path for storing compiled templates,
+    incorporating the fully-qualified stack name and blueprint version to
+    allow multiple stacks and versions to coexist in the same bucket.
 
     Args:
         blueprint: The blueprint object to create the key from.

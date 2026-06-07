@@ -28,7 +28,11 @@ MODULE = "runway.cfngin.hooks.iam"
 
 
 def test_create_ecs_service_role(cfngin_context: MockCfnginContext) -> None:
-    """Test create_ecs_service_role."""
+    """Test create_ecs_service_role.
+
+    Validates the happy path: role creation followed by policy attachment,
+    ensuring the hook returns truthy so the pipeline continues.
+    """
     stub = cfngin_context.add_stubber("iam")
 
     stub.add_response(
@@ -65,7 +69,11 @@ def test_create_ecs_service_role(cfngin_context: MockCfnginContext) -> None:
 def test_create_ecs_service_role_already_exists(
     cfngin_context: MockCfnginContext,
 ) -> None:
-    """Test create_ecs_service_role already exists."""
+    """Test create_ecs_service_role already exists.
+
+    Ensures idempotent behavior: if the role already exists, the hook still
+    attaches the policy and succeeds rather than failing on duplicate.
+    """
     stub = cfngin_context.add_stubber("iam")
 
     stub.add_client_error("create_role", service_message="already exists")
@@ -87,7 +95,11 @@ def test_create_ecs_service_role_already_exists(
 def test_create_ecs_service_role_raise_client_error(
     cfngin_context: MockCfnginContext,
 ) -> None:
-    """Test create_ecs_service_role raise ClientError."""
+    """Test create_ecs_service_role raise ClientError.
+
+    Verifies that unexpected IAM errors (not "already exists") propagate
+    so callers are alerted to permission or service issues.
+    """
     stub = cfngin_context.add_stubber("iam")
 
     stub.add_client_error("create_role", service_message="")
@@ -100,7 +112,11 @@ def test_create_ecs_service_role_raise_client_error(
 def test_ensure_server_cert_exists(
     cfngin_context: MockCfnginContext, mocker: MockerFixture, tmp_path: Path
 ) -> None:
-    """Test ensure_server_cert_exists."""
+    """Test ensure_server_cert_exists.
+
+    Validates the full interactive upload flow: cert doesn't exist, user
+    confirms upload, and the hook uploads cert/chain/key to IAM.
+    """
     cert_name = "foo"
     arn = f"arn:aws:iam::0123456789012:certification/{cert_name}"
 
@@ -156,7 +172,11 @@ def test_ensure_server_cert_exists(
 def test_ensure_server_cert_exists_already_exists(
     cfngin_context: MockCfnginContext,
 ) -> None:
-    """Test ensure_server_cert_exists already exists."""
+    """Test ensure_server_cert_exists already exists.
+
+    Ensures the hook short-circuits with status "exists" when the cert
+    is already in IAM, avoiding duplicate upload attempts.
+    """
     cert_name = "foo"
     arn = f"arn:aws:iam::0123456789012:certification/{cert_name}"
     stub = cfngin_context.add_stubber("iam")
@@ -189,7 +209,11 @@ def test_ensure_server_cert_exists_already_exists(
 def test_ensure_server_cert_exists_no_prompt_no_parameters(
     cfngin_context: MockCfnginContext, mocker: MockerFixture
 ) -> None:
-    """Test ensure_server_cert_exists no prompt, not parameters."""
+    """Test ensure_server_cert_exists no prompt, not parameters.
+
+    Confirms the hook returns falsy when prompt is disabled and no file
+    parameters are provided, preventing unattended interactive prompts.
+    """
     mocker.patch(
         f"{MODULE}.input",
         side_effect=["", "", ""],
@@ -206,7 +230,11 @@ def test_ensure_server_cert_exists_no_prompt_no_parameters(
 def test_ensure_server_cert_exists_prompt_no(
     cfngin_context: MockCfnginContext, mocker: MockerFixture
 ) -> None:
-    """Test ensure_server_cert_exists prompt input no."""
+    """Test ensure_server_cert_exists prompt input no.
+
+    Ensures the hook respects user declining the upload prompt and
+    returns falsy without attempting any IAM upload.
+    """
     mocker.patch(
         f"{MODULE}.input",
         side_effect=["no"],

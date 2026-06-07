@@ -1,4 +1,8 @@
-"""Utility functions for website build/upload."""
+"""Utility functions for website build/upload.
+
+Provides content-hashing and gitignore-aware file discovery shared by the build
+and upload hooks, enabling idempotent deployments based on source fingerprints.
+"""
 
 from __future__ import annotations
 
@@ -23,6 +27,9 @@ LOGGER = logging.getLogger(__name__)
 def calculate_hash_of_files(files: Iterable[StrPath], root: Path) -> str:
     """Return a hash of all of the given files at the given root.
 
+    Computes a single deterministic fingerprint from multiple files so the build
+    hook can detect source changes without comparing individual file timestamps.
+
     Args:
         files: file names to include in the hash calculation, relative to ``root``.
         root: base directory to analyze files in.
@@ -41,6 +48,9 @@ def get_hash_of_files(
     directories: list[dict[str, list[str] | str | None]] | None = None,
 ) -> str:
     """Generate md5 hash of files.
+
+    Walks specified directories while respecting gitignore rules, so build
+    artifacts and dependencies are excluded from the hash by default.
 
     Args:
         root_path: Base directory where all paths will be relative to.
@@ -77,6 +87,10 @@ def get_ignorer(
     path: Path, additional_exclusions: list[str] | None = None
 ) -> igittigitt.IgnoreParser:
     """Create gitignore filter from directory ``.gitignore`` file.
+
+    Reuses the project's existing .gitignore rules so the hash calculation
+    automatically excludes the same files that version control ignores,
+    preventing build cache misses from transient or generated files.
 
     Args:
         path: Top-level directory that the gitignore filter will be created for.

@@ -1,6 +1,6 @@
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: TestTemplate
-
 
 Parameters:
   Param1:
@@ -14,11 +14,9 @@ Parameters:
     MinValue: 1
     MaxValue: 2
 
-
 Conditions:
   DeployOne: !Or [!Equals [!Ref WaitConditionCount, 1], !Equals [!Ref WaitConditionCount, 2]]
   DeployTwo: !Equals [!Ref WaitConditionCount, 2]
-
 
 Resources:
   Dummy1:
@@ -27,7 +25,6 @@ Resources:
   Dummy2:
     Type: AWS::CloudFormation::WaitConditionHandle
     Condition: DeployTwo
-
 
 Outputs:
   DummyId:

@@ -1,4 +1,9 @@
-"""CFNgin prehook responsible for creation of Lambda@Edge functions."""
+"""CFNgin prehook responsible for creation of Lambda@Edge functions.
+
+Lambda@Edge does not support environment variables, so this hook injects
+runtime configuration by template-substituting a shared Python config file
+before packaging each function for upload to S3.
+"""
 
 from __future__ import annotations
 
@@ -19,6 +24,9 @@ if TYPE_CHECKING:
     from ....providers.aws.default import Provider
 
 # The functions associated with Auth@Edge
+# Each function corresponds to a specific CloudFront viewer/origin event:
+# authentication check, token refresh, OAuth callback parse, sign-out, and
+# security headers injection.
 FUNCTIONS = ["check_auth", "refresh_auth", "parse_auth", "sign_out", "http_headers"]
 
 
@@ -26,7 +34,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class HookArgs(HookArgsBaseModel):
-    """Hook arguments."""
+    """Hook arguments.
+
+    Contains all dynamic configuration values that must be baked into the
+    Lambda@Edge source code since environment variables are unavailable at edge.
+    """
 
     bucket: str
     """S3 bucket name."""
@@ -95,13 +107,17 @@ def write(
     }
 
     # Shared file that contains the method called for configuration data
+    # Uses the template as a base and replaces its placeholder dict with
+    # actual runtime values via regex to produce a self-contained config module.
     path = os.path.join(os.path.dirname(__file__), "templates", "shared.py")  # noqa: PTH120, PTH118
     context_dict: dict[str, Any] = {}
 
     with open(path, encoding="utf-8") as file_:  # noqa: PTH123
         # Dynamically replace our configuration values
         # in the shared.py template file with actual
-        # calculated values
+        # calculated values.
+        # The regex targets the first dict literal in the file (the config
+        # placeholder) and replaces it with the populated config dict.
         shared = re.sub(
             r"{.+?(})$",
             str(config),
@@ -119,6 +135,8 @@ def write(
         os.close(filedir)
 
         # Get all of the different Auth@Edge functions
+        # Each function is packaged independently because Lambda@Edge
+        # deployments are per-CloudFront event type and must be self-contained.
         for handler in FUNCTIONS:
             # Create a temporary folder
             dirpath = tempfile.mkdtemp()
@@ -176,7 +194,12 @@ def write(
 
 
 def get_nonce_signing_secret(param_name: str, context: CfnginContext) -> str:
-    """Retrieve signing secret, generating & storing it first if not present."""
+    """Retrieve signing secret, generating & storing it first if not present.
+
+    The nonce signing secret must persist across deployments to ensure tokens
+    signed by a previous deployment can still be validated after a redeploy.
+    SSM Parameter Store provides durable, encrypted storage for this secret.
+    """
     session = context.get_session()
     ssm_client = session.client("ssm")
     try:
@@ -195,6 +218,10 @@ def get_nonce_signing_secret(param_name: str, context: CfnginContext) -> str:
 
 def random_key(length: int = 16) -> str:
     """Generate a random key of specified length from the allowed secret characters.
+
+    Uses a restricted character set (URL-safe without reserved characters) to
+    ensure the generated secret can be safely embedded in cookies and query
+    parameters without encoding issues.
 
     Args:
         length: The length of the random key.

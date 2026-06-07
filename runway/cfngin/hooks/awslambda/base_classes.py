@@ -1,4 +1,9 @@
-"""Base classes."""
+"""Base classes.
+
+Centralizes the shared logic for all Lambda runtime hooks (Python, Node, etc.)
+so that runtime-specific subclasses only need to implement dependency
+installation and project-type detection.
+"""
 
 from __future__ import annotations
 
@@ -34,13 +39,20 @@ if TYPE_CHECKING:
 
 LOGGER = cast("RunwayLogger", logging.getLogger(__name__))
 
+# Covariant TypeVar allows subclass hooks to specialize the args model while
+# preserving type safety across the Project hierarchy.
 _AwsLambdaHookArgsTypeVar_co = TypeVar(
     "_AwsLambdaHookArgsTypeVar_co", bound=AwsLambdaHookArgs, covariant=True
 )
 
 
 class Project(Generic[_AwsLambdaHookArgsTypeVar_co]):
-    """Project containing source code for an AWS Lambda Function."""
+    """Project containing source code for an AWS Lambda Function.
+
+    Provides a uniform interface for source discovery, dependency management,
+    and build-directory lifecycle that all runtime-specific projects inherit,
+    ensuring consistent caching and hashing behavior regardless of language.
+    """
 
     DEFAULT_CACHE_DIR_NAME: ClassVar[str] = "cache"
     """Name of the default cache directory."""
@@ -64,7 +76,11 @@ class Project(Generic[_AwsLambdaHookArgsTypeVar_co]):
 
     @cached_property
     def build_directory(self) -> Path:
-        """Directory being used to build deployment package."""
+        """Directory being used to build deployment package.
+
+        Uses a content-hash suffix so that parallel builds of different source
+        revisions never collide, and unchanged source reuses the same directory.
+        """
         result = (
             self.ctx.work_dir
             / f"{self.source_code.root_directory.name}.{self.source_code.md5_hash}"
@@ -75,6 +91,9 @@ class Project(Generic[_AwsLambdaHookArgsTypeVar_co]):
     @cached_property
     def cache_dir(self) -> Path | None:
         """Directory where a dependency manager's cache data will be stored.
+
+        Caching avoids repeated network fetches of unchanged dependencies,
+        which dramatically speeds up iterative Lambda builds.
 
         Returns:
             Explicit cache directory if provided or default cache directory if
@@ -96,6 +115,10 @@ class Project(Generic[_AwsLambdaHookArgsTypeVar_co]):
     @cached_property
     def compatible_runtimes(self) -> list[str] | None:
         """List of compatible runtimes.
+
+        Validates early that the detected runtime is in the declared
+        compatibility list, preventing silent deployment of a package that
+        Lambda would reject at invocation time.
 
         Value should be valid Lambda Function runtimes
         (https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html).
@@ -142,6 +165,10 @@ class Project(Generic[_AwsLambdaHookArgsTypeVar_co]):
     def runtime(self) -> str:
         """runtime of the build system.
 
+        Serves as the single source of truth for which Lambda runtime string
+        gets embedded in the deployment package metadata and CloudFormation
+        template, ensuring consistency across build and deploy steps.
+
         Value should be a valid Lambda Function runtime
         (https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html).
 
@@ -163,6 +190,10 @@ class Project(Generic[_AwsLambdaHookArgsTypeVar_co]):
 
     def _validate_runtime(self, detected_runtime: str) -> str:
         """Verify that the detected runtime matches what is explicitly defined.
+
+        Guards against deploying a package built for the wrong runtime, which
+        would cause Lambda invocation failures that are hard to diagnose
+        after the fact.
 
         This method should be used before returning the detected runtime from
         the ``.runtime`` property.
@@ -186,6 +217,9 @@ class Project(Generic[_AwsLambdaHookArgsTypeVar_co]):
         Lazy load source code object.
         Extends gitignore as needed.
 
+        Applies user-defined gitignore extensions so that transient or
+        developer-only files (e.g. virtualenvs, IDE config) are excluded
+        from the deployment package hash and archive.
         """
         source_code = SourceCode(
             self.args.source_code,
@@ -199,6 +233,11 @@ class Project(Generic[_AwsLambdaHookArgsTypeVar_co]):
     @cached_property
     def project_root(self) -> Path:
         """Root directory of the project.
+
+        Walks from the source directory up toward the cfngin config path,
+        looking for metadata files, because monorepo layouts often place
+        pyproject.toml or package.json in a parent directory rather than
+        alongside the Lambda handler source.
 
         The top-level directory containing the source code and all
         configuration/metadata files (e.g. pyproject.toml, package.json).
@@ -229,6 +268,8 @@ class Project(Generic[_AwsLambdaHookArgsTypeVar_co]):
             )
             return self.args.source_code
 
+        # Walk directories from source up to the cfngin config path, stopping
+        # at the first one containing a recognized metadata file.
         dirs_to_check = [
             self.args.source_code,
             *parents[: parents.index(top_lvl_dir) + 1],
@@ -268,6 +309,10 @@ class Project(Generic[_AwsLambdaHookArgsTypeVar_co]):
     def cleanup(self) -> None:
         """Cleanup project files at the end of execution.
 
+        Provides a hook point for subclasses to release disk resources
+        (e.g. large dependency directories) after the deployment package is
+        built and uploaded.
+
         If any cleanup is needed (e.g. removal of temporary dependency directory)
         it should be implimented here. Hook's should call this method in a
         ``finally`` block to ensure it is run even if the rest of the hook
@@ -278,6 +323,10 @@ class Project(Generic[_AwsLambdaHookArgsTypeVar_co]):
     def cleanup_on_error(self) -> None:
         """Cleanup project files when an error occurs.
 
+        Separated from normal cleanup so that error-specific actions (like
+        deleting a partially-built package) can run without affecting the
+        normal teardown path.
+
         This will be run before ``self.cleanup()`` if an error has occurred.
 
         Hooks should call this method in an ``except`` block and reraise the
@@ -287,6 +336,11 @@ class Project(Generic[_AwsLambdaHookArgsTypeVar_co]):
 
     def install_dependencies(self) -> None:
         """Install project dependencies.
+
+        Defined as an abstract method because each runtime has fundamentally
+        different package managers and installation semantics (pip vs npm),
+        but the hook lifecycle always needs to trigger installation at the
+        same point in the build process.
 
         Arguments/options should be read from the ``args`` attribute of this
         object instead of being passed into the method call. The method itself
@@ -301,7 +355,12 @@ _ProjectTypeVar = TypeVar("_ProjectTypeVar", bound=Project[AwsLambdaHookArgs])
 
 
 class AwsLambdaHook(CfnginHookProtocol, Generic[_ProjectTypeVar]):
-    """Base class for AWS Lambda hooks."""
+    """Base class for AWS Lambda hooks.
+
+    Implements the CfnginHookProtocol lifecycle (pre_deploy, post_deploy,
+    etc.) with Lambda-specific orchestration: build the project, package it,
+    upload to S3, and return metadata the CloudFormation template needs.
+    """
 
     BUILD_LAYER: ClassVar[bool] = False
     """Flag to denote if the hook creates a Lambda Function or Layer deployment package."""
@@ -343,6 +402,10 @@ class AwsLambdaHook(CfnginHookProtocol, Generic[_ProjectTypeVar]):
     def build_response(self, stage: Literal["deploy", "destroy", "plan"]) -> BaseModel | None:
         """Build response object that will be returned by this hook.
 
+        Dispatches to stage-specific builders so that each lifecycle phase
+        can return different data (e.g. plan can use placeholder hashes while
+        deploy returns the real artifact metadata).
+
         Args:
             stage: The current stage being executed by the hook.
 
@@ -373,7 +436,12 @@ class AwsLambdaHook(CfnginHookProtocol, Generic[_ProjectTypeVar]):
         return None
 
     def _build_response_plan(self) -> AwsLambdaHookDeployResponse:
-        """Build response for plan stage."""
+        """Build response for plan stage.
+
+        Falls back to placeholder values when the deployment package has not
+        been built yet, allowing plan output to show expected structure without
+        requiring a full build.
+        """
         try:
             return AwsLambdaHookDeployResponse(
                 bucket_name=self.deployment_package.bucket.name,
@@ -442,7 +510,11 @@ class AwsLambdaHook(CfnginHookProtocol, Generic[_ProjectTypeVar]):
         """
 
     def plan(self) -> AwsLambdaHookDeployResponseTypedDict:
-        """Run during the **plan** stage."""
+        """Run during the **plan** stage.
+
+        Returns deployment metadata without actually uploading, allowing
+        cfngin's diff/plan output to preview what would be deployed.
+        """
         return cast(
             "AwsLambdaHookDeployResponseTypedDict",
             self.build_response("plan").model_dump(by_alias=True),

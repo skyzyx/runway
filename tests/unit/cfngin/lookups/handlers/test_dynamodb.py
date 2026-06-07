@@ -1,4 +1,9 @@
-"""Tests for runway.cfngin.lookups.handlers.dynamodb."""
+"""Tests for runway.cfngin.lookups.handlers.dynamodb.
+
+Validates DynamoDB lookups including query parsing, item retrieval, type
+coercion (string, number, list, map), and error handling for missing tables,
+invalid keys, and unsupported DynamoDB data types.
+"""
 
 from __future__ import annotations
 
@@ -27,7 +32,12 @@ GET_ITEM_RESPONSE = {
 
 
 class TestDynamoDBHandler:
-    """Test runway.cfngin.lookups.handlers.dynamodb.DynamodbLookup."""
+    """Test runway.cfngin.lookups.handlers.dynamodb.DynamodbLookup.
+
+    DynamoDB lookups enable config-time resolution of values stored in DDB,
+    allowing stacks to share data without hard-coded values. These tests
+    exercise the query DSL, API interaction, and error reporting.
+    """
 
     @pytest.mark.parametrize(
         "query, expected_projection, expected_result",
@@ -74,7 +84,11 @@ class TestDynamoDBHandler:
         stubber.assert_no_pending_responses()
 
     def test_handle_client_error(self, cfngin_context: MockCfnginContext) -> None:
-        """Test handle ClientError."""
+        """Test handle ClientError.
+
+        Ensures generic AWS client errors are caught and re-raised as
+        ValueError with the original query included for debugging.
+        """
         stubber = cfngin_context.add_stubber("dynamodb")
         expected_params = {
             "TableName": "TestTable",
@@ -94,13 +108,21 @@ class TestDynamoDBHandler:
         stubber.assert_no_pending_responses()
 
     def test_handle_empty_table_name(self, cfngin_context: MockCfnginContext) -> None:
-        """Test handle with empty table_name."""
+        """Test handle with empty table_name.
+
+        Validates regex-based query parsing rejects queries with an empty
+        table name prefix, catching malformed lookup strings early.
+        """
         query = "@TestKey:TestVal.TestMap[M].String1"
         with pytest.raises(ValueError, match="Query '.*' doesn't match regex:"):
             DynamodbLookup.handle(query, context=cfngin_context)
 
     def test_handle_invalid_partition_key(self, cfngin_context: MockCfnginContext) -> None:
-        """Test handle with invalid partition key."""
+        """Test handle with invalid partition key.
+
+        Verifies the handler produces a user-friendly error when the partition
+        key doesn't match DynamoDB's table schema (ValidationException).
+        """
         stubber = cfngin_context.add_stubber("dynamodb")
         expected_params = {
             "TableName": "TestTable",
@@ -127,7 +149,11 @@ class TestDynamoDBHandler:
         stubber.assert_no_pending_responses()
 
     def test_handle_invalid_partition_value(self, cfngin_context: MockCfnginContext) -> None:
-        """Test handle with invalid partition value."""
+        """Test handle with invalid partition value.
+
+        Covers the case where the key is valid but no item matches the
+        partition value, resulting in an empty response that must be detected.
+        """
         stubber = cfngin_context.add_stubber("dynamodb")
         expected_params = {
             "TableName": "TestTable",
@@ -149,7 +175,11 @@ class TestDynamoDBHandler:
             )
 
     def test_handle_list(self, cfngin_context: MockCfnginContext) -> None:
-        """Test handle return list."""
+        """Test handle return list.
+
+        Validates that DynamoDB List (L) type values are correctly unwrapped
+        into Python lists, enabling multi-value lookups in CFNgin configs.
+        """
         stubber = cfngin_context.add_stubber("dynamodb")
         expected_params = {
             "TableName": "TestTable",
@@ -164,13 +194,21 @@ class TestDynamoDBHandler:
         stubber.assert_no_pending_responses()
 
     def test_handle_missing_table_name(self, cfngin_context: MockCfnginContext) -> None:
-        """Test handle missing table_name."""
+        """Test handle missing table_name.
+
+        Validates that a query without the @ table delimiter is rejected
+        before making any API calls.
+        """
         query = "TestKey:TestVal.TestMap[M].String1"
         with pytest.raises(ValueError, match="'.*' missing delimiter for DynamoDB Table name:"):
             DynamodbLookup.handle(query, context=cfngin_context)
 
     def test_handle_number(self, cfngin_context: MockCfnginContext) -> None:
-        """Test handle return number."""
+        """Test handle return number.
+
+        Validates DynamoDB Number (N) types are converted to Python integers
+        and that the optional region prefix in the query is parsed correctly.
+        """
         stubber = cfngin_context.add_stubber("dynamodb")
         expected_params = {
             "TableName": "TestTable",
@@ -190,7 +228,11 @@ class TestDynamoDBHandler:
         stubber.assert_no_pending_responses()
 
     def test_handle_table_not_found(self, cfngin_context: MockCfnginContext) -> None:
-        """Test handle DDB Table not found."""
+        """Test handle DDB Table not found.
+
+        Ensures ResourceNotFoundException is translated into a clear error
+        message naming the missing table, rather than exposing raw AWS errors.
+        """
         stubber = cfngin_context.add_stubber("dynamodb")
         expected_params = {
             "TableName": "FakeTable",
@@ -213,7 +255,11 @@ class TestDynamoDBHandler:
         stubber.assert_no_pending_responses()
 
     def test_handle_unsupported_data_type(self, cfngin_context: MockCfnginContext) -> None:
-        """Test handle with unsupported data type."""
+        """Test handle with unsupported data type.
+
+        Confirms that unsupported DynamoDB types (e.g., Binary) raise a clear
+        error rather than silently returning malformed data.
+        """
         with pytest.raises(ValueError, match="CFNgin does not support looking up the data type: B"):
             DynamodbLookup.handle(
                 "TestTable@TestKey:FakeVal.TestStringSet[B]", context=cfngin_context
@@ -221,7 +267,11 @@ class TestDynamoDBHandler:
 
 
 class TestQueryDataModel:
-    """Test runway.cfngin.lookups.handlers.dynamodb.QueryDataModel."""
+    """Test runway.cfngin.lookups.handlers.dynamodb.QueryDataModel.
+
+    Validates parsing of the DynamoDB query DSL into structured data,
+    including partition key type annotation extraction and validation.
+    """
 
     @pytest.mark.parametrize(
         "value, expected",
@@ -242,7 +292,11 @@ class TestQueryDataModel:
         ).item_key == {"TestKey": expected}
 
     def test_item_key_no_match(self) -> None:
-        """Test item_key."""
+        """Test item_key.
+
+        Verifies that unsupported key type annotations (e.g., [L] for List)
+        are rejected since only S, N, and B are valid DynamoDB key types.
+        """
         obj = QueryDataModel(
             attribute="",
             partition_key="TestKey",

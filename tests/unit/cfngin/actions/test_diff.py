@@ -1,4 +1,9 @@
-"""Tests for runway.cfngin.actions.diff."""
+"""Tests for runway.cfngin.actions.diff.
+
+Validates the diff action's ability to compare current stack parameters and
+templates against proposed changes, detect added/removed/modified values,
+and handle edge cases like template-too-large and missing stacks gracefully.
+"""
 
 from __future__ import annotations
 
@@ -32,7 +37,12 @@ MODULE = "runway.cfngin.actions.diff"
 
 
 class TestAction:
-    """Test runway.cfngin.actions.diff.Action."""
+    """Test runway.cfngin.actions.diff.Action.
+
+    Validates the pre-run bucket validation and the _diff_stack error handling
+    when CloudFormation rejects change sets (e.g., template too large for
+    inline submission).
+    """
 
     @pytest.mark.parametrize(
         "bucket_name, forbidden, not_found",
@@ -53,7 +63,13 @@ class TestAction:
         not_found: bool,
         cfngin_context: MockCfnginContext,
     ) -> None:
-        """Test pre_run."""
+        """Test pre_run.
+
+        Parametrized across bucket presence/absence and permission scenarios
+        because diff must degrade gracefully: a missing bucket disables S3
+        template diffing, while a forbidden bucket is a fatal configuration
+        error that must abort.
+        """
         caplog.set_level(logging.DEBUG, logger=MODULE)
         mock_bucket = MagicMock()
         mock_bucket.name = bucket_name
@@ -89,7 +105,12 @@ class TestAction:
         provider_get_stack: MagicMock,
         stack_not_exist: bool,
     ) -> None:
-        """Test _diff_stack ValidationError - template too large."""
+        """Test _diff_stack ValidationError - template too large.
+
+        When a template exceeds CloudFormation's inline size limit, the diff
+        action must skip gracefully with a clear message rather than crashing,
+        since the real deploy would use S3-hosted templates anyway.
+        """
         caplog.set_level(logging.ERROR)
 
         cfngin_context.add_stubber("cloudformation")
@@ -135,7 +156,12 @@ class TestAction:
 
 
 class TestDictValueFormat(unittest.TestCase):
-    """Tests for runway.cfngin.actions.diff.DictValue."""
+    """Tests for runway.cfngin.actions.diff.DictValue.
+
+    Validates the status classification (ADDED, REMOVED, MODIFIED, UNMODIFIED)
+    and the formatted output used to display parameter/output differences to
+    operators. Correct formatting prevents misreading diff output.
+    """
 
     def test_status(self) -> None:
         """Test status."""
@@ -165,7 +191,11 @@ class TestDictValueFormat(unittest.TestCase):
 
 
 class TestDiffDictionary(unittest.TestCase):
-    """Tests for runway.cfngin.actions.diff.diff_dictionaries."""
+    """Tests for runway.cfngin.actions.diff.diff_dictionaries.
+
+    Validates the core diffing algorithm that compares old and new parameter
+    dicts, producing a sorted list of changes with correct change counts.
+    """
 
     def test_diff_dictionaries(self) -> None:
         """Test diff dictionaries."""
@@ -200,7 +230,11 @@ class TestDiffDictionary(unittest.TestCase):
 
 
 class TestDiffParameters(unittest.TestCase):
-    """Tests for runway.cfngin.actions.diff.diff_parameters."""
+    """Tests for runway.cfngin.actions.diff.diff_parameters.
+
+    Validates that when parameters are identical between old and new, the diff
+    returns an empty list (no false positives in diff output).
+    """
 
     def test_diff_parameters_no_changes(self) -> None:
         """Test diff parameters no changes."""

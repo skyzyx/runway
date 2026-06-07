@@ -42,7 +42,11 @@ def test_get_replicated_function_names(expected: list[str], outputs: list[Output
 def test_warn(
     caplog: pytest.LogCaptureFixture, cfngin_context: MockCfnginContext, mocker: MockerFixture
 ) -> None:
-    """Test warn."""
+    """Test warn.
+
+    Validates that replicated Lambda function names from stack outputs
+    are extracted and logged as a cleanup reminder for the operator.
+    """
     caplog.set_level(LogLevels.WARNING, MODULE)
     outputs = [{"OutputKey": "foo", "OutputValue": "bar"}]
     mock_get_func_names = mocker.patch(
@@ -77,7 +81,11 @@ def test_warn(
 def test_warn_ignore_client_error(
     caplog: pytest.LogCaptureFixture, cfngin_context: MockCfnginContext
 ) -> None:
-    """Test warn ignore ClientError."""
+    """Test warn ignore ClientError.
+
+    Ensures the hook doesn't fail the pipeline when the stack doesn't
+    exist or is inaccessible during cleanup warnings.
+    """
     caplog.set_level(LogLevels.WARNING, MODULE)
     stubber = cfngin_context.add_stubber("cloudformation")
 

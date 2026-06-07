@@ -1,4 +1,9 @@
-"""CFNgin info action."""
+"""CFNgin info action.
+
+This module provides a read-only introspection command so operators can query
+current stack outputs without needing to open the AWS console or use the CLI
+directly.
+"""
 
 import logging
 from typing import Any
@@ -14,6 +19,9 @@ class Action(BaseAction):
 
     Displays the outputs for the set of CloudFormation stacks.
 
+    Exists as a lightweight diagnostic action that queries live stack state
+    without executing any plan, making it safe to run at any time regardless
+    of lock state or ongoing deployments.
     """
 
     NAME = "info"
@@ -24,7 +32,11 @@ class Action(BaseAction):
         return None
 
     def run(self, *_args: Any, **_kwargs: Any) -> None:
-        """Get information on CloudFormation stacks."""
+        """Get information on CloudFormation stacks.
+
+        Iterates all configured stacks rather than using the DAG-based plan
+        because info only reads outputs and does not need dependency ordering.
+        """
         LOGGER.info("outputs for stacks: %s", self.context.get_fqn())
         if not self.context.stacks:
             LOGGER.warning("no stacks detected (error in config?)")

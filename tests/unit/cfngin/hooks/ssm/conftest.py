@@ -1,4 +1,8 @@
-"""Pytest fixtures and plugins."""
+"""Pytest fixtures and plugins.
+
+Provides shared SSM client and stubber fixtures for the ssm hook test
+module, ensuring consistent client setup across test functions.
+"""
 
 from __future__ import annotations
 

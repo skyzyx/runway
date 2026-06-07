@@ -14,10 +14,18 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 XREF_PERSISTENT_STATE = {"has_warned": False}
+"""Module-level state to ensure the deprecation warning is emitted only once
+per process, avoiding log spam in configs with many xref usages."""
 
 
 class XrefLookup(LookupHandler[Any]):
-    """Xref lookup."""
+    """Xref lookup.
+
+    Resolves outputs from stacks using their fully-qualified name, enabling
+    cross-namespace references without creating DAG dependencies. This is
+    necessary when consuming outputs from stacks managed by a different
+    CFNgin config or namespace.
+    """
 
     DEPRECATION_MSG = "xref Lookup has been deprecated; use the cfn lookup instead"
     TYPE_NAME: ClassVar[str] = "xref"
@@ -47,5 +55,8 @@ class XrefLookup(LookupHandler[Any]):
 
         """
         decon = deconstruct(value)
+        # Use the stack name as-is (fully qualified) rather than expanding
+        # through context, because xref intentionally bypasses namespace
+        # scoping to reach stacks outside the current config's namespace.
         stack_fqn = decon.stack_name
         return provider.get_output(stack_fqn, decon.output_name)

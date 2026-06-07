@@ -19,7 +19,12 @@ MODULE = "runway.cfngin.hooks.ecs"
 def test_create_clusters(
     caplog: pytest.LogCaptureFixture, cfngin_context: MockCfnginContext
 ) -> None:
-    """Test create_clusters."""
+    """Test create_clusters.
+
+    Validates that multiple clusters are created and the return structure
+    maps cluster names to their API responses, which downstream stacks
+    may reference via hook_data.
+    """
     caplog.set_level(LogLevels.DEBUG, MODULE)
     stub = cfngin_context.add_stubber("ecs")
     clusters: dict[str, ClusterTypeDef] = {
@@ -41,7 +46,11 @@ def test_create_clusters(
 
 
 def test_create_clusters_str(cfngin_context: MockCfnginContext) -> None:
-    """Test create_clusters with ``clusters`` provided as str."""
+    """Test create_clusters with ``clusters`` provided as str.
+
+    Ensures the hook handles a single cluster name passed as a string
+    (not a list), since the config schema allows both forms.
+    """
     stub = cfngin_context.add_stubber("ecs")
     cluster_name = "foo"
 

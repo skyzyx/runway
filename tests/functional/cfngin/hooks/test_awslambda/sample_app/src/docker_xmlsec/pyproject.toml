@@ -1,16 +1,14 @@
 [tool.poetry]
-name = "test-awslambda-xmlsec"
-version = "0.0.0"
-authors = [
-  "Rackspace Technology, Inc. <opensource@rackspace.com>",
-]
-description = "Test for awslambda hook."
-license = "Apache-2.0"
+  name = "test-awslambda-xmlsec"
+  version = "0.0.0"
+  authors = [ "Rackspace Technology, Inc. <opensource@rackspace.com>" ]
+  description = "Test for awslambda hook."
+  license = "Apache-2.0"
 
-[tool.poetry.dependencies]
-python = ">=3.7, <4"
-xmlsec = "<=1.3.13"  # NOTE (@ITProKyle): bug introduced in 1.3.14 & 15 - https://github.com/xmlsec/python-xmlsec/issues/314
+  [tool.poetry.dependencies]
+    python = ">=3.7, <4"
+    xmlsec = "<=1.3.13" # NOTE (@ITProKyle): bug introduced in 1.3.14 & 15 - https://github.com/xmlsec/python-xmlsec/issues/314
 
 [build-system]
-build-backend = "poetry.core.masonry.api"
-requires = ["poetry_core>=1.0.3"]
+  build-backend = "poetry.core.masonry.api"
+  requires = [ "poetry_core>=1.0.3" ]

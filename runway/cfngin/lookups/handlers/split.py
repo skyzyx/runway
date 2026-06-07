@@ -1,4 +1,9 @@
-"""Split lookup."""
+"""Split lookup.
+
+This lookup converts delimiter-separated strings into lists, which is
+necessary because CloudFormation outputs are always strings but many
+parameters (e.g. Subnets) require list inputs.
+"""
 
 from typing import Any, ClassVar
 
@@ -6,7 +11,12 @@ from ....lookups.handlers.base import LookupHandler
 
 
 class SplitLookup(LookupHandler[Any]):
-    """Split lookup."""
+    """Split lookup.
+
+    Provides the type conversion from comma-separated stack outputs to Python
+    lists that cfngin needs when feeding values into CloudFormation parameters
+    that accept ``CommaDelimitedList`` or similar list types.
+    """
 
     TYPE_NAME: ClassVar[str] = "split"
     """Name that the Lookup is registered as."""

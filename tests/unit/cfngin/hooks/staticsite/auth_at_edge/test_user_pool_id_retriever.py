@@ -21,7 +21,12 @@ MODULE = "runway.cfngin.hooks.staticsite.auth_at_edge.user_pool_id_retriever"
     ],
 )
 def test_hook_args_parse_obj(provided: dict[str, str], expected: dict[str, str]) -> None:
-    """Test HookArgs.parse_obj."""
+    """Test HookArgs.parse_obj.
+
+    Validates that the HookArgs model accepts both user_pool_arn and
+    created_user_pool_id independently or together, since either source
+    of the user pool ID is valid for auth@edge configuration.
+    """
     kwargs = provided
     args = HookArgs.parse_obj(kwargs)
     if "user_pool_arn" in provided:

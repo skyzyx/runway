@@ -1,4 +1,10 @@
-"""Tests for runway.cfngin.lookups.handlers.output."""
+"""Tests for runway.cfngin.lookups.handlers.output.
+
+Validates the output lookup that resolves CloudFormation stack outputs by
+name, enabling cross-stack references within a CFNgin deployment. Tests
+cover dependency detection, both query syntaxes, default values, and error
+cases for missing stacks or outputs.
+"""
 
 from __future__ import annotations
 
@@ -25,11 +31,20 @@ MODULE = "runway.cfngin.lookups.handlers.output"
 
 
 class TestOutputLookup:
-    """Test OutputLookup."""
+    """Test OutputLookup.
+
+    Output lookups are the primary cross-stack wiring mechanism in CFNgin,
+    allowing one stack to consume another stack's exports. Correct dependency
+    detection ensures stacks deploy in the right order.
+    """
 
     @pytest.mark.parametrize("provided", ["stack-name.Output", "stack-name::Output"])
     def test_dependencies(self, provided: str) -> None:
-        """Test dependencies."""
+        """Test dependencies.
+
+        Validates that the lookup correctly extracts the stack name as a
+        dependency, which the DAG uses to order stack operations.
+        """
         data_item = VariableValueLiteral(provided)
         var_val = MagicMock()
         var_val.__iter__.return_value = iter([data_item])
@@ -37,14 +52,22 @@ class TestOutputLookup:
 
     @pytest.mark.parametrize("provided", ["stack-name:Output", "foobar"])
     def test_dependencies_none(self, provided: str) -> None:
-        """Test dependencies none found."""
+        """Test dependencies none found.
+
+        Ensures malformed lookup strings (single colon, no separator) don't
+        produce phantom dependencies, which would create incorrect ordering.
+        """
         data_item = VariableValueLiteral(provided)
         var_val = MagicMock()
         var_val.__iter__.return_value = iter([data_item])
         assert OutputLookup.dependencies(var_val) == set()
 
     def test_dependencies_not_resolved(self) -> None:
-        """Test dependencies."""
+        """Test dependencies.
+
+        Unresolved variables can't be parsed for dependency extraction, so
+        they must return an empty set to avoid blocking the resolution pass.
+        """
         data_item = MagicMock(resolved=False)
         var_val = MagicMock()
         var_val.__iter__.return_value = iter([data_item])
@@ -94,7 +117,12 @@ class TestOutputLookup:
             OutputLookup.handle(provided, context=cfngin_context)
 
     def test_legacy_parse(self, caplog: pytest.LogCaptureFixture, mocker: MockerFixture) -> None:
-        """Test legacy_parse."""
+        """Test legacy_parse.
+
+        Validates that the deprecated dot-syntax is still accepted with a
+        deprecation warning, maintaining backward compatibility for existing
+        configurations while encouraging migration to the new syntax.
+        """
         query = "foo"
         caplog.set_level(LogLevels.WARNING, MODULE)
         deconstruct = mocker.patch(f"{MODULE}.deconstruct", return_value="success")

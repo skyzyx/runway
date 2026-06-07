@@ -24,7 +24,11 @@ HOOK_QUEUE = queue.Queue()
 
 
 class TestHooks(unittest.TestCase):
-    """Tests for runway.cfngin.hooks.utils."""
+    """Tests for runway.cfngin.hooks.utils.
+
+    Validates the hook dispatcher (handle_hooks) which is responsible for
+    loading, validating, and executing hooks at each lifecycle stage.
+    """
 
     def setUp(self) -> None:
         """Run before tests."""
@@ -32,13 +36,21 @@ class TestHooks(unittest.TestCase):
         self.provider = mock_provider(region="us-east-1")
 
     def test_empty_hook_stage(self) -> None:
-        """Test empty hook stage."""
+        """Test empty hook stage.
+
+        Ensures an empty hook list is a valid no-op, since not every
+        stage has configured hooks.
+        """
         hooks = []
         handle_hooks("fake", hooks, self.provider, self.context)
         assert HOOK_QUEUE.empty()
 
     def test_missing_required_hook(self) -> None:
-        """Test missing required hook."""
+        """Test missing required hook.
+
+        Required hooks that cannot be imported must abort the pipeline
+        to prevent partial deployments.
+        """
         hooks = [CfnginHookDefinitionModel(path="not.a.real.path", required=True)]
         with pytest.raises(ImportError):
             handle_hooks("missing", hooks, self.provider, self.context)
@@ -54,7 +66,11 @@ class TestHooks(unittest.TestCase):
             )
 
     def test_missing_non_required_hook_method(self) -> None:
-        """Test missing non required hook method."""
+        """Test missing non required hook method.
+
+        Non-required hooks that fail to load should be silently skipped,
+        allowing optional integrations.
+        """
         hooks = [CfnginHookDefinitionModel(path="runway.cfngin.hooks.blah", required=False)]
         handle_hooks("missing", hooks, self.provider, self.context)
         assert HOOK_QUEUE.empty()
@@ -127,7 +143,12 @@ class TestHooks(unittest.TestCase):
         handle_hooks("missing", hooks, self.provider, self.context)
 
     def test_hook_failure(self) -> None:
-        """Test hook failure."""
+        """Test hook failure.
+
+        Validates the failure modes: required hooks that return None raise
+        SystemExit, required hooks that raise propagate the exception, and
+        non-required hooks that raise are silently caught.
+        """
         hooks = [
             CfnginHookDefinitionModel(
                 path="tests.unit.cfngin.hooks.test_utils.fail_hook",
@@ -154,7 +175,11 @@ class TestHooks(unittest.TestCase):
         handle_hooks("ignore_exception", hooks, self.provider, self.context)
 
     def test_return_data_hook(self) -> None:
-        """Test return data hook."""
+        """Test return data hook.
+
+        Verifies that hook return values are stored in hook_data under
+        the configured data_key, enabling cross-hook data sharing.
+        """
         hooks = [
             CfnginHookDefinitionModel(
                 path="tests.unit.cfngin.hooks.test_utils.result_hook",
@@ -170,7 +195,11 @@ class TestHooks(unittest.TestCase):
         assert list(self.context.hook_data.keys()) == ["my_hook_results"]
 
     def test_return_data_hook_duplicate_key(self) -> None:
-        """Test return data hook duplicate key."""
+        """Test return data hook duplicate key.
+
+        Prevents accidental data_key collisions between hooks, which
+        would silently overwrite earlier hook results.
+        """
         hooks = [
             CfnginHookDefinitionModel(
                 path="tests.unit.cfngin.hooks.test_utils.result_hook",
@@ -186,7 +215,11 @@ class TestHooks(unittest.TestCase):
             handle_hooks("result", hooks, self.provider, self.context)
 
     def test_resolve_lookups_in_args(self) -> None:
-        """Test the resolution of lookups in hook args."""
+        """Test the resolution of lookups in hook args.
+
+        Ensures ${...} lookup expressions in hook args are resolved before
+        the hook executes, enabling dynamic configuration via variables.
+        """
         hooks = [
             CfnginHookDefinitionModel(
                 path="tests.unit.cfngin.hooks.test_utils.kwargs_hook",
@@ -200,7 +233,11 @@ class TestHooks(unittest.TestCase):
 
 
 class MockHook(CfnginHookProtocol):
-    """Mock hook class."""
+    """Mock hook class.
+
+    Implements the CfnginHookProtocol to test that class-based hooks
+    are correctly detected and dispatched by handle_hooks.
+    """
 
     ARGS_PARSER: ClassVar[type[HookArgsBaseModel]] = HookArgsBaseModel
 

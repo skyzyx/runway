@@ -1,4 +1,9 @@
-"""CFNgin session caching."""
+"""CFNgin session caching.
+
+This module provides a cached boto3 session factory so that multiple CFNgin
+operations reuse a single session per credential set, avoiding redundant STS
+calls and respecting credential refresh behavior.
+"""
 
 from __future__ import annotations
 
@@ -23,6 +28,10 @@ def get_session(
     session_token: str | None = None,
 ) -> boto3.Session:
     """Create a thread-safe boto3 session.
+
+    Uses the custom botocore Session to support AWS SSO token refresh, and
+    injects a shared credential cache so assume-role tokens are reused across
+    threads rather than re-fetched for every API call.
 
     Args:
         region: The region for the session.
@@ -56,8 +65,13 @@ def get_session(
         region_name=region,
         profile_name=profile,
     )
+    # Inject the shared credential cache into the assume-role provider so
+    # that temporary credentials are reused across threads rather than
+    # triggering a new STS AssumeRole call for each client.
     cred_provider = session._session.get_component("credential_provider")  # type: ignore
     provider = cred_provider.get_provider("assume-role")  # type: ignore
     provider.cache = BOTO3_CREDENTIAL_CACHE
+    # Use cfngin's own UI getpass to prompt for MFA tokens in a way that
+    # works with the cfngin interactive output handler.
     provider._prompter = ui.getpass  # noqa: SLF001
     return session

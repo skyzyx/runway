@@ -1,4 +1,10 @@
-"""Docker login hook."""
+"""Docker login hook.
+
+Authenticates with a Docker registry before build/push operations so that
+subsequent hooks in the same CFNgin config can push images without separate
+credential management steps.
+
+"""
 
 from __future__ import annotations
 
@@ -19,7 +25,13 @@ LOGGER = logging.getLogger(__name__.replace("._", "."))
 
 
 class LoginArgs(BaseModel):
-    """Args passed to the docker.login hook."""
+    """Args passed to the docker.login hook.
+
+    Validates and normalizes login credentials, supporting both explicit
+    registry URIs and ECR shorthand so users can authenticate to ECR with
+    minimal configuration (just the ECR block) instead of constructing the
+    full registry URI themselves.
+    """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -46,7 +58,12 @@ class LoginArgs(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def _set_ecr(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """Set the value of ``ecr``."""
+        """Set the value of ``ecr``.
+
+        Eagerly constructs the ElasticContainerRegistry model so that
+        the registry field validator can derive the URI from it without
+        needing to re-parse the raw dict.
+        """
         if "ecr" in values and isinstance(values["ecr"], dict):
             values["ecr"] = ElasticContainerRegistry.model_validate(
                 {"context": values.get("context"), **values["ecr"]}
@@ -56,7 +73,11 @@ class LoginArgs(BaseModel):
     @field_validator("registry", mode="before")
     @classmethod
     def _set_registry(cls, v: Any, info: ValidationInfo) -> Any:
-        """Set the value of ``registry``."""
+        """Set the value of ``registry``.
+
+        Falls back to the ECR fully qualified name when no explicit registry
+        is provided, enabling ECR authentication with only the ecr config block.
+        """
         if v:
             return v
 
@@ -71,6 +92,9 @@ def login(*, context: CfnginContext, **kwargs: Any) -> DockerHookData:
     """Docker login hook.
 
     Replicates the functionality of ``docker login`` cli command.
+
+    This hook must run before build/push hooks so that the Docker daemon has
+    valid credentials for the target registry.
 
     kwargs are parsed by :class:`~runway.cfngin.hooks.docker.LoginArgs`.
 

@@ -25,7 +25,12 @@ MODULE = "runway.cfngin.hooks.awslambda.base_classes"
 
 
 class TestAwsLambdaHook:
-    """Test AwsLambdaHook."""
+    """Test AwsLambdaHook.
+
+    Validates the abstract base hook that provides shared build_response
+    logic and enforces the deployment_package/project interface contract
+    on subclasses.
+    """
 
     def test___init__(self, cfngin_context: CfnginContext) -> None:
         """Test __init__."""
@@ -98,7 +103,11 @@ class TestAwsLambdaHook:
         )
 
     def test_build_response_plan_handle_file_not_found_error(self, mocker: MockerFixture) -> None:
-        """Test build_response."""
+        """Test build_response.
+
+        During plan, the deployment package may not exist yet; this
+        verifies graceful fallback when FileNotFoundError is raised.
+        """
         mocker.patch.object(
             AwsLambdaHook,
             "deployment_package",
@@ -163,7 +172,12 @@ class TestAwsLambdaHook:
 
 
 class TestProject:
-    """Test Project."""
+    """Test Project.
+
+    Validates the abstract Project base class which handles source code
+    hashing, build directory management, dependency installation, and
+    runtime detection across all Lambda build systems.
+    """
 
     def test___init__(self, cfngin_context: CfnginContext) -> None:
         """Test __init__."""
@@ -342,7 +356,12 @@ class TestProject:
         assert Project(Mock(runtime=None), Mock()).runtime == docker.runtime
 
     def test_runtime_raise_runtime_mismatch_error(self, mocker: MockerFixture) -> None:
-        """Test runtime raise RuntimeMismatchError."""
+        """Test runtime raise RuntimeMismatchError.
+
+        Prevents deploying code with a runtime that doesn't match the
+        Docker build environment, which would cause Lambda invocation
+        failures.
+        """
         args = Mock(runtime="bar")
         docker = mocker.patch.object(Project, "docker", Mock(runtime="foo"), create=True)
         with pytest.raises(RuntimeMismatchError) as excinfo:

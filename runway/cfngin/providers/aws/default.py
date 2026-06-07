@@ -1,4 +1,10 @@
-"""Default AWS Provider."""
+"""Default AWS Provider.
+
+This module is the primary integration point between cfngin's orchestration
+logic and the AWS CloudFormation API. It encapsulates all boto3 interactions,
+retry/backoff strategies, and interactive approval workflows so that action
+classes can operate at a higher abstraction level.
+"""
 
 from __future__ import annotations
 
@@ -80,13 +86,21 @@ DEFAULT_CAPABILITIES = ["CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"]
 
 
 def get_cloudformation_client(session: boto3.Session) -> CloudFormationClient:
-    """Get CloudFormation boto3 client."""
+    """Get CloudFormation boto3 client.
+
+    Centralizes client construction so retry configuration is applied
+    consistently across all CloudFormation API interactions.
+    """
     config = Config(retries={"max_attempts": MAX_ATTEMPTS})
     return session.client("cloudformation", config=config)
 
 
 def get_output_dict(stack: StackTypeDef) -> dict[str, str]:
     """Return a dict of key/values for the outputs for a given CF stack.
+
+    Converts the CloudFormation list-of-dicts output format into a flat
+    dictionary so downstream lookups and cross-stack references can access
+    values by key without repeatedly iterating the list.
 
     Args:
         stack: The stack object to get outputs from.
@@ -115,7 +129,13 @@ def s3_fallback(
     change_set_name: str | None = None,
     service_role: str | None = None,
 ) -> Any:
-    """Falling back to legacy CFNgin S3 bucket region for templates."""
+    """Falling back to legacy CFNgin S3 bucket region for templates.
+
+    CloudFormation requires the template S3 bucket to be in the same region
+    as the stack, but older CFNgin configurations used a single us-east-1
+    bucket. This rewrites the URL to the global S3 endpoint as a
+    backwards-compatible workaround.
+    """
     LOGGER.warning(
         "falling back to deprecated, legacy CFNgin S3 bucket "
         "region for templates; to learn how to correctly provide an "
@@ -149,6 +169,10 @@ def s3_fallback(
 def get_change_set_name() -> str:
     """Return a valid Change Set Name.
 
+    Uses a timestamp suffix to satisfy CloudFormation's uniqueness requirement
+    across all change sets within a stack, avoiding collisions when multiple
+    updates are attempted in rapid succession.
+
     The name has to satisfy the following regex::
 
         [a-zA-Z][-a-zA-Z0-9]*
@@ -161,6 +185,9 @@ def get_change_set_name() -> str:
 
 def requires_replacement(changeset: list[ChangeTypeDef]) -> list[ChangeTypeDef]:
     """Return the changes within the changeset that require replacement.
+
+    Filters to only replacement-level changes so interactive mode can warn
+    operators about resource recreation that causes downtime or data loss.
 
     Args:
         changeset: List of changes
@@ -176,6 +203,10 @@ def output_full_changeset(
     fqn: str | None = None,
 ) -> None:
     """Optionally output full changeset.
+
+    Provides verbose changeset detail on demand so operators can inspect the
+    raw CloudFormation diff before approving destructive changes in
+    interactive mode.
 
     Args:
         full_changeset: A list of the full changeset that will be output if the
@@ -212,6 +243,10 @@ def ask_for_approval(
     fqn: str | None = None,
 ) -> None:
     """Prompt the user for approval to execute a change set.
+
+    Acts as the safety gate in interactive mode, ensuring operators
+    explicitly confirm infrastructure mutations before they are applied.
+    This prevents accidental resource replacement or deletion.
 
     Args:
         full_changeset: A list of the full changeset that will be output if the
@@ -253,6 +288,10 @@ def output_summary(
 ) -> None:
     """Log a summary of the changeset.
 
+    Provides a human-readable overview of planned changes so operators can
+    quickly assess scope and risk without parsing the raw CloudFormation
+    changeset JSON.
+
     Args:
         fqn: Fully qualified name of the stack.
         action: Action to include in the log message.
@@ -293,12 +332,21 @@ def output_summary(
 
 
 def format_params_diff(params_diff: list[DictValue[Any, Any]]) -> str:
-    """Wrap :func:`runway.cfngin.actions.diff.format_params_diff` for testing."""
+    """Wrap :func:`runway.cfngin.actions.diff.format_params_diff` for testing.
+
+    Exists as an indirection layer so tests can mock parameter diff
+    formatting without patching the imported function directly.
+    """
     return format_diff(params_diff)
 
 
 def summarize_params_diff(params_diff: list[DictValue[Any, Any]]) -> str:
-    """Summarize parameter diff."""
+    """Summarize parameter diff.
+
+    Produces a compact text summary of added/removed/modified parameters
+    for inclusion in the changeset output, keeping the approval prompt
+    readable even for stacks with many parameters.
+    """
     summary = ""
 
     added_summary = [v.key for v in params_diff if v.status() is DictValue.ADDED]
@@ -324,6 +372,10 @@ def wait_till_change_set_complete(
     max_sleep: float = 3,
 ) -> DescribeChangeSetOutputTypeDef:
     """Check state of a changeset, returning when it is in a complete state.
+
+    CloudFormation changeset creation is asynchronous; this polls with
+    exponential backoff because the API provides no push notification
+    mechanism for changeset readiness.
 
     Since changesets can take a little bit of time to get into a complete
     state, we need to poll it until it does so. This will try to get the
@@ -364,7 +416,12 @@ def create_change_set(
     change_set_type: str = "UPDATE",
     service_role: str | None = None,
 ) -> tuple[list[ChangeTypeDef], str]:
-    """Create CloudFormation change set."""
+    """Create CloudFormation change set.
+
+    Uses change sets instead of direct update_stack to enable previewing
+    changes before execution and to support stacks with Transforms (SAM)
+    which require this API path.
+    """
     LOGGER.debug("attempting to create change set of type %s for stack: %s", change_set_type, fqn)
     args = generate_cloudformation_args(
         fqn,
@@ -397,6 +454,9 @@ def create_change_set(
     status = response["Status"]
     if status == "FAILED":
         status_reason = response["StatusReason"]
+        # CloudFormation reports "no changes" via a FAILED changeset status
+        # rather than a distinct API response, so we must inspect the reason
+        # string to distinguish a no-op from an actual failure.
         if (
             "didn't contain changes" in status_reason
             or "No updates are to be performed" in status_reason
@@ -422,6 +482,10 @@ def create_change_set(
 
 def check_tags_contain(actual: list[TagTypeDef], expected: list[TagTypeDef]) -> bool:
     """Check if a set of AWS resource tags is contained in another.
+
+    Used as a safety check before destroying and re-creating a failed stack,
+    ensuring the stack was originally created by CFNgin (via matching tags)
+    rather than accidentally targeting an unrelated stack.
 
     Every tag key in ``expected`` must be present in ``actual``, and have the
     same value. Extra keys in `actual` but not in ``expected`` are ignored.
@@ -452,6 +516,10 @@ def generate_cloudformation_args(
     change_set_name: str | None = None,
 ) -> dict[str, Any]:
     """Generate the args for common CloudFormation API interactions.
+
+    Consolidates argument assembly for create/update/changeset calls into a
+    single location to prevent drift between the different API paths and
+    ensure consistent capability and role handling.
 
     This is used for ``create_stack``/``update_stack``/``create_change_set``
     calls in CloudFormation.
@@ -494,8 +562,9 @@ def generate_cloudformation_args(
     else:
         raise ValueError("either template.body or template.url is required; neither were provided")
 
-    # When creating args for CreateChangeSet, don't include the stack policy,
-    # since ChangeSets don't support it.
+    # When creating args for CreateChangeSet, don't include the stack
+    # policy, since ChangeSets don't support it. The policy must be
+    # applied separately via set_stack_policy before execution.
     if not change_set_name:
         args.update(generate_stack_policy_args(stack_policy))
 
@@ -506,6 +575,10 @@ def generate_stack_policy_args(
     stack_policy: Template | None = None,
 ) -> dict[str, str]:
     """Convert a stack policy object into keyword args.
+
+    Separates stack policy handling because the CloudFormation API accepts
+    policies only on create/update calls, not on changeset creation,
+    requiring different argument assembly paths.
 
     Args:
         stack_policy: A template object representing a stack policy.
@@ -527,7 +600,12 @@ def generate_stack_policy_args(
 
 
 class ProviderBuilder:
-    """Implements a Memorized ProviderBuilder for the AWS provider."""
+    """Implements a Memorized ProviderBuilder for the AWS provider.
+
+    Memoizes Provider instances per region+profile combination so that
+    parallel stack operations in the same region share a single boto3
+    session and client, reducing connection overhead and API throttling risk.
+    """
 
     kwargs: dict[str, Any]
     lock: threading.Lock
@@ -542,7 +620,12 @@ class ProviderBuilder:
         self.lock = threading.Lock()
 
     def build(self, *, profile: str | None = None, region: str | None = None) -> Provider:
-        """Get or create the provider for the given region and profile."""
+        """Get or create the provider for the given region and profile.
+
+        Uses a lock to prevent race conditions when multiple threads
+        attempt to build providers for the same region simultaneously
+        during parallel stack operations.
+        """
         with self.lock:
             # memorization lookup key derived from region + profile.
             key = f"{profile}-{region}"
@@ -565,8 +648,18 @@ class ProviderBuilder:
 
 
 class Provider(BaseProvider):
-    """AWS CloudFormation Provider."""
+    """AWS CloudFormation Provider.
 
+    Encapsulates all CloudFormation API interactions behind a uniform
+    interface so that cfngin actions can manage stacks without knowing
+    the details of boto3, changeset workflows, or interactive approval.
+    Each instance is scoped to a single AWS session/region, constructed
+    by ProviderBuilder.
+    """
+
+    # CloudFormation status constants are grouped by semantic meaning so the
+    # provider can make state-machine decisions without scattering string
+    # literals throughout the codebase.
     COMPLETE_STATUSES = (
         "CREATE_COMPLETE",
         "DELETE_COMPLETE",
@@ -622,18 +715,31 @@ class Provider(BaseProvider):
         replacements_only: bool = False,
         service_role: str | None = None,
     ) -> None:
-        """Instantiate class."""
+        """Instantiate class.
+
+        Accepts per-stack behavioral overrides so the same provider class can
+        serve both CI/CD pipelines (non-interactive) and operator-driven CLI
+        workflows (interactive with approval gates).
+        """
         self._outputs: dict[str, dict[str, str]] = {}
         self.cloudformation = get_cloudformation_client(session)
         self.interactive = interactive
+        # Interactive mode implies recreate_failed because an operator is
+        # present to confirm the destructive action.
         self.recreate_failed = interactive or recreate_failed
         self.region = region
-        # replacements only is only used in interactive mode
+        # replacements_only is only meaningful in interactive mode where
+        # an operator reviews changes before approval.
         self.replacements_only = interactive and replacements_only
         self.service_role = service_role
 
     def get_stack(self, stack_name: str, *_args: Any, **_kwargs: Any) -> StackTypeDef:
-        """Get stack."""
+        """Get stack.
+
+        Wraps describe_stacks and translates the ClientError into a
+        domain-specific exception so callers can handle missing stacks
+        without coupling to boto3 error formats.
+        """
         try:
             return self.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][0]
         except botocore.exceptions.ClientError as err:
@@ -695,7 +801,13 @@ class Provider(BaseProvider):
         log_func: Callable[[StackEventTypeDef], None] | None = None,
         retries: int | None = None,
     ) -> None:
-        """Tail the events of a stack."""
+        """Tail the events of a stack.
+
+        Provides real-time feedback on stack operations by polling for new
+        events. Retries on "does not exist" errors because CloudFormation
+        is eventually consistent and a newly created stack may not appear
+        in the API immediately.
+        """
 
         def _log_func(event: StackEventTypeDef) -> None:
             template = "[%s] %s %s %s"
@@ -744,6 +856,10 @@ class Provider(BaseProvider):
     def get_delete_failed_status_reason(self, stack_name: str) -> str | None:
         """Process events and return latest delete failed reason.
 
+        Extracts the failure reason from stack events so cfngin can surface
+        actionable error messages to operators when a delete operation fails,
+        rather than requiring manual console inspection.
+
         Args:
             stack_name: Name of a CloudFormation Stack.
 
@@ -760,6 +876,10 @@ class Provider(BaseProvider):
         self, stack_name: str, status: str, *, chronological: bool = True
     ) -> StackEventTypeDef | None:
         """Get Stack Event of a given set of resource status.
+
+        Searches events for a specific status to extract diagnostic
+        information (e.g., rollback reasons) without requiring callers to
+        manually iterate the event stream.
 
         Args:
             stack_name: Name of a CloudFormation Stack.
@@ -783,7 +903,12 @@ class Provider(BaseProvider):
     def get_events(
         self, stack_name: str, chronological: bool = True
     ) -> Iterable[StackEventTypeDef]:
-        """Get the events in batches and return in chronological order."""
+        """Get the events in batches and return in chronological order.
+
+        Paginates through all stack events because the CloudFormation API
+        returns them in reverse chronological order with a page limit, but
+        consumers (tail, diagnostics) need the full ordered history.
+        """
         next_token = None
         event_list: list[list[StackEventTypeDef]] = []
         while True:
@@ -809,6 +934,10 @@ class Provider(BaseProvider):
 
     def get_rollback_status_reason(self, stack_name: str) -> str | None:
         """Process events and returns latest roll back reason.
+
+        Checks both UPDATE_ROLLBACK_IN_PROGRESS and ROLLBACK_IN_PROGRESS
+        because CloudFormation uses different status strings depending on
+        whether the rollback was triggered during a create or an update.
 
         Args:
             stack_name: Name of a CloudFormation Stack.
@@ -836,7 +965,11 @@ class Provider(BaseProvider):
         sleep_time: int = 5,
         include_initial: bool = True,
     ) -> None:
-        """Show and then tail the event log."""
+        """Show and then tail the event log.
+
+        Implements a polling loop with event deduplication (via EventId set)
+        because CloudFormation has no streaming/push API for stack events.
+        """
         # First dump the full list of events in chronological order and keep
         # track of the events we've seen already
         seen: set[str] = set()
@@ -866,6 +999,10 @@ class Provider(BaseProvider):
         **kwargs: Any,
     ) -> None:
         """Destroy a CloudFormation Stack.
+
+        Delegates to interactive or non-interactive destroy methods based on
+        provider mode, providing a single entry point for stack deletion that
+        handles both CI and operator-driven workflows.
 
         Args:
             stack: Stack to be destroyed.
@@ -898,6 +1035,10 @@ class Provider(BaseProvider):
         **kwargs: Any,
     ) -> None:
         """Create a new Cloudformation stack.
+
+        Supports both direct create_stack and changeset-based creation. The
+        changeset path is required for stacks using Transforms (e.g., SAM)
+        which cannot be created via the standard API.
 
         Args:
             fqn: The fully qualified name of the Cloudformation stack.
@@ -974,6 +1115,11 @@ class Provider(BaseProvider):
     ) -> Callable[..., None]:
         """Select the correct update method when updating a stack.
 
+        Routes to the appropriate update strategy because each path has
+        different API requirements: interactive needs changeset + approval,
+        force_change_set is required for Transform stacks, and default uses
+        the simpler update_stack API.
+
         Args:
             force_interactive: Whether or not to force interactive mode
                 no matter what mode the provider is in.
@@ -991,6 +1137,11 @@ class Provider(BaseProvider):
 
     def prepare_stack_for_update(self, stack: StackTypeDef, tags: list[TagTypeDef]) -> bool:
         """Prepare a stack for updating.
+
+        Handles the edge case where a stack's initial creation failed, leaving
+        it in a state that cannot be updated. In interactive/recreate_failed
+        mode, it safely destroys and re-creates the stack after verifying
+        ownership via tag matching.
 
         It may involve deleting the stack if is has failed it's initial
         creation. The deletion is only allowed if:
@@ -1075,6 +1226,10 @@ class Provider(BaseProvider):
     ) -> None:
         """Update a Cloudformation stack.
 
+        Serves as the single entry point for all stack updates, delegating
+        to the appropriate method (interactive, changeset, or default)
+        after ensuring termination protection is in the desired state.
+
         Args:
             fqn: The fully qualified name of the Cloudformation stack.
             template: A Template object to use when updating the stack.
@@ -1118,6 +1273,10 @@ class Provider(BaseProvider):
     def update_termination_protection(self, fqn: str, termination_protection: bool) -> None:
         """Update a Stack's termination protection if needed.
 
+        Runs as a pre-step before updates because termination protection
+        state must match the desired config before any stack mutation, and
+        CloudFormation does not allow setting it atomically with an update.
+
         Runs before the normal stack update process.
 
         Args:
@@ -1142,6 +1301,10 @@ class Provider(BaseProvider):
     ) -> None:
         """Set a stack policy when using changesets.
 
+        Works around a CloudFormation API limitation: the CreateChangeSet
+        and ExecuteChangeSet APIs do not accept stack policies, so the
+        policy must be applied as a separate API call before execution.
+
         ChangeSets don't allow you to set stack policies in the same call to
         update them. This sets it before executing the changeset if the
         stack policy is passed in.
@@ -1161,6 +1324,11 @@ class Provider(BaseProvider):
         self, fqn: str, approval: str | None = None, **kwargs: Any
     ) -> None:
         """Delete a CloudFormation stack in interactive mode.
+
+        Requires explicit operator confirmation before deletion to prevent
+        accidental infrastructure destruction in CLI workflows. Also handles
+        the case where termination protection blocks deletion by offering
+        to disable it with a second prompt.
 
         Args:
             fqn: A fully qualified stack name.
@@ -1212,6 +1380,11 @@ class Provider(BaseProvider):
         tags: list[TagTypeDef],
     ) -> None:
         """Update a Cloudformation stack in interactive mode.
+
+        Creates a changeset and presents a diff to the operator before
+        execution, enabling human review of infrastructure changes. This
+        is the primary safety mechanism for production deployments run
+        from the CLI.
 
         Args:
             fqn: The fully qualified name of the Cloudformation stack.
@@ -1281,6 +1454,10 @@ class Provider(BaseProvider):
     ) -> None:
         """Delete a CloudFormation stack without interaction.
 
+        Handles the common CI/CD case where termination protection should be
+        automatically disabled for stacks in recreatable states, avoiding
+        manual intervention in automated pipelines.
+
         Args:
             fqn: A fully qualified stack name.
             allow_disable_termination_protection: Whether to disable termination protection
@@ -1318,6 +1495,10 @@ class Provider(BaseProvider):
     ) -> None:
         """Update a Cloudformation stack using a change set.
 
+        This path exists because stacks with Transforms (e.g., SAM) cannot
+        use the simpler update_stack API and require the changeset workflow
+        even in non-interactive mode.
+
         This is required for stacks with a defined Transform (i.e. SAM), as the
         default ``update_stack`` API cannot be used with them.
 
@@ -1351,6 +1532,10 @@ class Provider(BaseProvider):
     def select_destroy_method(self, force_interactive: bool) -> Callable[..., None]:
         """Select the correct destroy method for destroying a stack.
 
+        Mirrors select_update_method's pattern to keep the destroy path
+        consistent with the update path's interactive/non-interactive
+        routing logic.
+
         Args:
             force_interactive: Always ask for approval.
 
@@ -1372,6 +1557,9 @@ class Provider(BaseProvider):
         stack_policy: Template | None = None,
     ) -> None:
         """Update a Cloudformation stack in default mode.
+
+        Uses the simpler update_stack API (no changeset) for speed in
+        non-interactive, non-Transform stacks where preview is unnecessary.
 
         Args:
             fqn: The fully qualified name of the Cloudformation stack.
@@ -1425,7 +1613,11 @@ class Provider(BaseProvider):
         return stack.get("Tags", [])
 
     def get_outputs(self, stack_name: str, *_args: Any, **_kwargs: Any) -> dict[str, str]:
-        """Get stack outputs."""
+        """Get stack outputs.
+
+        Caches outputs per stack name to avoid redundant API calls during
+        cross-stack reference resolution within a single plan execution.
+        """
         if not self._outputs.get(stack_name):
             stack = self.get_stack(stack_name)
             self._outputs[stack_name] = get_output_dict(stack)
@@ -1437,7 +1629,12 @@ class Provider(BaseProvider):
         return get_output_dict(stack)
 
     def get_stack_info(self, stack: StackTypeDef) -> tuple[str, dict[str, list[str] | str]]:
-        """Get the template and parameters of the stack currently in AWS."""
+        """Get the template and parameters of the stack currently in AWS.
+
+        Retrieves the live state of a stack so the diff action and
+        interactive update can compare the current deployed state against
+        the proposed changes.
+        """
         stack_name = stack.get("StackId", "None")
 
         try:
@@ -1464,6 +1661,11 @@ class Provider(BaseProvider):
         retain_changeset: bool = False,
     ) -> dict[str, str]:
         """Get the changes from a ChangeSet.
+
+        Implements the diff/plan workflow by creating a temporary changeset,
+        extracting the changes, invalidating cached outputs for affected
+        resources, and optionally retaining the changeset for later
+        execution. This is the core mechanism for preview-before-deploy.
 
         Args:
             stack: The stack to get changes.
@@ -1548,6 +1750,9 @@ class Provider(BaseProvider):
         self.get_outputs(stack.fqn)
 
         # infer which outputs may have changed
+        # Resources that are being replaced or have property changes may
+        # produce different output values, so we must invalidate cached
+        # outputs that reference them to force re-resolution.
         refs_to_invalidate: list[str] = []
         for change in changes:
             resc_change = change.get("ResourceChange", {})
@@ -1586,10 +1791,11 @@ class Provider(BaseProvider):
                     f"<inferred-change = {stack.fqn}.{output_name}={output_params['Value']}>"
                 )
 
-        # when creating a changeset for a new stack, CFN creates a temporary
-        # stack with a status of REVIEW_IN_PROGRESS. this is only removed if
-        # the changeset is executed or it is manually deleted.
-        # Skip cleanup if retaining changeset (needed for later execution)
+        # When creating a changeset for a new stack, CFN creates a temporary
+        # stack with a status of REVIEW_IN_PROGRESS. This must be cleaned up
+        # to avoid orphaned stacks that block future deployments with the
+        # same name. Skip cleanup if retaining changeset (needed for later
+        # execution).
         if change_type == "CREATE" and not retain_changeset:
             try:
                 temp_stack = self.get_stack(stack.fqn)
@@ -1613,7 +1819,11 @@ class Provider(BaseProvider):
     def params_as_dict(
         parameters_list: list[ParameterTypeDef],
     ) -> dict[str, list[str] | str]:
-        """Parameters as dict."""
+        """Parameters as dict.
+
+        Converts CloudFormation's list-of-dicts parameter format to a flat
+        dict for easier comparison when computing parameter diffs.
+        """
         return {
             param["ParameterKey"]: param["ParameterValue"]  # type: ignore
             for param in parameters_list

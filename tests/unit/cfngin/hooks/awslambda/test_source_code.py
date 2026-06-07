@@ -17,7 +17,12 @@ MODULE = "runway.cfngin.hooks.awslambda.source_code"
 
 
 class TestSourceCode:
-    """Test SourceCode."""
+    """Test SourceCode.
+
+    Validates source code discovery and hashing, including gitignore
+    filtering, path operations, and deterministic MD5 computation that
+    drives the content-addressed deployment package naming scheme.
+    """
 
     def test___eq___other(self, tmp_path: Path) -> None:
         """Test __eq__."""

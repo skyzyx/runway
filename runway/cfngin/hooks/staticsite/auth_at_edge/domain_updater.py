@@ -1,4 +1,9 @@
-"""User Pool Client Domain Updater."""
+"""User Pool Client Domain Updater.
+
+A Cognito hosted UI domain is required before OAuth authorization and token
+endpoints can be used. This hook ensures one exists, creating a deterministic
+domain name from the pool and client IDs when none is configured.
+"""
 
 from __future__ import annotations
 
@@ -14,7 +19,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class HookArgs(HookArgsBaseModel):
-    """Hook arguments."""
+    """Hook arguments.
+
+    Requires only the client ID because the User Pool ID is resolved from
+    shared hook_data populated by the user_pool_id_retriever pre-hook.
+    """
 
     client_id: str
     """The ID of the Cognito User Pool Client."""
@@ -48,11 +57,15 @@ def update(context: CfnginContext, *_args: Any, **kwargs: Any) -> dict[str, Any]
     domain_prefix = user_pool.get("CustomDomain", user_pool.get("Domain"))
 
     # Return early if we already have a domain
+    # Prefer a custom domain over the auto-generated one; avoids recreating
+    # domains on re-deploys and preserves user-configured settings.
     if domain_prefix:
         context_dict["domain"] = get_user_pool_domain(domain_prefix, user_pool_region)
         return context_dict
 
     try:
+        # Derive a deterministic, globally-unique domain prefix from the pool
+        # hash and client ID so repeated deploys produce the same domain.
         domain_prefix = (f"{user_pool_hash}-{args.client_id}").lower()
 
         cognito_client.create_user_pool_domain(Domain=domain_prefix, UserPoolId=user_pool_id)
@@ -84,6 +97,8 @@ def delete(context: CfnginContext, *_args: Any, **kwargs: Any) -> dict[str, Any]
     cognito_client = session.client("cognito-idp")
 
     user_pool_id = context.hook_data["aae_user_pool_id_retriever"]["id"]
+    # Reconstruct the same deterministic domain prefix used during creation
+    # so we target the correct domain for deletion.
     _, user_pool_hash = user_pool_id.split("_")
     domain_prefix = (f"{user_pool_hash}-{args.client_id}").lower()
 
@@ -91,6 +106,8 @@ def delete(context: CfnginContext, *_args: Any, **kwargs: Any) -> dict[str, Any]
         cognito_client.delete_user_pool_domain(UserPoolId=user_pool_id, Domain=domain_prefix)
         return True
     except cognito_client.exceptions.InvalidParameterException:
+        # InvalidParameterException means no domain with that prefix exists;
+        # this is safe to ignore since the goal is absence of the domain.
         LOGGER.info('skipped deletion; no domain with prefix "%s"', domain_prefix)
         return True
     except Exception:
@@ -100,6 +117,9 @@ def delete(context: CfnginContext, *_args: Any, **kwargs: Any) -> dict[str, Any]
 
 def get_user_pool_domain(prefix: str, region: str) -> str:
     """Return a user pool domain name based on the prefix received and region.
+
+    Constructs the standard Cognito hosted-UI FQDN so callers don't need to
+    know the URL pattern for OAuth endpoints.
 
     Args:
         prefix: The domain prefix for the domain.

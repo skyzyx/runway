@@ -1,4 +1,9 @@
-"""CFNgin lookup registry."""
+"""CFNgin lookup registry.
+
+Centralizes the mapping of lookup type names to handler classes so that the
+variable resolution system can dispatch ``${type query}`` syntax to the
+correct handler without hard-coding handler imports at each call site.
+"""
 
 from __future__ import annotations
 
@@ -25,6 +30,9 @@ from .handlers.rxref import RxrefLookup
 from .handlers.split import SplitLookup
 from .handlers.xref import XrefLookup
 
+# Mutable module-level dict acts as the single source of truth for lookup
+# dispatch; populated at import time so lookups are available immediately
+# when a CFNgin config is parsed.
 CFNGIN_LOOKUP_HANDLERS: dict[str, type[LookupHandler[Any]]] = {}
 LOGGER = logging.getLogger(__name__)
 
@@ -34,6 +42,10 @@ def register_lookup_handler(
 ) -> None:
     """Register a lookup handler.
 
+    Provides a single entry point for both built-in and user-defined lookups,
+    accepting either a class reference or a dotted import path so that custom
+    lookups declared in config files can be resolved lazily by string.
+
     Args:
         lookup_type: Name to register the handler under.
         handler_or_path: A function or a path to a handler.
@@ -42,6 +54,8 @@ def register_lookup_handler(
     handler = handler_or_path
     LOGGER.debug("registering CFNgin lookup: %s=%s", lookup_type, handler_or_path)
 
+    # Resolve string paths to actual classes so config-file-declared lookups
+    # are loaded the same way as built-in ones.
     handler = (
         cast("type", load_object_from_string(handler_or_path))
         if isinstance(handler_or_path, str)
@@ -49,6 +63,9 @@ def register_lookup_handler(
     )
 
     try:
+        # Enforce the LookupHandler contract: only subclasses are allowed so
+        # the variable resolver can rely on a consistent interface (handle,
+        # dependencies, etc.) across all registered lookups.
         if issubclass(handler, LookupHandler):
             CFNGIN_LOOKUP_HANDLERS[lookup_type] = handler
             return
@@ -72,6 +89,10 @@ def unregister_lookup_handler(lookup_type: str) -> None:
     This is useful when testing various lookup types if you want to unregister
     the lookup type after the test runs.
 
+    Exists primarily to support test isolation: tests that register custom
+    lookups can clean up after themselves to avoid polluting the global
+    registry for subsequent test cases.
+
     Args:
         lookup_type: Name of the lookup type to unregister.
 
@@ -79,6 +100,10 @@ def unregister_lookup_handler(lookup_type: str) -> None:
     CFNGIN_LOOKUP_HANDLERS.pop(lookup_type, None)
 
 
+# Register all built-in lookup handlers at module import time so they are
+# immediately available when cfngin parses a configuration file.  This
+# eager registration avoids the need for lazy discovery while keeping the
+# handler list easily auditable in one location.
 register_lookup_handler(AmiLookup.TYPE_NAME, AmiLookup)
 register_lookup_handler(AwsLambdaLookup.TYPE_NAME, AwsLambdaLookup)
 register_lookup_handler(AwsLambdaLookup.Code.TYPE_NAME, AwsLambdaLookup.Code)

@@ -23,7 +23,11 @@ MODULE = "runway.cfngin.hooks.staticsite.utils"
 
 
 def test_calculate_hash_of_files(mocker: MockerFixture, tmp_path: Path) -> None:
-    """Test calculate_hash_of_files."""
+    """Test calculate_hash_of_files.
+
+    Validates that file paths are sorted before hashing to ensure
+    deterministic results regardless of filesystem enumeration order.
+    """
     mock_file_hash_obj = Mock(add_files=Mock(), hexdigest="success")
     mocker.patch(f"{MODULE}.FileHash", return_value=mock_file_hash_obj)
 

@@ -1,5 +1,9 @@
 """Dedicated lookup for use with :class:`~runway.cfngin.hooks.awslambda.base_classes.AwsLambdaHook` based hooks.
 
+This lookup exists to bridge the gap between the Lambda packaging hook (which
+runs before deploy) and the stack templates that need artifact metadata (S3 URI,
+hash, runtime) at variable resolution time.
+
 To use this hook, there must be a
 :class:`~runway.cfngin.hooks.awslambda.base_classes.AwsLambdaHook` based hook defined
 in the :attr:`~cfngin.config.pre_deploy` section of the CFNgin configuration file.
@@ -32,7 +36,13 @@ LOGGER = logging.getLogger(__name__)
 
 
 class AwsLambdaLookup(LookupHandler["CfnginContext"]):
-    """Lookup for AwsLambdaHook responses."""
+    """Lookup for AwsLambdaHook responses.
+
+    Bridges the Lambda packaging hook output into stack template variables,
+    allowing CloudFormation resources to reference deployment artifact metadata
+    (S3 location, hash, runtime) without duplicating hook logic in each stack.
+
+    """
 
     TYPE_NAME: ClassVar[str] = "awslambda"
 
@@ -41,6 +51,9 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
         cls, context: CfnginContext, data_key: str
     ) -> AwsLambdaHookDeployResponse:
         """Get the response of an AwsLambdaHook run.
+
+        Lazily initializes hook data if missing, enabling ``runway plan`` to
+        compute deployment metadata on-demand without requiring a prior deploy.
 
         Args:
             context: CFNgin context object.
@@ -84,6 +97,8 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
         """Get the required Hook definition from the CFNgin config.
 
         Currently, this only supports finding the data_key pre_deploy.
+        Restricting to exactly one match prevents ambiguous state when multiple
+        hooks accidentally share a data_key.
 
         Args:
             config: CFNgin config being processed.
@@ -131,6 +146,10 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
     ) -> AwsLambdaHook[Any]:
         """Initialize AwsLambdaHook subclass instance.
 
+        Validates that the resolved class is actually an AwsLambdaHook subclass
+        before instantiation, guarding against misconfigured hook paths that
+        would produce confusing attribute errors later.
+
         Args:
             context: CFNgin context object.
             hook_def: The :class:`~runway.cfngin.hooks.awslambda.base_classes.AwsLambdaHook`
@@ -157,7 +176,12 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
         return cast("AwsLambdaHook[Any]", kls(context, **hook_def.args))
 
     class Code(LookupHandler["CfnginContext"]):
-        """Lookup for AwsLambdaHook responses."""
+        """Lookup for AwsLambdaHook responses.
+
+        Returns a troposphere Code object ready for direct use in a
+        CloudFormation Lambda Function resource definition.
+
+        """
 
         TYPE_NAME: ClassVar[str] = "awslambda.Code"
 
@@ -185,7 +209,12 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
             )
 
     class CodeSha256(LookupHandler["CfnginContext"]):
-        """Lookup for AwsLambdaHook responses."""
+        """Lookup for AwsLambdaHook responses.
+
+        Provides the content hash separately so CloudFormation can detect code
+        changes and trigger a new Lambda Version resource.
+
+        """
 
         TYPE_NAME: ClassVar[str] = "awslambda.CodeSha256"
 
@@ -261,7 +290,12 @@ class AwsLambdaLookup(LookupHandler["CfnginContext"]):
             )
 
     class Content(LookupHandler["CfnginContext"]):
-        """Lookup for AwsLambdaHook responses."""
+        """Lookup for AwsLambdaHook responses.
+
+        Returns a troposphere Content object for Lambda Layer resources,
+        which use a different property schema than Function Code.
+
+        """
 
         TYPE_NAME: ClassVar[str] = "awslambda.Content"
 

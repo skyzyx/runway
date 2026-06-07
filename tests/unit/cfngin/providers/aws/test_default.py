@@ -1,4 +1,9 @@
-"""Tests for runway.cfngin.providers.aws.default."""
+"""Tests for runway.cfngin.providers.aws.default.
+
+Validates the CloudFormation provider layer that wraps all boto3 interactions,
+ensuring correct handling of stack CRUD, changeset workflows, interactive approval,
+event tailing, and error translation for various CloudFormation API states.
+"""
 
 from __future__ import annotations
 
@@ -54,6 +59,9 @@ if TYPE_CHECKING:
 def random_string(length: int = 12) -> str:
     """Return a random string of variable length.
 
+    Generates non-deterministic test data so that tests don't accidentally
+    pass due to hardcoded values matching expected outputs.
+
     Args:
         length: The # of characters to use in the random string.
 
@@ -91,7 +99,11 @@ def generate_describe_stacks_stack(
     tags: TagSetTypeDef | None = None,
     termination_protection: bool = False,
 ) -> StackTypeDef:
-    """Generate describe stacks stack."""
+    """Generate describe stacks stack.
+
+    Provides a reusable factory for DescribeStacks responses so tests can
+    exercise different stack lifecycle states without duplicating boilerplate.
+    """
     tags = tags or []
     return {
         "StackName": stack_name,
@@ -106,7 +118,11 @@ def generate_describe_stacks_stack(
 def generate_get_template(
     file_name: str = "cfn_template.json", stages_available: list[str] | None = None
 ) -> dict[str, Any]:
-    """Generate get template."""
+    """Generate get template.
+
+    Loads real fixture templates so changeset diff logic is tested against
+    realistic CloudFormation template bodies rather than empty stubs.
+    """
     return {
         "StagesAvailable": stages_available or ["Original"],
         "TemplateBody": (Path(__file__).parent.parent.parent / "fixtures" / file_name).read_text(),
@@ -114,7 +130,11 @@ def generate_get_template(
 
 
 def generate_stack_object(stack_name: str, outputs: dict[str, Any] | None = None) -> MagicMock:
-    """Generate stack object."""
+    """Generate stack object.
+
+    Creates a mock Stack with output definitions so tests can verify that
+    the provider correctly infers output changes from changeset responses.
+    """
     mock_stack = MagicMock(["name", "fqn", "blueprint"])
     if not outputs:
         outputs = {"FakeOutput": {"Value": {"Ref": "FakeResource"}}}
@@ -126,7 +146,11 @@ def generate_stack_object(stack_name: str, outputs: dict[str, Any] | None = None
 
 
 def generate_resource_change(replacement: bool = True) -> ChangeTypeDef:
-    """Generate resource change."""
+    """Generate resource change.
+
+    Builds a single changeset resource entry to test that the provider
+    correctly identifies resources requiring replacement vs in-place updates.
+    """
     resource_change: ResourceChangeTypeDef = {
         "Action": "Modify",
         "Details": [],
@@ -148,7 +172,11 @@ def generate_change_set_response(
     changes: list[dict[str, Any]] | None = None,
     status_reason: str = "FAKE",
 ) -> dict[str, Any]:
-    """Generate change set response."""
+    """Generate change set response.
+
+    Simulates the full DescribeChangeSet API response shape so tests can
+    exercise status polling, failure handling, and change extraction paths.
+    """
     return {
         "ChangeSetName": "string",
         "ChangeSetId": "string",
@@ -180,7 +208,11 @@ def generate_change(
     replacement: str = "False",
     requires_recreation: str = "Never",
 ) -> dict[str, Any]:
-    """Generate a minimal change for a changeset."""
+    """Generate a minimal change for a changeset.
+
+    Produces a single resource-level change entry with randomized IDs so
+    tests can build multi-change changesets without colliding identifiers.
+    """
     return {
         "Type": "Resource",
         "ResourceChange": {
@@ -207,7 +239,12 @@ def generate_change(
 
 
 class TestMethods(unittest.TestCase):
-    """Tests for runway.cfngin.providers.aws.default."""
+    """Tests for runway.cfngin.providers.aws.default.
+
+    Validates the module-level utility functions that support changeset
+    workflows, ensuring correct filtering, summarization, and user approval
+    logic independent of the Provider class state.
+    """
 
     def setUp(self) -> None:
         """Run before tests."""
@@ -215,7 +252,11 @@ class TestMethods(unittest.TestCase):
         self.stubber = Stubber(self.cfn)
 
     def test_requires_replacement(self) -> None:
-        """Test requires replacement."""
+        """Test requires replacement.
+
+        Verifies that only resources marked for replacement are filtered out,
+        because these represent destructive changes the user must be warned about.
+        """
         changeset = [
             generate_resource_change(),
             generate_resource_change(replacement=False),
@@ -227,7 +268,12 @@ class TestMethods(unittest.TestCase):
             assert resource.get("ResourceChange", {}).get("Replacement") == "True"
 
     def test_summarize_params_diff(self) -> None:
-        """Test summarize params diff."""
+        """Test summarize params diff.
+
+        Ensures the human-readable summary correctly categorizes parameter
+        changes into added/removed/modified, which is displayed to users
+        during interactive approval to help them assess deployment impact.
+        """
         unmodified_param = DictValue("ParamA", "new-param-value", "new-param-value")
         modified_param = DictValue("ParamB", "param-b-old-value", "param-b-new-value-delta")
         added_param = DictValue("ParamC", None, "param-c-new-value")
@@ -255,7 +301,12 @@ class TestMethods(unittest.TestCase):
         assert summarize_params_diff(only_removed_params_diff) == "Parameters Removed: ParamD\n"
 
     def test_ask_for_approval(self) -> None:
-        """Test ask for approval."""
+        """Test ask for approval.
+
+        Validates that the interactive approval gate correctly accepts 'y',
+        rejects other inputs with CancelExecution, and supports the 'v'
+        verbose mode path — critical for preventing accidental deployments.
+        """
         get_input_path = "runway.cfngin.ui.get_raw_input"
         with patch(get_input_path, return_value="y"):
             assert ask_for_approval([], [], False) is None
@@ -274,7 +325,11 @@ class TestMethods(unittest.TestCase):
             assert mock_get_input.call_count == 2
 
     def test_ask_for_approval_with_params_diff(self) -> None:
-        """Test ask for approval with params diff."""
+        """Test ask for approval with params diff.
+
+        Ensures the approval flow still works correctly when parameter diffs
+        are present, since params_diff alters the displayed output to the user.
+        """
         get_input_path = "runway.cfngin.ui.get_raw_input"
         params_diff = [
             DictValue("ParamA", None, "new-param-value"),
@@ -301,7 +356,12 @@ class TestMethods(unittest.TestCase):
     def test_output_full_changeset(
         self, mock_safe_dump: MagicMock, patched_format: MagicMock
     ) -> None:
-        """Test output full changeset."""
+        """Test output full changeset.
+
+        Validates the verbose changeset display logic handles all user input
+        paths (y/Y/v/V to show, n/N to skip, x to cancel) and only formats
+        params_diff when actual parameter changes exist.
+        """
         get_input_path = "runway.cfngin.ui.get_raw_input"
 
         safe_dump_counter = 0
@@ -335,7 +395,11 @@ class TestMethods(unittest.TestCase):
         assert patched_format.call_count == 1
 
     def test_wait_till_change_set_complete_success(self) -> None:
-        """Test wait till change set complete success."""
+        """Test wait till change set complete success.
+
+        Confirms the poller exits cleanly on terminal states (CREATE_COMPLETE
+        and FAILED) without raising, since both represent stabilized changesets.
+        """
         self.stubber.add_response(
             "describe_change_set", generate_change_set_response("CREATE_COMPLETE")
         )
@@ -347,7 +411,11 @@ class TestMethods(unittest.TestCase):
             wait_till_change_set_complete(self.cfn, "FAKEID")
 
     def test_wait_till_change_set_complete_failed(self) -> None:
-        """Test wait till change set complete failed."""
+        """Test wait till change set complete failed.
+
+        Ensures the poller raises ChangesetDidNotStabilize when retries are
+        exhausted, preventing indefinite hangs on stuck changesets.
+        """
         # Need 2 responses for try_count
         for _ in range(2):
             self.stubber.add_response(
@@ -357,7 +425,12 @@ class TestMethods(unittest.TestCase):
             wait_till_change_set_complete(self.cfn, "FAKEID", try_count=2, sleep_time=0.1)
 
     def test_create_change_set_stack_did_not_change(self) -> None:
-        """Test create change set stack did not change."""
+        """Test create change set stack did not change.
+
+        Validates that when CloudFormation reports no changes, the changeset is
+        cleaned up and StackDidNotChange is raised — this is the expected
+        no-op path that prevents unnecessary stack updates.
+        """
         self.stubber.add_response("create_change_set", {"Id": "CHANGESETID", "StackId": "STACKID"})
 
         self.stubber.add_response(
@@ -379,7 +452,11 @@ class TestMethods(unittest.TestCase):
             )
 
     def test_create_change_set_unhandled_failed_status(self) -> None:
-        """Test create change set unhandled failed status."""
+        """Test create change set unhandled failed status.
+
+        Ensures unexpected failure reasons bubble up as UnhandledChangeSetStatus
+        rather than being silently swallowed, so operators can investigate.
+        """
         self.stubber.add_response("create_change_set", {"Id": "CHANGESETID", "StackId": "STACKID"})
 
         self.stubber.add_response(
@@ -397,7 +474,12 @@ class TestMethods(unittest.TestCase):
             )
 
     def test_create_change_set_bad_execution_status(self) -> None:
-        """Test create change set bad execution status."""
+        """Test create change set bad execution status.
+
+        Verifies that a changeset in UNAVAILABLE execution status raises
+        UnableToExecuteChangeSet, since executing such a changeset would fail
+        at the API level anyway.
+        """
         self.stubber.add_response("create_change_set", {"Id": "CHANGESETID", "StackId": "STACKID"})
 
         self.stubber.add_response(
@@ -415,7 +497,12 @@ class TestMethods(unittest.TestCase):
             )
 
     def test_generate_cloudformation_args(self) -> None:
-        """Test generate cloudformation args."""
+        """Test generate cloudformation args.
+
+        Validates the argument builder correctly maps provider options to the
+        CloudFormation API parameter shape, including optional fields like
+        service role, change set name, stack policy, and template body fallback.
+        """
         stack_name = "mystack"
         template_url = "http://fake.s3url.com/blah.json"
         template_body = '{"fake_body": "woot"}'
@@ -462,10 +549,19 @@ class TestMethods(unittest.TestCase):
 
 
 class TestProvider:
-    """Test Provider."""
+    """Test Provider.
+
+    Validates Provider instance methods that inspect stack events and status,
+    ensuring correct extraction of failure reasons from CloudFormation event
+    history — essential for meaningful error messages during deployments.
+    """
 
     def test_get_delete_failed_status_reason(self, mocker: MockerFixture) -> None:
-        """Test get_delete_failed_status_reason."""
+        """Test get_delete_failed_status_reason.
+
+        Ensures the provider can extract a human-readable reason from
+        DELETE_FAILED events, and gracefully returns None when no reason exists.
+        """
         mock_get_event_by_resource_status = mocker.patch.object(
             Provider,
             "get_event_by_resource_status",
@@ -479,7 +575,12 @@ class TestProvider:
         assert not obj.get_delete_failed_status_reason("test")
 
     def test_get_event_by_resource_status(self, mocker: MockerFixture) -> None:
-        """Test get_event_by_resource_status."""
+        """Test get_event_by_resource_status.
+
+        Validates that the first matching event is returned when searching
+        chronologically, and that missing statuses return None rather than
+        raising — both paths are used during error reporting.
+        """
         events = [
             {"StackName": "0"},
             {"StackName": "1", "ResourceStatus": "no match"},
@@ -498,7 +599,12 @@ class TestProvider:
         mock_get_events.assert_called_with("test", chronological=False)
 
     def test_get_rollback_status_reason(self, mocker: MockerFixture) -> None:
-        """Test get_rollback_status_reason."""
+        """Test get_rollback_status_reason.
+
+        Exercises the fallback chain: first checks UPDATE_ROLLBACK_IN_PROGRESS,
+        then ROLLBACK_IN_PROGRESS, then returns None — this mirrors the
+        multiple rollback event types CloudFormation can produce.
+        """
         mock_get_event_by_resource_status = mocker.patch.object(
             Provider,
             "get_event_by_resource_status",
@@ -522,7 +628,12 @@ class TestProvider:
         assert not obj.get_rollback_status_reason("test")
 
     def test_get_stack_status_reason(self) -> None:
-        """Test get_stack_status_reason."""
+        """Test get_stack_status_reason.
+
+        Confirms the static helper safely extracts StackStatusReason when
+        present and returns None when absent, avoiding KeyError on stacks
+        that have no reason field (e.g., successfully completed stacks).
+        """
         stack_details = generate_describe_stacks_stack("test")
         assert Provider.get_stack_status_reason(stack_details) is None
         stack_details["StackStatusReason"] = "reason"
@@ -533,7 +644,12 @@ class TestProvider:
         [("DELETE_FAILED", False), ("CREATE_FAILED", True), ("CREATE_COMPLETE", True)],
     )
     def test_is_stack_destroy_possible(self, expected: bool, status: str) -> None:
-        """Test is_stack_destroy_possible."""
+        """Test is_stack_destroy_possible.
+
+        Parametrized across stack states to confirm that DELETE_FAILED stacks
+        cannot be destroyed again (requires manual intervention), while other
+        states allow deletion to proceed.
+        """
         assert (
             Provider(MagicMock()).is_stack_destroy_possible(
                 generate_describe_stacks_stack("test", stack_status=status)  # type: ignore
@@ -543,7 +659,12 @@ class TestProvider:
 
 
 class TestProviderDefaultMode(unittest.TestCase):
-    """Tests for runway.cfngin.providers.aws.default default mode."""
+    """Tests for runway.cfngin.providers.aws.default default mode.
+
+    Validates non-interactive (CI/CD) provider behavior including direct stack
+    creation, changeset-based updates, stack preparation logic for various
+    lifecycle states, and event tailing retry resilience.
+    """
 
     def setUp(self) -> None:
         """Run before tests."""
@@ -553,7 +674,11 @@ class TestProviderDefaultMode(unittest.TestCase):
         self.stubber = Stubber(self.provider.cloudformation)
 
     def test_create_stack_no_changeset(self) -> None:
-        """Test create_stack, no changeset, template url."""
+        """Test create_stack, no changeset, template url.
+
+        Validates the direct CreateStack API path used in non-interactive mode,
+        ensuring termination protection and timeout are passed through correctly.
+        """
         stack_name = "fake_stack"
         template = Template(url="http://fake.template.url.com/")
         parameters: list[Any] = []
@@ -574,7 +699,12 @@ class TestProviderDefaultMode(unittest.TestCase):
     def test_create_stack_with_changeset(
         self, patched_create_change_set: MagicMock, patched_update_term: MagicMock
     ) -> None:
-        """Test create_stack, force changeset, termination protection."""
+        """Test create_stack, force changeset, termination protection.
+
+        Validates the changeset-based creation path which is required when
+        termination protection is enabled, since it must be set after the
+        stack transitions from REVIEW_IN_PROGRESS to created.
+        """
         stack_name = "fake_stack"
         template_path = Path("./tests/unit/cfngin/fixtures/cfn_template.yaml")
         template = Template(
@@ -612,7 +742,11 @@ class TestProviderDefaultMode(unittest.TestCase):
         patched_update_term.assert_called_once_with(stack_name, True)
 
     def test_destroy_stack(self) -> None:
-        """Test destroy stack."""
+        """Test destroy stack.
+
+        Confirms the basic delete path issues a DeleteStack call and
+        returns None on success — the simplest happy path for stack removal.
+        """
         stack = {"StackName": "MockStack"}
 
         self.stubber.add_response("delete_stack", {}, stack)
@@ -622,7 +756,11 @@ class TestProviderDefaultMode(unittest.TestCase):
             self.stubber.assert_no_pending_responses()
 
     def test_get_stack_stack_does_not_exist(self) -> None:
-        """Test get stack stack does not exist."""
+        """Test get stack stack does not exist.
+
+        Verifies that the provider translates CloudFormation's ValidationError
+        into a typed StackDoesNotExist exception for cleaner upstream handling.
+        """
         stack_name = "MockStack"
         self.stubber.add_client_error(
             "describe_stacks",
@@ -635,7 +773,10 @@ class TestProviderDefaultMode(unittest.TestCase):
             self.provider.get_stack(stack_name)
 
     def test_get_stack_stack_exists(self) -> None:
-        """Test get stack stack exists."""
+        """Test get stack stack exists.
+
+        Confirms the happy path returns the stack dict from DescribeStacks.
+        """
         stack_name = "MockStack"
         stack_response = {"Stacks": [generate_describe_stacks_stack(stack_name)]}
         self.stubber.add_response(
@@ -648,7 +789,11 @@ class TestProviderDefaultMode(unittest.TestCase):
         assert response["StackName"] == stack_name
 
     def test_select_destroy_method(self) -> None:
-        """Test select destroy method."""
+        """Test select destroy method.
+
+        Ensures the method dispatcher correctly routes to noninteractive or
+        interactive destroy based on the force_interactive flag.
+        """
         for i in [
             [{"force_interactive": False}, self.provider.noninteractive_destroy_stack],
             [{"force_interactive": True}, self.provider.interactive_destroy_stack],
@@ -656,7 +801,12 @@ class TestProviderDefaultMode(unittest.TestCase):
             assert self.provider.select_destroy_method(**i[0]) == i[1]  # type: ignore
 
     def test_select_update_method(self) -> None:
-        """Test select update method."""
+        """Test select update method.
+
+        Validates the update method selection matrix: interactive mode takes
+        precedence over force_change_set, and the default path is used only
+        when neither flag is set.
+        """
         for i in [
             [
                 {"force_interactive": True, "force_change_set": False},
@@ -678,7 +828,11 @@ class TestProviderDefaultMode(unittest.TestCase):
             assert self.provider.select_update_method(**i[0]) == i[1]  # type: ignore
 
     def test_prepare_stack_for_update_completed(self) -> None:
-        """Test prepare stack for update completed."""
+        """Test prepare stack for update completed.
+
+        Confirms stacks in a terminal success state are ready for update
+        without any preparatory action needed.
+        """
         with self.stubber:
             stack_name = "MockStack"
             stack = generate_describe_stacks_stack(stack_name, stack_status="UPDATE_COMPLETE")
@@ -686,7 +840,11 @@ class TestProviderDefaultMode(unittest.TestCase):
             assert self.provider.prepare_stack_for_update(stack, [])
 
     def test_prepare_stack_for_update_in_progress(self) -> None:
-        """Test prepare stack for update in progress."""
+        """Test prepare stack for update in progress.
+
+        Validates that stacks currently being modified cannot be updated
+        concurrently, raising StackUpdateBadStatus with an in-progress message.
+        """
         stack_name = "MockStack"
         stack = generate_describe_stacks_stack(stack_name, stack_status="UPDATE_IN_PROGRESS")
 
@@ -696,7 +854,11 @@ class TestProviderDefaultMode(unittest.TestCase):
         assert "in-progress" in str(raised.value)
 
     def test_prepare_stack_for_update_non_recreatable(self) -> None:
-        """Test prepare stack for update non recreatable."""
+        """Test prepare stack for update non recreatable.
+
+        Ensures stacks in REVIEW_IN_PROGRESS (changeset-created but never
+        executed) are rejected since they cannot be updated in place.
+        """
         stack_name = "MockStack"
         stack = generate_describe_stacks_stack(stack_name, stack_status="REVIEW_IN_PROGRESS")
 
@@ -706,7 +868,12 @@ class TestProviderDefaultMode(unittest.TestCase):
         assert "Unsupported state" in str(excinfo.value)
 
     def test_prepare_stack_for_update_disallowed(self) -> None:
-        """Test prepare stack for update disallowed."""
+        """Test prepare stack for update disallowed.
+
+        Confirms ROLLBACK_COMPLETE stacks are rejected when recreate_failed is
+        disabled, and the error message includes the --recreate-failed hint
+        so users know how to proceed.
+        """
         stack_name = "MockStack"
         stack = generate_describe_stacks_stack(stack_name, stack_status="ROLLBACK_COMPLETE")
 
@@ -718,7 +885,12 @@ class TestProviderDefaultMode(unittest.TestCase):
         assert "--recreate-failed" in str(excinfo.value)
 
     def test_prepare_stack_for_update_bad_tags(self) -> None:
-        """Test prepare stack for update bad tags."""
+        """Test prepare stack for update bad tags.
+
+        Verifies that even with recreate_failed enabled, tag mismatches
+        prevent recreation — this guards against accidentally destroying a
+        stack that belongs to a different namespace.
+        """
         stack_name = "MockStack"
         stack = generate_describe_stacks_stack(stack_name, stack_status="ROLLBACK_COMPLETE")
 
@@ -732,7 +904,11 @@ class TestProviderDefaultMode(unittest.TestCase):
         assert "tags differ" in str(excinfo.value).lower()
 
     def test_prepare_stack_for_update_recreate(self) -> None:
-        """Test prepare stack for update recreate."""
+        """Test prepare stack for update recreate.
+
+        Confirms that ROLLBACK_COMPLETE stacks are deleted when recreate_failed
+        is enabled, returning False to signal the caller must create anew.
+        """
         stack_name = "MockStack"
         stack = generate_describe_stacks_stack(stack_name, stack_status="ROLLBACK_COMPLETE")
 
@@ -744,7 +920,11 @@ class TestProviderDefaultMode(unittest.TestCase):
             assert not self.provider.prepare_stack_for_update(stack, [])
 
     def test_noninteractive_changeset_update_no_stack_policy(self) -> None:
-        """Test noninteractive changeset update no stack policy."""
+        """Test noninteractive changeset update no stack policy.
+
+        Validates the changeset update path without stack policy, ensuring
+        the changeset is created, described, and executed in sequence.
+        """
         self.stubber.add_response("create_change_set", {"Id": "CHANGESETID", "StackId": "STACKID"})
         changes = [generate_change()]
         self.stubber.add_response(
@@ -768,7 +948,12 @@ class TestProviderDefaultMode(unittest.TestCase):
             )
 
     def test_noninteractive_changeset_update_with_stack_policy(self) -> None:
-        """Test noninteractive changeset update with stack policy."""
+        """Test noninteractive changeset update with stack policy.
+
+        Ensures that when a stack policy is provided, set_stack_policy is
+        called before execute_change_set — order matters because the policy
+        must be in place before the update proceeds.
+        """
         self.stubber.add_response("create_change_set", {"Id": "CHANGESETID", "StackId": "STACKID"})
         changes = [generate_change()]
         self.stubber.add_response(
@@ -792,7 +977,12 @@ class TestProviderDefaultMode(unittest.TestCase):
             )
 
     def test_noninteractive_destroy_stack_termination_protected(self) -> None:
-        """Test noninteractive_destroy_stack with termination protection."""
+        """Test noninteractive_destroy_stack with termination protection.
+
+        Validates the auto-disable-and-retry flow: when delete fails due to
+        termination protection, the provider disables it and retries — this
+        is the expected behavior for automated teardown pipelines.
+        """
         self.stubber.add_client_error("delete_stack", service_message="TerminationProtection")
         self.stubber.add_response(
             "describe_stacks",
@@ -820,7 +1010,12 @@ class TestProviderDefaultMode(unittest.TestCase):
     def test_noninteractive_destroy_stack_termination_protected_not_allowed(
         self,
     ) -> None:
-        """Test noninteractive_destroy_stack with termination protection."""
+        """Test noninteractive_destroy_stack with termination protection.
+
+        Ensures that when auto-disable is explicitly forbidden, the original
+        ClientError propagates — preventing accidental destruction of
+        protected stacks in restricted environments.
+        """
         self.stubber.add_client_error("delete_stack", service_message="TerminationProtection")
 
         with self.stubber, pytest.raises(ClientError):
@@ -831,7 +1026,12 @@ class TestProviderDefaultMode(unittest.TestCase):
 
     @patch("runway.cfngin.providers.aws.default.output_full_changeset")
     def test_get_stack_changes_update(self, mock_output_full_cs: MagicMock) -> None:
-        """Test get stack changes update."""
+        """Test get stack changes update.
+
+        Validates the dry-run changeset workflow for existing stacks: creates
+        a temporary changeset, extracts changes and inferred outputs, then
+        cleans up — used by the diff action to preview updates without applying.
+        """
         stack_name = "MockStack"
         mock_stack = generate_stack_object(stack_name)
 
@@ -871,7 +1071,12 @@ class TestProviderDefaultMode(unittest.TestCase):
 
     @patch("runway.cfngin.providers.aws.default.output_full_changeset")
     def test_get_stack_changes_create(self, mock_output_full_cs: MagicMock) -> None:
-        """Test get stack changes create."""
+        """Test get stack changes create.
+
+        Tests the preview path for new stacks (REVIEW_IN_PROGRESS): after
+        extracting changes the temporary stack is deleted since it was only
+        created to generate a changeset for preview purposes.
+        """
         stack_name = "MockStack"
         mock_stack = generate_stack_object(stack_name)
 
@@ -924,7 +1129,12 @@ class TestProviderDefaultMode(unittest.TestCase):
         )
 
     def test_tail_stack_retry_on_missing_stack(self) -> None:
-        """Test tail stack retry on missing stack."""
+        """Test tail stack retry on missing stack.
+
+        Validates that event tailing retries when the stack doesn't exist yet
+        (race condition during creation) and eventually gives up after
+        MAX_TAIL_RETRIES to avoid infinite loops.
+        """
         stack_name = "SlowToCreateStack"
         stack = MagicMock(spec=Stack)
         stack.fqn = f"my-namespace-{stack_name}"
@@ -950,7 +1160,12 @@ class TestProviderDefaultMode(unittest.TestCase):
                 )
 
     def test_tail_stack_retry_on_missing_stack_eventual_success(self) -> None:
-        """Test tail stack retry on missing stack eventual success."""
+        """Test tail stack retry on missing stack eventual success.
+
+        Ensures that after transient "stack does not exist" errors, the tailer
+        recovers once the stack appears and begins delivering events — this
+        is the expected behavior during slow stack creation.
+        """
         stack_name = "SlowToCreateStack"
         stack = MagicMock(spec=Stack)
         stack.fqn = f"my-namespace-{stack_name}"
@@ -1001,7 +1216,12 @@ class TestProviderDefaultMode(unittest.TestCase):
         assert received_events[0]["EventId"] == "Event1"
 
     def test_update_termination_protection(self) -> None:
-        """Test update_termination_protection."""
+        """Test update_termination_protection.
+
+        Exercises all four combinations of current AWS state vs desired state
+        to confirm the provider only calls UpdateTerminationProtection when
+        the value actually needs to change, avoiding unnecessary API calls.
+        """
         stack_name = "fake-stack"
         test_cases = [
             MutableMap(aws=False, defined=True, expected=True),
@@ -1037,7 +1257,12 @@ class TestProviderDefaultMode(unittest.TestCase):
 
 
 class TestProviderInteractiveMode(unittest.TestCase):
-    """Tests for runway.cfngin.providers.aws.default interactive mode."""
+    """Tests for runway.cfngin.providers.aws.default interactive mode.
+
+    Validates the interactive (human-in-the-loop) provider behavior where
+    users must approve changes before execution, ensuring the approval gate
+    cannot be bypassed and termination protection toggling works correctly.
+    """
 
     def setUp(self) -> None:
         """Run before tests."""
@@ -1048,7 +1273,12 @@ class TestProviderInteractiveMode(unittest.TestCase):
 
     @patch("runway.cfngin.ui.get_raw_input")
     def test_interactive_destroy_stack(self, patched_input: MagicMock) -> None:
-        """Test interactive_destroy_stack."""
+        """Test interactive_destroy_stack.
+
+        Confirms the user is prompted for approval and deletion proceeds
+        only after explicit 'y' input — the core safety mechanism for
+        interactive mode.
+        """
         stack_name = "fake-stack"
         stack = {"StackName": stack_name}
         patched_input.return_value = "y"
@@ -1064,7 +1294,11 @@ class TestProviderInteractiveMode(unittest.TestCase):
     def test_interactive_destroy_stack_termination_protected(
         self, patched_input: MagicMock, patched_update_term: MagicMock
     ) -> None:
-        """Test interactive_destroy_stack with termination protection."""
+        """Test interactive_destroy_stack with termination protection.
+
+        Validates that in interactive mode, termination protection is disabled
+        after user confirmation, then deletion retries successfully.
+        """
         stack_name = "fake-stack"
         stack = {"StackName": stack_name}
         patched_input.return_value = "y"
@@ -1080,14 +1314,22 @@ class TestProviderInteractiveMode(unittest.TestCase):
 
     @patch("runway.cfngin.ui.get_raw_input")
     def test_destroy_stack_canceled(self, patched_input: MagicMock) -> None:
-        """Test destroy stack canceled."""
+        """Test destroy stack canceled.
+
+        Ensures answering 'n' raises CancelExecution, preventing any
+        destructive API calls from being made.
+        """
         patched_input.return_value = "n"
 
         with pytest.raises(exceptions.CancelExecution):
             self.provider.destroy_stack({"StackName": "MockStack"})  # type: ignore
 
     def test_successful_init(self) -> None:
-        """Test successful init."""
+        """Test successful init.
+
+        Confirms provider initialization correctly passes through the
+        replacements_only flag used to restrict changeset display.
+        """
         replacements = True
         provider = Provider(self.session, interactive=True, replacements_only=replacements)
         assert provider.replacements_only == replacements
@@ -1097,7 +1339,12 @@ class TestProviderInteractiveMode(unittest.TestCase):
     def test_update_stack_execute_success_no_stack_policy(
         self, patched_approval: MagicMock, patched_update_term: MagicMock
     ) -> None:
-        """Test update stack execute success no stack policy."""
+        """Test update stack execute success no stack policy.
+
+        Validates the full interactive update flow: changeset creation,
+        user approval prompt, and execution — confirming the approval gate
+        is called with the correct changeset details.
+        """
         stack_name = "my-fake-stack"
 
         self.stubber.add_response("create_change_set", {"Id": "CHANGESETID", "StackId": "STACKID"})
@@ -1131,7 +1378,11 @@ class TestProviderInteractiveMode(unittest.TestCase):
     def test_update_stack_execute_success_with_stack_policy(
         self, patched_approval: MagicMock, patched_update_term: MagicMock
     ) -> None:
-        """Test update stack execute success with stack policy."""
+        """Test update stack execute success with stack policy.
+
+        Ensures the stack policy is applied alongside the changeset execution
+        when provided in interactive mode.
+        """
         stack_name = "my-fake-stack"
 
         self.stubber.add_response("create_change_set", {"Id": "CHANGESETID", "StackId": "STACKID"})
@@ -1164,7 +1415,11 @@ class TestProviderInteractiveMode(unittest.TestCase):
         patched_update_term.assert_called_once_with(stack_name, False)
 
     def test_select_destroy_method(self) -> None:
-        """Test select destroy method."""
+        """Test select destroy method.
+
+        In interactive mode, destroy always routes to interactive_destroy_stack
+        regardless of force_interactive, since the provider is already interactive.
+        """
         for i in [
             [{"force_interactive": False}, self.provider.interactive_destroy_stack],
             [{"force_interactive": True}, self.provider.interactive_destroy_stack],
@@ -1172,7 +1427,11 @@ class TestProviderInteractiveMode(unittest.TestCase):
             assert self.provider.select_destroy_method(**i[0]) == i[1]  # type: ignore
 
     def test_select_update_method(self) -> None:
-        """Test select update method."""
+        """Test select update method.
+
+        In interactive mode, all flag combinations route to
+        interactive_update_stack since user approval is always required.
+        """
         for i in [
             [
                 {"force_interactive": False, "force_change_set": False},
@@ -1198,7 +1457,11 @@ class TestProviderInteractiveMode(unittest.TestCase):
     def test_get_stack_changes_interactive(
         self, mock_output_summary: MagicMock, mock_output_full_cs: MagicMock
     ) -> None:
-        """Test get stack changes interactive."""
+        """Test get stack changes interactive.
+
+        Validates that in interactive mode, both the summary and full changeset
+        are displayed to the user for review before any approval prompt.
+        """
         stack_name = "MockStack"
         mock_stack = generate_stack_object(stack_name)
 

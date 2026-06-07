@@ -1,4 +1,9 @@
-"""Exceptions for awslambda hooks."""
+"""Exceptions for awslambda hooks.
+
+Dedicated exception types allow callers to distinguish Lambda packaging
+failures from generic cfngin errors and provide actionable diagnostics
+specific to the deployment packaging workflow.
+"""
 
 from __future__ import annotations
 
@@ -20,6 +25,8 @@ class DeploymentPackageEmptyError(CfnginError):
     archive file. If the size is <=22 (the size a zip file End of Central
     Directory Record) it has no contents.
 
+    Deploying an empty zip to Lambda would succeed silently but produce a
+    broken function, so this error fails fast with a clear diagnostic.
     """
 
     archive_file: Path
@@ -38,7 +45,11 @@ class DeploymentPackageEmptyError(CfnginError):
 
 
 class RuntimeMismatchError(CfnginError):
-    """Required runtime does not match the detected runtime."""
+    """Required runtime does not match the detected runtime.
+
+    Guards against deploying a package built with an incompatible runtime,
+    which would cause Lambda invocation failures at runtime.
+    """
 
     detected_runtime: str
     """Runtime detected on the build system."""

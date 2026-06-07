@@ -1,4 +1,8 @@
-"""CFNgin graph action."""
+"""CFNgin graph action.
+
+This module exists to let operators visualize the dependency DAG for debugging
+deployment order and identifying unexpected dependency chains between stacks.
+"""
 
 from __future__ import annotations
 
@@ -21,6 +25,10 @@ LOGGER = logging.getLogger(__name__)
 def each_step(graph: Graph) -> Iterable[tuple[Step, list[Step]]]:
     """Yield each step and it's direct dependencies.
 
+    Reverses the topological sort so that output reads top-down from root
+    stacks to leaf stacks, matching the natural reading order for dependency
+    graphs.
+
     Args:
         graph: Graph to iterate over.
 
@@ -35,6 +43,10 @@ def each_step(graph: Graph) -> Iterable[tuple[Step, list[Step]]]:
 
 def dot_format(out: TextIO, graph: Graph, name: str = "digraph") -> None:
     """Output a graph using the graphviz "dot" format.
+
+    Uses DOT format because it is the de facto standard for graph
+    visualization tools and can be piped directly into graphviz to produce
+    PNG/SVG diagrams of the dependency structure.
 
     Args:
         out: Where output will be written.
@@ -51,6 +63,10 @@ def dot_format(out: TextIO, graph: Graph, name: str = "digraph") -> None:
 
 def json_format(out: TextIO, graph: Graph) -> None:
     """Output the graph in a machine readable JSON format.
+
+    Provides a structured alternative to DOT for programmatic consumption by
+    CI/CD pipelines and custom tooling that need to inspect the dependency
+    graph without parsing graphviz syntax.
 
     Args:
         out: Where output will be written.
@@ -70,7 +86,13 @@ FORMATTERS = {
 
 
 class Action(BaseAction):
-    """Responsible for outputting a graph for the current CFNgin config."""
+    """Responsible for outputting a graph for the current CFNgin config.
+
+    This action exists as a standalone command (rather than a flag on deploy)
+    so operators can inspect the dependency structure without triggering any
+    AWS API calls or requiring valid credentials beyond what plan generation
+    needs.
+    """
 
     DESCRIPTION = "Print graph"
     NAME = "graph"
@@ -91,15 +113,19 @@ class Action(BaseAction):
         upload_disabled: bool = False,  # noqa: ARG002
         **kwargs: Any,
     ) -> None:
-        """Generate the underlying graph and prints it."""
+        """Generate the underlying graph and prints it.
+
+        Merges the persistent graph (if present) so the visualization reflects
+        the complete set of managed stacks, not just those in the current
+        config file.
+        """
         graph = self._generate_plan(require_unlocked=False, include_persistent_graph=True).graph
         if self.context.persistent_graph:
             graph = merge_graphs(self.context.persistent_graph, graph)
         if kwargs.get("reduce"):
-            # This will perform a a transitive reduction on the underlying
-            # graph, producing less edges. Mostly useful for the "dot" format,
-            # when converting to PNG, so it creates a prettier/cleaner
-            # dependency graph.
+            # Transitive reduction removes redundant edges (if A→B→C, drop
+            # A→C) to produce a cleaner visual in DOT/PNG output without
+            # changing the logical dependency order.
             graph.transitive_reduction()
 
         fn = FORMATTERS[str(kwargs.get("format", "json"))]

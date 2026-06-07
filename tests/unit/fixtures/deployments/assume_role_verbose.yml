@@ -1,3 +1,4 @@
+---
 assume_role:
   arn: arn:aws:iam::123456789012:role/test
   post_deploy_env_revert: true

@@ -1,4 +1,9 @@
-"""CFNgin hook for syncing static website to S3 bucket."""
+"""CFNgin hook for syncing static website to S3 bucket.
+
+This hook coordinates the upload, cache invalidation, hash tracking, and archive
+pruning steps that follow a successful build, ensuring the live site reflects the
+latest build output without manual AWS console interaction.
+"""
 
 from __future__ import annotations
 
@@ -29,7 +34,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class HookArgs(HookArgsBaseModel):
-    """Hook arguments."""
+    """Hook arguments.
+
+    Centralizes all upload configuration in a validated model so callers only
+    need to supply CFNgin stack outputs and optional overrides.
+    """
 
     bucket_name: str
     """S3 bucket name."""
@@ -56,6 +65,9 @@ class HookArgs(HookArgsBaseModel):
 def get_archives_to_prune(archives: list[dict[str, Any]], hook_data: dict[str, Any]) -> list[str]:
     """Return list of keys to delete.
 
+    Retains the 15 most recent archives to support quick rollbacks while keeping
+    S3 storage costs bounded over many deployments.
+
     Args:
         archives: The full list of file archives
         hook_data: CFNgin hook data
@@ -77,6 +89,9 @@ def sync(context: CfnginContext, *__args: Any, **kwargs: Any) -> bool:
     """Sync static website to S3 bucket.
 
     Arguments parsed by :class:`~runway.cfngin.hooks.staticsite.upload_staticsite.HookArgs`.
+
+    Orchestrates the full post-build upload flow: sync main build, sync extra files,
+    invalidate CloudFront, update the deployment hash, and prune old archives.
 
     Args:
         context: The context instance.
@@ -132,6 +147,9 @@ def sync(context: CfnginContext, *__args: Any, **kwargs: Any) -> bool:
 def update_ssm_hash(context: CfnginContext, session: Session) -> bool:
     """Update the SSM hash with the new tracking data.
 
+    Persists the deployed content hash to SSM so subsequent builds can detect
+    when the source has not changed and skip redundant uploads.
+
     Args:
         context: Context instance.
         session: boto3 session.
@@ -165,6 +183,9 @@ def invalidate_distribution(
 ) -> bool:
     """Invalidate the current distribution.
 
+    Forces CloudFront edge caches to fetch fresh content from the S3 origin,
+    ensuring users see updated files immediately after a deployment.
+
     Args:
         session: The current CFNgin session.
         domain: The distribution domain.
@@ -189,6 +210,9 @@ def invalidate_distribution(
 def prune_archives(context: CfnginContext, session: Session) -> bool:
     """Prune the archives from the bucket.
 
+    Removes old deployment archives to prevent unbounded storage growth while
+    retaining enough history for rollback scenarios.
+
     Args:
         context: The context instance.
         session: The CFNgin session.
@@ -208,7 +232,8 @@ def prune_archives(context: CfnginContext, session: Session) -> bool:
         archives.extend(page.get("Contents", []))  # type: ignore
     archives_to_prune = get_archives_to_prune(archives, context.hook_data["staticsite"])
 
-    # Iterate in chunks of 1000 to match delete_objects limit
+    # Iterate in chunks of 1000 to match the S3 delete_objects API limit,
+    # which rejects requests with more than 1000 keys.
     for objects in [
         archives_to_prune[i : i + 1000] for i in range(0, len(archives_to_prune), 1000)
     ]:
@@ -221,6 +246,9 @@ def prune_archives(context: CfnginContext, session: Session) -> bool:
 
 def auto_detect_content_type(filename: str | None) -> str | None:
     """Auto detects the content type based on the filename.
+
+    Infers content type from extension so extra files are served with correct
+    MIME headers without requiring users to manually specify content_type.
 
     Args:
         filename : A filename to use to auto detect the content type.
@@ -260,6 +288,10 @@ def get_content_type(extra_file: RunwayStaticSiteExtraFileDataModel) -> str | No
 def get_content(extra_file: RunwayStaticSiteExtraFileDataModel) -> str | None:
     """Get serialized content based on content_type.
 
+    Serializes structured data (dict/list) to the declared content type so users
+    can define extra files as inline data structures in their config rather than
+    maintaining separate files on disk.
+
     Args:
         extra_file: The extra file configuration.
 
@@ -290,6 +322,9 @@ def calculate_hash_of_extra_files(
 
     All attributes of the extra file object are included when hashing:
     name, content_type, content, and file data.
+
+    Produces a deterministic fingerprint of all extra file content so the upload
+    hook can skip re-uploading when nothing has changed between deployments.
 
     Args:
         extra_files: The list of extra file configurations.
@@ -366,6 +401,9 @@ def sync_extra_files(  # noqa: C901
 ) -> list[str]:
     """Sync static website extra files to S3 bucket.
 
+    Handles supplementary files (config JSONs, YAML manifests, etc.) that are
+    managed separately from the main build output and may change independently.
+
     Args:
         context: The context instance.
         bucket: The static site bucket name.
@@ -390,6 +428,9 @@ def sync_extra_files(  # noqa: C901
         extra_file.content_type = get_content_type(extra_file)
         extra_file.content = get_content(extra_file)
 
+    # Use a separate SSM parameter (with "extra" suffix) to track extra files
+    # independently from the main site hash, because extra files can change
+    # without rebuilding the full site.
     # calculate a hash of the extra_files
     if hash_param:
         hash_param = f"{hash_param}extra"

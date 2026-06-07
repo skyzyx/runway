@@ -30,7 +30,12 @@ def args(tmp_path: Path) -> PythonHookArgs:
 
 
 class TestPythonFunction:
-    """Test PythonFunction."""
+    """Test PythonFunction.
+
+    Validates the Lambda function hook lifecycle: arg parsing, project
+    initialization, deployment package creation/upload, and cleanup on
+    both success and error paths.
+    """
 
     def test___init__(self, args: PythonHookArgs) -> None:
         """Test __init__."""
@@ -87,7 +92,11 @@ class TestPythonFunction:
         cleanup.assert_called_once_with()
 
     def test_pre_deploy_always_cleanup(self, args: PythonHookArgs, mocker: MockerFixture) -> None:
-        """Test pre_deploy always cleanup."""
+        """Test pre_deploy always cleanup.
+
+        Ensures cleanup runs even when upload raises, preventing orphaned
+        build artifacts from accumulating on disk.
+        """
         build_response = mocker.patch.object(
             PythonFunction, "build_response", return_value="success"
         )

@@ -1,4 +1,9 @@
-"""Replicated Lambda Function cleanup warning."""
+"""Replicated Lambda Function cleanup warning.
+
+Lambda@Edge replicas cannot be immediately deleted by CloudFormation; AWS removes
+them asynchronously. This hook warns operators about orphaned functions so they
+can manually clean up after the replication lag passes.
+"""
 
 from __future__ import annotations
 
@@ -13,6 +18,8 @@ if TYPE_CHECKING:
     from ....context import CfnginContext
 
 LOGGER = logging.getLogger(__name__)
+# Lambda@Edge function ARN output keys from the static site CloudFormation stack.
+# These identify replicated functions that may become orphaned on stack deletion.
 REPLICATED_FUNCTION_OUTPUTS = [
     "LambdaCheckAuthArn",
     "LambdaHttpHeadersArn",
@@ -21,6 +28,8 @@ REPLICATED_FUNCTION_OUTPUTS = [
     "LambdaSignOutArn",
     "LambdaCFDirectoryIndexRewriteArn",
 ]
+# Stack statuses that indicate the stack is already gone or rolling back,
+# meaning there are no active outputs to inspect for orphaned functions.
 STACK_STATUSES_TO_IGNORE = [
     "ROLLBACK_IN_PROGRESS",
     "ROLLBACK_FAILED",
@@ -42,7 +51,11 @@ class HookArgs(HookArgsBaseModel):
 
 
 def get_replicated_function_names(outputs: list[OutputTypeDef]) -> list[str]:
-    """Extract replicated function names from CFN outputs."""
+    """Extract replicated function names from CFN outputs.
+
+    Parses function names from ARNs so operators can run delete commands
+    without having to manually inspect the stack's output section.
+    """
     function_names: list[str] = []
     for i in REPLICATED_FUNCTION_OUTPUTS:
         function_arn = next(
@@ -58,6 +71,10 @@ def warn(context: CfnginContext, *_args: Any, **kwargs: Any) -> bool:
     """Notify the user of Lambda functions to delete.
 
     Arguments parsed by :class:`~runway.cfngin.hooks.staticsite.cleanup.HookArgs`.
+
+    This hook runs before stack destruction to give operators actionable cleanup
+    commands, because AWS does not surface orphaned Lambda@Edge replicas in any
+    standard console view.
 
     Args:
         context: The context instance.

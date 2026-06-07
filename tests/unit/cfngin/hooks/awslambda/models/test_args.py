@@ -18,7 +18,12 @@ MODULE = "runway.cfngin.hooks.awslambda.models.args"
 
 
 class TestAwsLambdaHookArgs:
-    """Test AwsLambdaHookArgs."""
+    """Test AwsLambdaHookArgs.
+
+    Validates the argument model that all Lambda hooks share, ensuring
+    path resolution, runtime/docker validation, and field constraints
+    catch configuration errors before the build starts.
+    """
 
     def test___resolve_path(self) -> None:
         """Test _resolve_path."""
@@ -124,7 +129,11 @@ class TestAwsLambdaHookArgs:
 
 
 class TestPythonHookArgs:
-    """Test PythonHookArgs."""
+    """Test PythonHookArgs.
+
+    Validates Python-specific args including extend_pip_args restrictions
+    that prevent conflicts with hook-managed pip flags.
+    """
 
     @pytest.mark.parametrize("arg_flag", ["-r", "--requirement"])
     def test__validate_extend_pip_args_no_requirement(self, arg_flag: str, tmp_path: Path) -> None:

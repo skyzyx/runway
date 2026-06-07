@@ -2,6 +2,10 @@
 
 Replicates the functionality of the ``docker image build`` CLI command.
 
+Allows CFNgin to build container images as a deployment step so that
+ECS/Fargate stacks can reference freshly built images without requiring a
+separate CI pipeline or manual docker commands.
+
 """
 
 from __future__ import annotations
@@ -28,7 +32,12 @@ LOGGER = logging.getLogger(__name__.replace("._", "."))
 
 
 class DockerImageBuildApiOptions(BaseModel):
-    """Options for controlling Docker."""
+    """Options for controlling Docker.
+
+    Wraps the Docker SDK's build API keyword arguments as a typed model so
+    that hook users get validation and IDE support rather than passing
+    untyped dicts that silently fail on typos.
+    """
 
     buildargs: dict[str, Any] = {}
     """Dict of build-time variables that will be passed to Docker."""
@@ -88,7 +97,12 @@ class DockerImageBuildApiOptions(BaseModel):
 
 
 class ImageBuildArgs(BaseModel):
-    """Args passed to image.build."""
+    """Args passed to image.build.
+
+    Orchestrates the relationship between ECR repo configuration, repository
+    URI, tags, and Docker API options so that a single declarative hook config
+    block produces a fully tagged image ready for push.
+    """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -128,7 +142,12 @@ class ImageBuildArgs(BaseModel):
         v: dict[str, Any] | DockerImageBuildApiOptions | Any,
         info: ValidationInfo,
     ) -> Any:
-        """Set the value of ``docker``."""
+        """Set the value of ``docker``.
+
+        Auto-populates the Docker SDK's tag option from the resolved repo URI
+        so the build output is tagged correctly without requiring the user to
+        duplicate the repo value.
+        """
         repo = info.data["repo"]
         if repo:
             if isinstance(v, dict):
@@ -140,7 +159,11 @@ class ImageBuildArgs(BaseModel):
     @field_validator("ecr_repo", mode="before")
     @classmethod
     def _set_ecr_repo(cls, v: Any, info: ValidationInfo) -> Any:
-        """Set the value of ``ecr_repo``."""
+        """Set the value of ``ecr_repo``.
+
+        Converts a raw dict into nested Pydantic models early so that
+        downstream validators can access the fully qualified repo name.
+        """
         if v and isinstance(v, dict):
             return ElasticContainerRegistryRepository.model_validate(
                 {
@@ -160,7 +183,12 @@ class ImageBuildArgs(BaseModel):
     @field_validator("repo", mode="before")
     @classmethod
     def _set_repo(cls, v: str | None, info: ValidationInfo) -> str | None:
-        """Set the value of ``repo``."""
+        """Set the value of ``repo``.
+
+        Derives the repo URI from ecr_repo when not explicitly provided,
+        allowing users to specify only ECR details without manually
+        constructing the full registry URI.
+        """
         if v:
             return v
 
@@ -173,7 +201,11 @@ class ImageBuildArgs(BaseModel):
     @field_validator("dockerfile", mode="before")
     @classmethod
     def _validate_dockerfile(cls, v: Any, info: ValidationInfo) -> Any:
-        """Validate ``dockerfile``."""
+        """Validate ``dockerfile``.
+
+        Fails fast with a clear error when the Dockerfile is missing,
+        rather than letting the Docker daemon return an opaque build failure.
+        """
         path: Path = info.data["path"]
         dockerfile = path / v
         if not dockerfile.is_file():
@@ -186,6 +218,10 @@ def build(*, context: CfnginContext, **kwargs: Any) -> DockerHookData:
 
     Replicates the functionality of ``docker image build`` CLI command.
 
+    Builds, tags, and stores the image reference in DockerHookData so that
+    subsequent push/remove hooks can operate on it without re-specifying
+    the image details.
+
     kwargs are parsed by :class:`~runway.cfngin.hooks.docker.image.ImageBuildArgs`.
 
     """
@@ -194,9 +230,13 @@ def build(*, context: CfnginContext, **kwargs: Any) -> DockerHookData:
     image, logs = docker_hook_data.client.images.build(
         path=str(args.path), **args.docker.model_dump()
     )
+    # Stream build logs so users can observe progress and diagnose failures
+    # in real time rather than waiting for the entire build to complete.
     for msg in logs:  # iterate through JSON log messages
         if "stream" in msg:  # log if they contain a message
             LOGGER.info(msg["stream"].strip())  # remove any new line characters
+    # Apply each tag individually because the Docker SDK's build method only
+    # accepts a single tag; multiple tags require explicit post-build tagging.
     for tag in args.tags:
         image.tag(args.repo, tag=tag)
     image.reload()

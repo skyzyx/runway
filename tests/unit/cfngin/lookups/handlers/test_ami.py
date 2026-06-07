@@ -1,4 +1,9 @@
-"""Tests for runway.cfngin.lookups.handlers.ami."""
+"""Tests for runway.cfngin.lookups.handlers.ami.
+
+Validates the AMI lookup handler's ability to query EC2 for images by owner,
+executable users, and name regex, ensuring the correct (most recent) image
+is selected from potentially many matches.
+"""
 
 from __future__ import annotations
 
@@ -15,10 +20,19 @@ REGION = "us-east-1"
 
 
 class TestAMILookup:
-    """Tests for runway.cfngin.lookups.handlers.ami.AmiLookup."""
+    """Tests for runway.cfngin.lookups.handlers.ami.AmiLookup.
+
+    AMI lookups are critical because selecting the wrong image can deploy
+    instances with outdated or incompatible operating systems. These tests
+    verify filtering, regex matching, date-based ordering, and error paths.
+    """
 
     def test_basic_lookup_single_image(self, cfngin_context: MockCfnginContext) -> None:
-        """Test basic lookup single image."""
+        """Test basic lookup single image.
+
+        Validates the happy path where exactly one image matches the query,
+        including executable_users filtering which restricts AMI visibility.
+        """
         executable_users = ["123456789012", "234567890123"]
         stubber = cfngin_context.add_stubber("ec2")
         image_id = "ami-fffccc111"
@@ -55,7 +69,12 @@ class TestAMILookup:
             )
 
     def test_basic_lookup_with_region(self, cfngin_context: MockCfnginContext) -> None:
-        """Test basic lookup with region."""
+        """Test basic lookup with region.
+
+        Validates cross-region AMI resolution using the region@ prefix syntax,
+        which is needed when deploying to a different region than the context's
+        default.
+        """
         stubber = cfngin_context.add_stubber("ec2", region="us-west-1")
         image_id = "ami-fffccc111"
         stubber.add_response(
@@ -86,7 +105,12 @@ class TestAMILookup:
             )
 
     def test_basic_lookup_multiple_images(self, cfngin_context: MockCfnginContext) -> None:
-        """Test basic lookup multiple images."""
+        """Test basic lookup multiple images.
+
+        Verifies that when multiple images match, the most recently created one
+        is returned. Also includes an ARI (without a Name field) to ensure the
+        handler tolerates heterogeneous image types in the response.
+        """
         stubber = cfngin_context.add_stubber("ec2")
         image_id = "ami-fffccc111"
         stubber.add_response(
@@ -138,7 +162,11 @@ class TestAMILookup:
     def test_basic_lookup_multiple_images_name_match(
         self, cfngin_context: MockCfnginContext
     ) -> None:
-        """Test basic lookup multiple images name match."""
+        """Test basic lookup multiple images name match.
+
+        Ensures the name_regex filter correctly excludes images whose names
+        don't match, even when multiple images are returned by the AWS API.
+        """
         stubber = cfngin_context.add_stubber("ec2")
         image_id = "ami-fffccc111"
         stubber.add_response(
@@ -178,7 +206,11 @@ class TestAMILookup:
             )
 
     def test_basic_lookup_no_matching_images(self, cfngin_context: MockCfnginContext) -> None:
-        """Test basic lookup no matching images."""
+        """Test basic lookup no matching images.
+
+        Validates that ImageNotFound is raised when the EC2 API returns an
+        empty result set, giving users a clear error rather than a KeyError.
+        """
         stubber = cfngin_context.add_stubber("ec2")
         stubber.add_response("describe_images", {"Images": []})
 
@@ -190,7 +222,12 @@ class TestAMILookup:
     def test_basic_lookup_no_matching_images_from_name(
         self, cfngin_context: MockCfnginContext
     ) -> None:
-        """Test basic lookup no matching images from name."""
+        """Test basic lookup no matching images from name.
+
+        Covers the case where images are returned by EC2 but none match the
+        name_regex. This is distinct from an empty API response because the
+        filtering happens client-side after the API call.
+        """
         stubber = cfngin_context.add_stubber("ec2")
         image_id = "ami-fffccc111"
         stubber.add_response(

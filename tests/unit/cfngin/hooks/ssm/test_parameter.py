@@ -25,10 +25,18 @@ MODULE = "runway.cfngin.hooks.ssm.parameter"
 
 
 class TestArgsDataModel:
-    """Test ArgsDataModel."""
+    """Test ArgsDataModel.
+
+    Validates the Pydantic model that parses and constrains SSM parameter
+    hook arguments, ensuring invalid configs are rejected early.
+    """
 
     def test_field_defaults(self) -> None:
-        """Test field values."""
+        """Test field values.
+
+        Confirms sensible defaults (overwrite=True, tier=Standard) so
+        users only need to specify name, type, and value.
+        """
         obj = ArgsDataModel(name="test", type="String")
         assert not obj.allowed_pattern
         assert not obj.data_type
@@ -121,7 +129,11 @@ class TestArgsDataModel:
 
 
 class TestParameter:
-    """Test Parameter."""
+    """Test Parameter.
+
+    Validates the SSM Parameter lifecycle hook which manages put, get,
+    delete, and tag operations against AWS SSM Parameter Store.
+    """
 
     def test___init__(self, cfngin_context: CfnginContext, mocker: MockerFixture) -> None:
         """Test __init__."""
@@ -567,7 +579,11 @@ class TestParameter:
 
 
 class TestSecureString:
-    """Test SecureString."""
+    """Test SecureString.
+
+    Ensures the SecureString convenience subclass correctly sets type
+    to 'SecureString' so callers don't need to specify it explicitly.
+    """
 
     def test___init__(self, cfngin_context: CfnginContext) -> None:
         """Test __init__."""

@@ -11,7 +11,11 @@ if TYPE_CHECKING:
 
 
 def test_delete_param(cfngin_context: MockCfnginContext) -> None:
-    """Test delete_param."""
+    """Test delete_param.
+
+    Validates the happy path where the parameter exists and is successfully
+    deleted, confirming the hook returns truthy on success.
+    """
     stub = cfngin_context.add_stubber("ssm")
 
     stub.add_response("delete_parameter", {}, {"Name": "foo"})
@@ -20,7 +24,11 @@ def test_delete_param(cfngin_context: MockCfnginContext) -> None:
 
 
 def test_delete_param_not_found(cfngin_context: MockCfnginContext) -> None:
-    """Test delete_param."""
+    """Test delete_param when parameter does not exist.
+
+    Ensures the hook treats a missing parameter as success (idempotent
+    behavior) since the desired end state is already achieved.
+    """
     stub = cfngin_context.add_stubber("ssm")
 
     stub.add_client_error("delete_parameter", "ParameterNotFound")

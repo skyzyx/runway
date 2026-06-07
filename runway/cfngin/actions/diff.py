@@ -1,4 +1,9 @@
-"""CFNgin diff action."""
+"""CFNgin diff action.
+
+This module exists to provide a non-destructive preview of what a deploy would
+change, allowing operators to review CloudFormation changesets before committing
+to a real deployment.
+"""
 
 from __future__ import annotations
 
@@ -41,7 +46,12 @@ LOGGER = cast("RunwayLogger", logging.getLogger(__name__))
 
 
 class DictValue(Generic[_OV, _NV]):
-    """Used to create a diff of two dictionaries."""
+    """Used to create a diff of two dictionaries.
+
+    This class encapsulates the comparison logic for a single key-value pair so
+    that diff formatting and status classification are co-located, enabling
+    unified-diff-style output for parameter changes.
+    """
 
     ADDED = "ADDED"
     REMOVED = "REMOVED"
@@ -62,6 +72,10 @@ class DictValue(Generic[_OV, _NV]):
 
     def changes(self) -> list[str]:
         """Return changes to represent the diff between old and new value.
+
+        Produces unified-diff-style output (prefixed +/-) so operators can
+        quickly scan parameter changes in the same format they expect from
+        version control tools.
 
         Returns:
             Representation of the change (if any) between old and new value.
@@ -94,6 +108,10 @@ def diff_dictionaries(
     old_dict: dict[str, _OV], new_dict: dict[str, _NV]
 ) -> tuple[int, list[DictValue[_OV, _NV]]]:
     """Calculate the diff two single dimension dictionaries.
+
+    This serves as the core comparison engine for stack parameters, using set
+    operations to efficiently partition keys into added/removed/common buckets
+    without requiring pre-sorted inputs.
 
     Args:
         old_dict: Old dictionary.
@@ -133,6 +151,9 @@ def diff_dictionaries(
 def format_params_diff(parameter_diff: list[DictValue[Any, Any]]) -> str:
     """Handle the formatting of differences in parameters.
 
+    Presents parameter changes in a unified-diff header format so the output
+    is visually consistent with what developers expect from diff tools.
+
     Args:
         parameter_diff: A list of :class:`DictValue` detailing the differences
             between two dicts returned by :func:`diff_dictionaries`.
@@ -154,6 +175,9 @@ def diff_parameters(
     old_params: dict[str, _OV], new_params: dict[str, _NV]
 ) -> list[DictValue[_OV, _NV]]:
     """Compare the old vs. new parameters and returns a "diff".
+
+    Returns an empty list when there are no changes so callers can use a
+    simple truthiness check to decide whether to display parameter output.
 
     If there are no changes, we return an empty list.
 
@@ -181,6 +205,9 @@ class Action(deploy.Action):
     The plan is then used to create a changeset for a stack using a
     generated template based on the current config.
 
+    Inherits from deploy.Action because the diff workflow mirrors the deploy
+    workflow (resolve blueprints, build parameters, submit to CloudFormation)
+    but stops at changeset creation rather than executing the changeset.
     """
 
     DESCRIPTION = "Diff stacks"
@@ -192,7 +219,12 @@ class Action(deploy.Action):
         return self._diff_stack
 
     def _diff_stack(self, stack: Stack, **_: Any) -> Status:  # noqa: C901
-        """Handle diffing a stack in CloudFormation vs our config."""
+        """Handle diffing a stack in CloudFormation vs our config.
+
+        Reuses the deploy submission pipeline but requests a changeset preview
+        instead of executing, so operators see exactly what would change without
+        any risk of modifying live infrastructure.
+        """
         if self.cancel.wait(0):
             return INTERRUPTED
 
@@ -222,7 +254,9 @@ class Action(deploy.Action):
                 tags,
                 retain_changeset=self.context.create_changeset,
             )
-            # Store changeset ID if retained for CI/CD workflows
+            # Retain the changeset ID so CI/CD pipelines can later execute
+            # the exact changeset that was reviewed, avoiding drift between
+            # diff and deploy.
             if self.context.create_changeset and "changeset_id" in outputs:
                 self.context.changeset_results[stack.fqn] = outputs["changeset_id"]
             stack.set_outputs(outputs)
@@ -234,10 +268,16 @@ class Action(deploy.Action):
                 return SkippedStatus("persistent graph: stack does not exist, will be removed")
             return DoesNotExistInCloudFormation()
         except AttributeError as err:
+            # A stack scheduled for destruction in the persistent graph may
+            # lack a blueprint class; catch that specific error to skip
+            # gracefully rather than crashing the entire diff run.
             if self.context.persistent_graph and "defined class or template path" in str(err):
                 return SkippedStatus("persistent graph: will be destroyed")
             raise
         except ClientError as err:
+            # CloudFormation has a hard limit on inline template size;
+            # detect this specific validation error and skip gracefully
+            # so the rest of the diff run can continue.
             if (
                 err.response["Error"]["Code"] == "ValidationError"
                 and "length less than or equal to" in err.response["Error"]["Message"]
@@ -261,7 +301,12 @@ class Action(deploy.Action):
         upload_disabled: bool = False,  # noqa: ARG002
         **_kwargs: Any,
     ) -> None:
-        """Kicks off the diffing of the stacks in the stack_definitions."""
+        """Kicks off the diffing of the stacks in the stack_definitions.
+
+        Generates the plan without requiring an unlocked persistent graph
+        because diff is a read-only operation that should never be blocked by
+        another concurrent action holding the lock.
+        """
         plan = self._generate_plan(require_unlocked=False, include_persistent_graph=True)
         plan.outline(logging.DEBUG)
         if plan.keys():
@@ -282,6 +327,9 @@ class Action(deploy.Action):
 
         Handle CFNgin bucket access denied & not existing.
 
+        Validates bucket access up front so the diff can proceed without a
+        bucket (templates are submitted inline) rather than failing midway
+        through the plan execution.
         """
         if not self.bucket_name:
             return

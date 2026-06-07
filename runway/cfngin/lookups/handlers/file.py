@@ -1,4 +1,9 @@
-"""File lookup."""
+"""File lookup.
+
+This lookup exists to embed external file contents (certificates, IAM policies,
+userdata scripts, JSON/YAML templates) directly into CloudFormation parameters,
+avoiding the need to inline large text blobs in the configuration file itself.
+"""
 
 from __future__ import annotations
 
@@ -23,6 +28,8 @@ if TYPE_CHECKING:
 
     from ....lookups.handlers.base import ParsedArgsTypeDef
 
+# Matches {{VarName}} placeholders so they can be replaced with CloudFormation
+# Ref intrinsic functions at template generation time.
 _PARAMETER_PATTERN = re.compile(r"{{([::|\w]+)}}")
 
 ParameterizedObjectTypeDef: TypeAlias = "str | Mapping[str, Any] | Sequence[Any] | Any"
@@ -30,7 +37,11 @@ ParameterizedObjectReturnTypeDef: TypeAlias = "dict[str, ParameterizedObjectRetu
 
 
 class ArgsDataModel(BaseModel):
-    """Arguments data model."""
+    """Arguments data model.
+
+    Validates and constrains the codec argument so that unsupported codecs
+    fail fast at parse time rather than deep inside the codec dispatch logic.
+    """
 
     codec: str
     """Codec that will be used to parse and/or manipulate the data."""
@@ -45,7 +56,12 @@ class ArgsDataModel(BaseModel):
 
 
 class FileLookup(LookupHandler[Any]):
-    """File lookup."""
+    """File lookup.
+
+    Provides a single entry point that reads an external file and transforms
+    its content through a codec pipeline, enabling users to embed file data in
+    stack variables without custom pre-processing scripts.
+    """
 
     TYPE_NAME: ClassVar[str] = "file"
     """Name that the Lookup is registered as."""
@@ -55,6 +71,9 @@ class FileLookup(LookupHandler[Any]):
         """Parse the value passed to the lookup.
 
         This overrides the default parsing to account for special requirements.
+        The file lookup uses a ``codec:path`` format instead of the standard
+        ``query key=value`` syntax because the codec dictates how the raw
+        file content is interpreted before it reaches CloudFormation.
 
         Args:
             value: The raw value passed to a lookup.
@@ -87,6 +106,10 @@ class FileLookup(LookupHandler[Any]):
 
 def _parameterize_string(raw: str) -> GenericHelperFn:
     """Substitute placeholders in a string using CloudFormation references.
+
+    This enables userdata scripts and config files to reference stack
+    parameters/resources at deploy time without hardcoding values, bridging
+    the gap between static file content and dynamic CloudFormation resolution.
 
     Args:
         raw: String to be processed. Byte strings are not supported; decode them
@@ -125,6 +148,9 @@ def parameterized_codec(raw: str, b64: Literal[True]) -> Base64: ...
 def parameterized_codec(raw: str, b64: bool = False) -> Any:
     """Parameterize a string, possibly encoding it as Base64 afterwards.
 
+    The Base64 variant exists specifically for EC2 UserData, which AWS requires
+    to be Base64-encoded while still supporting CloudFormation Ref substitution.
+
     Args:
         raw: String to be processed. Byte strings will be interpreted as UTF-8.
         b64: Whether to wrap the output in a Base64 CloudFormation call.
@@ -160,6 +186,9 @@ def _parameterize_obj(
 
     Parametrizes all values of a Mapping, all items of a Sequence, an
     unicode string, or pass other objects through unmodified.
+    This recursive walk is necessary because JSON/YAML templates can contain
+    {{Ref}} placeholders at any nesting depth, and each must be converted
+    to a CloudFormation intrinsic function call.
 
     Args:
         obj: Data to parameterize.
@@ -184,17 +213,29 @@ def _parameterize_obj(
 
 
 def yaml_codec(raw: str, parameterized: bool = False) -> Any:
-    """YAML codec."""
+    """YAML codec.
+
+    Parses YAML files into native Python structures for direct inclusion in
+    CloudFormation templates, optionally resolving {{Ref}} placeholders.
+    """
     data: Mapping[str, Any] = yaml.load(raw, Loader=yaml.SafeLoader)
     return _parameterize_obj(data) if parameterized else data
 
 
 def json_codec(raw: str, parameterized: bool = False) -> Any:
-    """JSON codec."""
+    """JSON codec.
+
+    Parses JSON files (e.g. IAM policy documents) into native Python
+    structures for inclusion in CloudFormation templates, optionally
+    resolving {{Ref}} placeholders.
+    """
     data: Mapping[str, Any] = json.loads(raw)
     return _parameterize_obj(data) if parameterized else data
 
 
+# Registry of codec functions keyed by name. Each codec transforms raw file
+# content into a form suitable for CloudFormation parameters — from simple
+# pass-through (plain) to full template parameterization with Base64 encoding.
 CODECS: dict[str, Callable[[str], Any]] = {
     "base64": lambda x: base64.b64encode(x.encode("utf8")).decode("utf-8"),
     "json": lambda x: json_codec(x, parameterized=False),

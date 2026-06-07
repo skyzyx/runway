@@ -1,4 +1,10 @@
-"""AWS IAM hook."""
+"""AWS IAM hook.
+
+This module manages IAM resources (roles, certificates) that must exist
+before stacks referencing them are created, bridging the gap between
+prerequisites that are too dynamic for static templates and full
+CloudFormation-managed resources.
+"""
 
 from __future__ import annotations
 
@@ -24,6 +30,8 @@ if TYPE_CHECKING:
 
 LOGGER = logging.getLogger(__name__)
 
+# The ECS service role policy grants the minimum permissions required for
+# the ECS agent to manage container instances and register tasks.
 ECS_SERVICE_ROLE_NAME = "ecsServiceRole"
 ECS_SERVICE_ROLE_POLICY = Policy(
     Version="2012-10-17",
@@ -72,6 +80,10 @@ class EnsureServerCertExistsHookArgs(BaseModel):
 def create_ecs_service_role(context: CfnginContext, *_args: Any, **kwargs: Any) -> bool:
     """Create ecsServiceRole IAM role.
 
+    This hook exists because ECS historically required a service-linked role
+    to be explicitly created before services could be launched, and the role
+    must be idempotent (tolerate "already exists" errors) across repeated deploys.
+
     https://docs.aws.amazon.com/AmazonECS/latest/developerguide/using-service-linked-roles.html
 
     Args:
@@ -88,6 +100,8 @@ def create_ecs_service_role(context: CfnginContext, *_args: Any, **kwargs: Any) 
             AssumeRolePolicyDocument=get_ecs_assumerole_policy().to_json(),
         )
     except ClientError as err:
+        # Tolerate "already exists" so this hook is idempotent across
+        # repeated deployments without requiring a pre-check API call.
         if "already exists" not in str(err):
             raise
     client.put_role_policy(
@@ -101,8 +115,14 @@ def create_ecs_service_role(context: CfnginContext, *_args: Any, **kwargs: Any) 
 def _get_cert_arn_from_response(
     response: GetServerCertificateResponseTypeDef | UploadServerCertificateResponseTypeDef,
 ) -> str:
+    """Extract the certificate ARN from either a GET or UPLOAD API response.
+
+    The two response shapes nest the ARN at different depths, so this helper
+    normalizes access to avoid duplicating the extraction logic at each call site.
+    """
     result = copy.deepcopy(response)
-    # GET response returns this extra key
+    # The GET response wraps metadata in an extra "ServerCertificate" key
+    # that the UPLOAD response does not have.
     if "ServerCertificate" in response:
         return cast("GetServerCertificateResponseTypeDef", result)["ServerCertificate"][
             "ServerCertificateMetadata"
@@ -116,6 +136,10 @@ def _get_cert_arn_from_response(
 
 def _get_cert_contents(kwargs: dict[str, Any]) -> dict[str, Any]:  # noqa: C901
     """Build parameters with server cert file contents.
+
+    This function handles both automated (path-based) and interactive (prompt)
+    certificate provisioning so that the hook works in CI pipelines and local
+    development alike.
 
     Args:
         kwargs: The keyword args passed to ensure_server_cert_exists, optionally
@@ -170,6 +194,10 @@ def _get_cert_contents(kwargs: dict[str, Any]) -> dict[str, Any]:  # noqa: C901
 
 def ensure_server_cert_exists(context: CfnginContext, *_args: Any, **kwargs: Any) -> dict[str, str]:
     """Ensure server cert exists.
+
+    This hook implements an idempotent certificate provisioning pattern:
+    check if the cert already exists, and only upload if missing, so that
+    stacks depending on the cert ARN always have a valid reference.
 
     Args:
         context: CFNgin context object.

@@ -1,4 +1,9 @@
-"""AWS EC2 keypair hook."""
+"""AWS EC2 keypair hook.
+
+This module ensures EC2 key pairs exist before stacks that reference them
+are created, supporting multiple provisioning strategies (import, generate
+locally, or store in SSM) to accommodate different security workflows.
+"""
 
 from __future__ import annotations
 
@@ -60,7 +65,11 @@ class KeyPairInfo(TypedDict, total=False):
 
 
 def get_existing_key_pair(ec2: EC2Client, keypair_name: str) -> KeyPairInfo | None:
-    """Get existing keypair."""
+    """Get existing keypair.
+
+    Checks whether the keypair already exists so the hook can short-circuit
+    and avoid regenerating or re-importing keys on subsequent deploys.
+    """
     resp = ec2.describe_key_pairs()
     keypair = next(
         (kp for kp in resp.get("KeyPairs", []) if kp.get("KeyName") == keypair_name),
@@ -87,7 +96,11 @@ def get_existing_key_pair(ec2: EC2Client, keypair_name: str) -> KeyPairInfo | No
 def import_key_pair(
     ec2: EC2Client, keypair_name: str, public_key_data: bytes
 ) -> ImportKeyPairResultTypeDef:
-    """Import keypair."""
+    """Import keypair.
+
+    Imports a user-provided public key rather than generating one, allowing
+    teams to use pre-existing SSH keys managed outside of AWS.
+    """
     keypair = ec2.import_key_pair(
         KeyName=keypair_name, PublicKeyMaterial=public_key_data.strip(), DryRun=False
     )
@@ -101,7 +114,11 @@ def import_key_pair(
 
 
 def read_public_key_file(path: Path) -> bytes | None:
-    """Read public key file."""
+    """Read public key file.
+
+    Validates the key format early to provide a clear error message rather
+    than letting the AWS API reject malformed key material with a cryptic error.
+    """
     try:
         data = path.read_bytes()
         if not data.startswith(b"ssh-rsa"):
@@ -118,7 +135,11 @@ def read_public_key_file(path: Path) -> bytes | None:
 def create_key_pair_from_public_key_file(
     ec2: EC2Client, keypair_name: str, public_key_path: Path
 ) -> KeyPairInfo | None:
-    """Create keypair from public key file."""
+    """Create keypair from public key file.
+
+    Provides a non-interactive path for CI pipelines where the public key
+    file path is known ahead of time.
+    """
     public_key_data = read_public_key_file(public_key_path)
     if not public_key_data:
         return None
@@ -138,7 +159,12 @@ def create_key_pair_in_ssm(
     parameter_name: str,
     kms_key_id: str | None = None,
 ) -> KeyPairInfo | None:
-    """Create keypair in SSM."""
+    """Create keypair in SSM.
+
+    Stores the generated private key in SSM Parameter Store so that it
+    is never written to disk, enabling secure key management in automated
+    pipelines where local file storage is undesirable.
+    """
     keypair = create_key_pair(ec2, keypair_name)
     try:
         kms_key_label = "default"
@@ -163,7 +189,8 @@ def create_key_pair_in_ssm(
         )
     except ClientError:
         # Erase the key pair if we failed to store it in SSM, since the
-        # private key will be lost anyway
+        # private key material is only returned once at creation time and
+        # would be permanently lost without the SSM backup.
 
         LOGGER.exception(
             "failed to store generated key in SSM; deleting "
@@ -180,7 +207,11 @@ def create_key_pair_in_ssm(
 
 
 def create_key_pair(ec2: EC2Client, keypair_name: str) -> KeyPairTypeDef:
-    """Create keypair."""
+    """Create keypair.
+
+    Wraps the raw EC2 API call with logging so callers get consistent
+    audit output regardless of which storage strategy is used.
+    """
     keypair = ec2.create_key_pair(KeyName=keypair_name, DryRun=False)
     LOGGER.info(
         KEYPAIR_LOG_MESSAGE,
@@ -192,7 +223,11 @@ def create_key_pair(ec2: EC2Client, keypair_name: str) -> KeyPairTypeDef:
 
 
 def create_key_pair_local(ec2: EC2Client, keypair_name: str, dest_dir: Path) -> KeyPairInfo | None:
-    """Create local keypair."""
+    """Create local keypair.
+
+    Provides a developer-friendly path that writes the private key to a local
+    file for immediate SSH access during development or bootstrapping.
+    """
     dest_dir = dest_dir.resolve()
     if not dest_dir.is_dir():
         LOGGER.error('"%s" is not a valid directory', dest_dir)
@@ -218,7 +253,12 @@ def create_key_pair_local(ec2: EC2Client, keypair_name: str, dest_dir: Path) -> 
 def interactive_prompt(
     keypair_name: str,
 ) -> tuple[Literal["create", "import"] | None, str | None]:
-    """Interactive prompt."""
+    """Interactive prompt.
+
+    Provides a fallback for local development when neither public_key_path
+    nor ssm_parameter_name is configured, allowing the user to decide the
+    provisioning strategy at runtime.
+    """
     if not sys.stdin.isatty():
         return None, None
 
@@ -248,6 +288,10 @@ def ensure_keypair_exists(context: CfnginContext, *__args: Any, **kwargs: Any) -
     """Ensure a specific keypair exists within AWS.
 
     If the key doesn't exist, upload it.
+
+    This is the main entry point that orchestrates the different key
+    provisioning strategies (import, SSM, local, interactive) behind a
+    single idempotent interface for the hook runner.
 
     """
     args = EnsureKeypairExistsHookArgs.model_validate(kwargs)

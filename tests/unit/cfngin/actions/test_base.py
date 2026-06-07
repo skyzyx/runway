@@ -1,4 +1,9 @@
-"""Tests for runway.cfngin.actions.base."""
+"""Tests for runway.cfngin.actions.base.
+
+Validates the foundational action behavior that all concrete actions inherit:
+plan generation with/without the persistent graph, S3 bucket verification, and
+template URL construction. Regressions here would break every action subclass.
+"""
 
 import unittest
 from unittest.mock import MagicMock, PropertyMock, patch
@@ -19,7 +24,12 @@ MOCK_VERSION = "01234abcdef"
 
 
 class MockBlueprint(Blueprint):
-    """Test blueprint."""
+    """Test blueprint.
+
+    Provides a minimal blueprint with a deterministic version string so that
+    template URL generation tests can assert exact paths without depending on
+    real template content hashing.
+    """
 
     VARIABLES = {
         "Param1": {"default": "default", "type": str},
@@ -35,7 +45,13 @@ class MockBlueprint(Blueprint):
 
 
 class TestBaseAction(unittest.TestCase):
-    """Tests for runway.cfngin.actions.base.BaseAction."""
+    """Tests for runway.cfngin.actions.base.BaseAction.
+
+    Validates plan generation under four key scenarios: with/without persistent
+    graph and with/without including that graph in the plan. This matrix ensures
+    the destroy-orphan-stacks logic (persistent graph) doesn't corrupt normal
+    deploys when the feature is disabled.
+    """
 
     def setUp(self) -> None:
         """Run before tests."""
@@ -60,7 +76,11 @@ class TestBaseAction(unittest.TestCase):
 
     @patch("runway.cfngin.actions.base.ensure_s3_bucket")
     def test_ensure_cfn_bucket_exists(self, mock_ensure_s3_bucket: MagicMock) -> None:
-        """Test ensure cfn bucket exists."""
+        """Test ensure cfn bucket exists.
+
+        Confirms the action delegates to ensure_s3_bucket without requesting
+        bucket creation, since the bucket must already exist for deploys.
+        """
         action = BaseAction(
             context=mock_context("mynamespace"),
             provider_builder=MockProviderBuilder(provider=Provider(get_session("us-east-1"))),
@@ -74,7 +94,12 @@ class TestBaseAction(unittest.TestCase):
     def test_ensure_cfn_bucket_exists_raise_cfngin_bucket_not_found(
         self, mock_ensure_s3_bucket: MagicMock
     ) -> None:
-        """Test ensure cfn bucket exists."""
+        """Test ensure cfn bucket exists.
+
+        Verifies that a ClientError from S3 is translated into
+        CfnginBucketNotFound rather than leaking a raw boto exception, giving
+        callers a clear signal that the bucket needs to be created first.
+        """
         mock_ensure_s3_bucket.side_effect = botocore.exceptions.ClientError(
             {},
             "head_bucket",  # type: ignore
@@ -94,7 +119,11 @@ class TestBaseAction(unittest.TestCase):
     def test_generate_plan_no_persist_exclude(
         self, mock_stack_action: PropertyMock, mock_tags: PropertyMock
     ) -> None:
-        """Test generate plan no persist exclude."""
+        """Test generate plan no persist exclude.
+
+        When no persistent graph is configured, the plan must only contain
+        stacks from the config and must not attempt to read graph tags from S3.
+        """
         mock_stack_action.return_value = MagicMock()
         mock_tags.return_value = {}
         context = mock_context(
@@ -124,7 +153,11 @@ class TestBaseAction(unittest.TestCase):
     def test_generate_plan_no_persist_include(
         self, mock_stack_action: PropertyMock, mock_tags: PropertyMock
     ) -> None:
-        """Test generate plan no persist include."""
+        """Test generate plan no persist include.
+
+        Even when include_persistent_graph=True, if no persistent graph key is
+        configured the plan should behave identically to the exclude case.
+        """
         mock_stack_action.return_value = MagicMock()
         mock_tags.return_value = {}
         context = mock_context(
@@ -154,7 +187,11 @@ class TestBaseAction(unittest.TestCase):
     def test_generate_plan_with_persist_exclude(
         self, mock_stack_action: PropertyMock, mock_tags: PropertyMock
     ) -> None:
-        """Test generate plan with persist exclude."""
+        """Test generate plan with persist exclude.
+
+        When a persistent graph exists but is excluded from the plan, orphan
+        stacks must not appear in the generated plan graph.
+        """
         mock_stack_action.return_value = MagicMock()
         mock_tags.return_value = {}
         context = mock_context(
@@ -183,7 +220,11 @@ class TestBaseAction(unittest.TestCase):
     def test_generate_plan_with_persist_include(
         self, mock_stack_action: PropertyMock, mock_tags: PropertyMock
     ) -> None:
-        """Test generate plan with persist include."""
+        """Test generate plan with persist include.
+
+        When the persistent graph is included, orphan stacks (e.g. "removed")
+        must be merged into the plan so they can be cleaned up during deploy.
+        """
         mock_stack_action.return_value = MagicMock()
         mock_tags.return_value = {}
         context = mock_context(
@@ -214,7 +255,12 @@ class TestBaseAction(unittest.TestCase):
     def test_generate_plan_with_persist_no_lock_req(
         self, mock_stack_action: PropertyMock, mock_tags: PropertyMock
     ) -> None:
-        """Test generate plan with persist no lock req."""
+        """Test generate plan with persist no lock req.
+
+        Confirms the require_unlocked flag can be disabled, which is needed for
+        read-only operations (like diff/info) that inspect the persistent graph
+        without modifying it.
+        """
         mock_stack_action.return_value = MagicMock()
         mock_tags.return_value = {}
         context = mock_context(
@@ -241,7 +287,12 @@ class TestBaseAction(unittest.TestCase):
         assert not plan.require_unlocked
 
     def test_stack_template_url(self) -> None:
-        """Test stack template url."""
+        """Test stack template url.
+
+        Validates the S3 URL pattern used to upload templates, ensuring the
+        namespace, region, blueprint name, and version hash are all correctly
+        embedded so CloudFormation receives the right template.
+        """
         context = mock_context("mynamespace")
         blueprint = MockBlueprint(name="test-blueprint", context=context)
 

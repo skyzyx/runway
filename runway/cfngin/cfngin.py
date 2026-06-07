@@ -1,4 +1,10 @@
-"""CFNgin entrypoint."""
+"""CFNgin entrypoint.
+
+This module serves as the single orchestration layer between Runway's module system
+and CFNgin's internal action/provider machinery, ensuring a consistent lifecycle
+(config loading, environment merging, action dispatch) regardless of which command
+the user invokes.
+"""
 
 from __future__ import annotations
 
@@ -19,12 +25,17 @@ if TYPE_CHECKING:
     from .._logging import RunwayLogger
     from ..context import RunwayContext
 
-# explicitly name logger so its not redundant
+# Explicitly name the logger "runway.cfngin" rather than using __name__ to avoid
+# the redundant "runway.cfngin.cfngin" path that would appear in log output.
 LOGGER = cast("RunwayLogger", logging.getLogger("runway.cfngin"))
 
 
 class CFNgin:
     """Control CFNgin.
+
+    Acts as the facade between Runway's high-level module interface and CFNgin's
+    internal action classes, centralizing environment resolution, parameter merging,
+    and provider construction so that individual actions remain decoupled from Runway.
 
     Attributes:
         concurrency: Max number of CFNgin stacks that can be deployed concurrently.
@@ -56,6 +67,10 @@ class CFNgin:
     ) -> None:
         """Instantiate class.
 
+        Captures all Runway-level settings upfront so that downstream actions and
+        providers can be constructed without re-querying the Runway context, keeping
+        the CFNgin layer decoupled from Runway internals.
+
         Args:
             ctx: Runway context object.
             parameters: Parameters from Runway.
@@ -82,8 +97,14 @@ class CFNgin:
 
     @cached_property
     def env_file(self) -> MutableMap:
-        """Contents of a CFNgin environment file."""
+        """Contents of a CFNgin environment file.
+
+        Uses cached_property so the filesystem lookup only happens once, but the
+        result is available for both the skip-check and parameter merging paths.
+        """
         result: dict[str, Any] = {}
+        # Support both plain environment files and region-scoped files so that
+        # users can override parameters per-region without duplicating configs.
         supported_names = [
             f"{self.__ctx.env.name}.env",
             f"{self.__ctx.env.name}-{self.region}.env",
@@ -99,6 +120,10 @@ class CFNgin:
 
     def deploy(self, force: bool = False, sys_path: Path | None = None) -> None:
         """Run the CFNgin deploy action.
+
+        Wraps each config file in its own SafeHaven context to isolate module
+        imports (troposphere/awacs) between configurations, preventing stale
+        class registries from causing cross-config contamination.
 
         Args:
             force: Explicitly enable the action even if an environment
@@ -128,6 +153,10 @@ class CFNgin:
     def destroy(self, force: bool = False, sys_path: Path | None = None) -> None:
         """Run the CFNgin destroy action.
 
+        Processes config files in reverse order so that dependent stacks are
+        destroyed before the stacks they depend on, respecting the implicit
+        creation-order dependency chain.
+
         Args:
             force: Explicitly enable the action even if an environment
                 file is not found.
@@ -139,7 +168,8 @@ class CFNgin:
             return
         sys_path = sys_path or self.sys_path
         config_file_paths = self.find_config_files(sys_path=sys_path)
-        # destroy should run in reverse to handle dependencies
+        # Destroy processes configs in reverse to handle inter-config dependencies:
+        # configs listed later may depend on outputs from configs listed earlier.
         config_file_paths.reverse()
 
         with SafeHaven(environ=self.__ctx.env.vars):
@@ -156,7 +186,12 @@ class CFNgin:
                 logger.success("destroy (complete)")
 
     def init(self, force: bool = False, sys_path: Path | None = None) -> None:
-        """Initialize environment."""
+        """Initialize environment.
+
+        Ensures prerequisite AWS resources (e.g., the CFNgin S3 bucket) exist
+        before deploy runs, so deploy can assume infrastructure is already
+        bootstrapped.
+        """
         if self.should_skip(force):
             return
         sys_path = sys_path or self.sys_path
@@ -177,6 +212,9 @@ class CFNgin:
 
     def load(self, config_path: Path) -> CfnginContext:
         """Load a CFNgin config into a context object.
+
+        Separates config parsing from action execution so that validation errors
+        surface before any AWS API calls are made, failing fast on malformed configs.
 
         Args:
             config_path: Valid path to a CFNgin config file.
@@ -199,6 +237,9 @@ class CFNgin:
 
     def plan(self, force: bool = False, sys_path: Path | None = None) -> dict[str, str]:
         """Run the CFNgin plan action.
+
+        Delegates to the diff action to generate CloudFormation changesets, allowing
+        users to preview what deploy would do without modifying any resources.
 
         Args:
             force: Explicitly enable the action even if an environment
@@ -229,12 +270,17 @@ class CFNgin:
                     # Collect changeset results from this config
                     all_changesets.update(ctx.changeset_results)
                 logger.success("plan (complete)")
-        # Store results in RunwayContext for access by CLI
+        # Propagate changeset IDs back to RunwayContext so the CLI layer
+        # can report them without coupling to CFNgin internals.
         self.__ctx.changeset_results.update(all_changesets)
         return all_changesets
 
     def should_skip(self, force: bool = False) -> bool:
         """Determine if action should be taken or not.
+
+        Provides a safety gate that prevents CFNgin from running in directories
+        without explicit configuration, reducing the risk of accidental deployments
+        against the wrong environment.
 
         Args:
             force: If ``True``, will always return ``False`` meaning
@@ -249,6 +295,9 @@ class CFNgin:
     def _get_config(self, file_path: Path) -> CfnginConfig:
         """Initialize a CFNgin config object from a file.
 
+        Centralizes config construction so parameter injection and work_dir
+        resolution happen consistently regardless of which action triggers the load.
+
         Args:
             file_path: Path to the config file to load.
             validate: Validate the loaded config.
@@ -262,6 +311,9 @@ class CFNgin:
 
     def _get_context(self, config: CfnginConfig, config_path: Path) -> CfnginContext:
         """Initialize a CFNgin context object.
+
+        Bridges Runway's context into a CFNgin-specific context so that actions
+        only depend on the CFNgin context interface, keeping the boundary clean.
 
         Args:
             config: CFNgin config object.
@@ -282,6 +334,10 @@ class CFNgin:
     def _get_provider_builder(self, service_role: str | None = None) -> ProviderBuilder:
         """Initialize provider builder.
 
+        Returns a builder rather than a provider instance because the actual
+        provider is constructed per-stack (with stack-specific overrides), while
+        the builder carries shared settings like region and interaction mode.
+
         Args:
             service_role: CloudFormation service role.
 
@@ -299,6 +355,10 @@ class CFNgin:
 
     def _inject_common_parameters(self) -> None:
         """Add common parameters if they don't already exist.
+
+        Pre-populates environment and region so that config files can reference
+        them without requiring explicit lookup syntax, simplifying the most common
+        parameterization patterns.
 
         Adding these commonly used parameters will remove the need to add
         lookup support (mainly for environment variable lookups) in places
@@ -326,6 +386,9 @@ class CFNgin:
         cls, exclude: list[str] | None = None, sys_path: Path | None = None
     ) -> list[Path]:
         """Find CFNgin config files.
+
+        Delegates to CfnginConfig's discovery logic to keep file-matching rules
+        in one place, ensuring consistency between CLI and programmatic usage.
 
         Args:
             exclude: List of file names to exclude. This list is appended to

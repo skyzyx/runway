@@ -1,4 +1,9 @@
-"""CFNgin blueprint representing raw template module."""
+"""CFNgin blueprint representing raw template module.
+
+This module exists to bridge pre-existing CloudFormation JSON/YAML templates
+into CFNgin's blueprint system without requiring users to rewrite them in
+troposphere.
+"""
 
 from __future__ import annotations
 
@@ -30,6 +35,10 @@ def get_template_path(file_path: Path) -> Path | None:
     config, or files in remote package_sources. Here, we emulate python module
     loading to find the path to the template.
 
+    This uses sys.path traversal so that templates fetched via package_sources
+    (which are extracted to temporary directories added to sys.path) can be
+    located without requiring absolute paths in the configuration.
+
     Args:
         file_path: Template path.
 
@@ -51,6 +60,10 @@ def resolve_variable(provided_variable: Variable | None, blueprint_name: str) ->
 
     This acts as a subset of resolve_variable logic in the base module, leaving
     out everything that doesn't apply to CFN parameters.
+
+    Raw templates bypass troposphere entirely, so they only need the resolved
+    scalar value — not the full variable validation pipeline that troposphere
+    blueprints require.
 
     Args:
         provided_variable: The variable value provided to the blueprint.
@@ -74,6 +87,11 @@ def resolve_variable(provided_variable: Variable | None, blueprint_name: str) ->
 
 class RawTemplateBlueprint(Blueprint):
     """Blueprint class for blueprints auto-generated from raw templates.
+
+    This subclass allows users to bring pre-existing CloudFormation JSON/YAML
+    templates (or Jinja2-templated versions) into CFNgin's orchestration
+    without converting them to troposphere. It satisfies the Blueprint
+    interface while delegating template generation to file I/O.
 
     Attributes:
         context: CFNgin context object.
@@ -155,10 +173,18 @@ class RawTemplateBlueprint(Blueprint):
 
     @property
     def rendered(self) -> str:
-        """Return (generating first if needed) rendered Template."""
+        """Return (generating first if needed) rendered Template.
+
+        Lazily renders the template so that Jinja2 templates can access
+        resolved variables that are only available after resolve_variables
+        has been called.
+        """
         if not self._rendered:
             template_path = get_template_path(self.raw_template_path)
             if template_path:
+                # Jinja2 templates (.j2) receive context and variables so
+                # users can parameterize raw templates without full
+                # troposphere conversion.
                 if template_path.suffix == ".j2":
                     self._rendered = (
                         Environment(  # noqa: S701
@@ -184,12 +210,21 @@ class RawTemplateBlueprint(Blueprint):
 
     @property
     def requires_change_set(self) -> bool:
-        """Return True if the underlying template has transforms."""
+        """Return True if the underlying template has transforms.
+
+        CloudFormation requires change sets for templates with transforms
+        (e.g. AWS::Serverless), so CFNgin must detect this to choose the
+        correct deployment strategy.
+        """
         return bool("Transform" in self.to_dict())
 
     @property
     def version(self) -> str:
-        """Return (generating first if needed) version hash."""
+        """Return (generating first if needed) version hash.
+
+        Uses MD5 for speed — this is a content fingerprint for change
+        detection, not a security hash.
+        """
         if not self._version:
             self._version = hashlib.md5(self.rendered.encode()).hexdigest()[:8]  # noqa: S324
         return self._version
@@ -205,6 +240,9 @@ class RawTemplateBlueprint(Blueprint):
 
     def to_json(self, variables: dict[str, Any] | None = None) -> str:  # noqa: ARG002
         """Return the template in JSON.
+
+        Accepts and ignores the variables arg to satisfy the base class
+        interface, since raw templates are already fully rendered.
 
         Args:
             variables: Unused in this subclass (variables won't affect the template).
@@ -224,6 +262,12 @@ class RawTemplateBlueprint(Blueprint):
         from the env file, the config, and any lookups resolved. The
         resolution is run twice, in case the blueprint is jinja2 templated
         and requires provided variables to render.
+
+        The two-pass approach is necessary because Jinja2 templates may define
+        their own CloudFormation Parameters that can only be discovered after
+        rendering. Pass 1 renders the template with all provided variables;
+        pass 2 restricts resolved_variables to only those parameters actually
+        defined in the rendered template.
 
         Args:
             provided_variables: List of provided variables.

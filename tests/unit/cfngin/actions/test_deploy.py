@@ -1,4 +1,9 @@
-"""Tests for runway.cfngin.actions.deploy."""
+"""Tests for runway.cfngin.actions.deploy.
+
+Validates the deploy action's decision logic: when to create vs update stacks,
+how to handle rollbacks and recreation, parameter resolution and missing-param
+detection, and persistent graph interactions during deploy runs.
+"""
 
 from __future__ import annotations
 
@@ -50,14 +55,23 @@ if TYPE_CHECKING:
 
 
 def mock_stack_parameters(parameters: dict[str, Any]) -> StackTypeDef:
-    """Mock stack parameters."""
+    """Mock stack parameters.
+
+    Converts a flat dict into the CloudFormation Parameters list format so
+    tests can simulate existing stack parameters without calling AWS.
+    """
     return {  # type: ignore
         "Parameters": [{"ParameterKey": k, "ParameterValue": v} for k, v in parameters.items()]
     }
 
 
 class MockProvider(BaseProvider):
-    """Mock provider."""
+    """Mock provider.
+
+    Simulates stack existence via an in-memory outputs dict, allowing tests to
+    control which stacks "exist" and what outputs they provide without hitting
+    AWS. Raises StackDoesNotExist for missing stacks, mirroring real behavior.
+    """
 
     _outputs: dict[str, dict[str, str]]
 
@@ -84,7 +98,12 @@ class MockProvider(BaseProvider):
 
 
 class MockStack:
-    """Mock our local CFNgin stack and an AWS provider stack."""
+    """Mock our local CFNgin stack and an AWS provider stack.
+
+    Provides the minimal interface that deploy action methods expect from a
+    stack object, enabling unit-level testing without constructing full
+    CfnginStack instances with all their dependencies.
+    """
 
     def __init__(
         self,
@@ -103,7 +122,12 @@ class MockStack:
 
 
 class TestAction:
-    """Test Action."""
+    """Test Action.
+
+    Validates the upload_disabled property logic that determines whether
+    template upload to S3 is needed or explicitly disabled. This gates whether
+    inline templates or S3-hosted templates are used during deploy.
+    """
 
     @pytest.mark.parametrize(
         "bucket_name, explicit, expected",
@@ -122,7 +146,12 @@ class TestAction:
         expected: bool,
         mocker: MockerFixture,
     ) -> None:
-        """Test upload_disabled."""
+        """Test upload_disabled.
+
+        Parametrized to cover the interaction between bucket_name absence and
+        explicit disabling. Upload must be disabled when no bucket is configured
+        (no S3 target) or when explicitly disabled by the caller.
+        """
         mocker.patch.object(cfngin_context, "bucket_name", bucket_name)
         obj = Action(cfngin_context)
         obj.upload_explicitly_disabled = explicit
@@ -145,14 +174,23 @@ class TestAction:
     def test_upload_disabled_setter_raise_cfngin_bucket_required(
         self, cfngin_context: CfnginContext, mocker: MockerFixture
     ) -> None:
-        """Test upload_disabled."""
+        """Test upload_disabled.
+
+        Enabling uploads when no bucket is configured must raise immediately
+        rather than failing later during the S3 push with a confusing error.
+        """
         mocker.patch.object(cfngin_context, "bucket_name", None)
         with pytest.raises(CfnginBucketRequired):
             Action(cfngin_context).upload_disabled = False
 
 
 class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into the TestAction class
-    """Tests for runway.cfngin.actions.deploy.BuildAction."""
+    """Tests for runway.cfngin.actions.deploy.BuildAction.
+
+    Exercises the full deploy lifecycle: plan generation, stack creation,
+    update, rollback detection, re-creation of failed stacks, and parameter
+    resolution. These represent the core deploy decision paths.
+    """
 
     def setUp(self) -> None:
         """Run before tests."""
@@ -192,7 +230,12 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         return CfnginContext(config=CfnginConfig.parse_obj(config), **kwargs)
 
     def test_destroy_stack_delete_failed(self) -> None:
-        """Test _destroy_stack DELETE_FAILED."""
+        """Test _destroy_stack DELETE_FAILED.
+
+        During deploy, orphan stacks from the persistent graph are destroyed.
+        If a stack is stuck in DELETE_FAILED, the action must report the failure
+        reason rather than retrying or hanging indefinitely.
+        """
         provider = MagicMock()
         provider.get_stack.return_value = {
             "StackName": "test",
@@ -220,7 +263,12 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
 
     @patch("runway.context.CfnginContext.persistent_graph_tags", new_callable=PropertyMock)
     def test_generate_plan_persist_destroy(self, mock_graph_tags: PropertyMock) -> None:
-        """Test generate plan persist destroy."""
+        """Test generate plan persist destroy.
+
+        When a persistent graph tracks stacks that no longer appear in the
+        config, the deploy plan must include those orphan stacks with the
+        _destroy_stack action so they get cleaned up automatically.
+        """
         mock_graph_tags.return_value = {}
         context = self._get_context(extra_config_args={"persistent_graph_key": "test.json"})
         context._persistent_graph = Graph.from_steps([Step.from_stack_name("removed", context)])
@@ -245,7 +293,12 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         assert deploy_action._launch_stack == plan.graph.steps["other"].fn
 
     def test_handle_missing_params(self) -> None:
-        """Test handle missing params."""
+        """Test handle missing params.
+
+        When updating an existing stack, parameters not explicitly provided
+        should use UsePreviousParameterValue to preserve existing settings,
+        preventing accidental parameter resets on partial updates.
+        """
         existing_stack_param_dict = {"StackName": "teststack", "Address": "192.168.0.1"}
         existing_stack_params = mock_stack_parameters(existing_stack_param_dict)
         all_params = list(existing_stack_param_dict.keys())
@@ -261,7 +314,12 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         assert sorted(result) == sorted(expected_params.items())
 
     def test_missing_params_no_existing_stack(self) -> None:
-        """Test missing params no existing stack."""
+        """Test missing params no existing stack.
+
+        For new stacks with no existing parameters to fall back on, missing
+        required parameters must raise MissingParameterException to prevent
+        creating a stack with incomplete configuration.
+        """
         all_params = ["Address", "StackName"]
         required = ["Address"]
         parameter_values: dict[str, Any] = {}
@@ -271,7 +329,11 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         assert result.value.parameters == required
 
     def test_existing_stack_params_does_not_override_given_params(self) -> None:
-        """Test existing stack params does not override given params."""
+        """Test existing stack params does not override given params.
+
+        Explicitly provided parameter values must take precedence over existing
+        stack values, ensuring intentional parameter changes are applied.
+        """
         existing_stack_param_dict = {"StackName": "teststack", "Address": "192.168.0.1"}
         existing_stack_params = mock_stack_parameters(existing_stack_param_dict)
         all_params = list(existing_stack_param_dict.keys())
@@ -283,7 +345,11 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         assert sorted(result) == sorted(parameter_values.items())
 
     def test_generate_plan(self) -> None:
-        """Test generate plan."""
+        """Test generate plan.
+
+        Verifies the dependency graph is correctly constructed from stack
+        output-reference variables, ensuring stacks deploy in the right order.
+        """
         context = self._get_context()
         deploy_action = deploy.Action(context, cancel=MockThreadingEvent())  # type: ignore
         plan = cast("Plan", deploy_action._Action__generate_plan())  # type: ignore
@@ -295,7 +361,11 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         }
 
     def test_does_not_execute_plan_when_outline_specified(self) -> None:
-        """Test does not execute plan when outline specified."""
+        """Test does not execute plan when outline specified.
+
+        Outline mode must only display the plan without executing it, providing
+        a safe dry-run for operators to review dependency order.
+        """
         context = self._get_context()
         deploy_action = deploy.Action(context, cancel=MockThreadingEvent())  # type: ignore
         with patch.object(deploy_action, "_generate_plan") as mock_generate_plan:
@@ -321,7 +391,12 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         mock_lock: MagicMock,
         mock_graph_tags: PropertyMock,
     ) -> None:
-        """Test run persist."""
+        """Test run persist.
+
+        Validates the lock/execute/unlock sequence for persistent-graph-enabled
+        deploys. The graph must be locked before execution and unlocked after to
+        prevent concurrent deploys from corrupting the shared state in S3.
+        """
         mock_graph_tags.return_value = {}
         context = self._get_context(extra_config_args={"persistent_graph_key": "test.json"})
         context._persistent_graph = Graph.from_steps([Step.from_stack_name("removed", context)])
@@ -334,7 +409,12 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         mock_unlock.assert_called_once()
 
     def test_should_update(self) -> None:
-        """Test should update."""
+        """Test should update.
+
+        Exercises the locked/force interaction matrix: a locked stack should
+        not be updated unless force is True, providing a safety gate against
+        accidental modifications to critical infrastructure.
+        """
         test_scenario = namedtuple("test_scenario", ["locked", "force", "result"])  # type: ignore
         test_scenarios = (
             test_scenario(locked=False, force=False, result=True),
@@ -350,7 +430,11 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
             assert deploy.should_update(mock_stack) == test.result  # type: ignore
 
     def test_should_ensure_cfn_bucket(self) -> None:
-        """Test should ensure cfn bucket."""
+        """Test should ensure cfn bucket.
+
+        Bucket verification should be skipped during outline and dump modes
+        because those are read-only operations that don't interact with S3.
+        """
         test_scenarios = [
             {"outline": False, "dump": False, "result": True},
             {"outline": True, "dump": False, "result": False},
@@ -370,7 +454,11 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
                 raise
 
     def test_should_submit(self) -> None:
-        """Test should submit."""
+        """Test should submit.
+
+        Disabled stacks must not be submitted to CloudFormation, allowing
+        operators to temporarily skip stacks without removing them from config.
+        """
         test_scenario = namedtuple("test_scenario", ["enabled", "result"])  # type: ignore
         test_scenarios = (
             test_scenario(enabled=False, result=False),
@@ -385,7 +473,12 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
 
 
 class TestLaunchStack(TestBuildAction):  # TODO (kyle): refactor tests to be pytest tests
-    """Tests for runway.cfngin.actions.deploy.BuildAction launch stack."""
+    """Tests for runway.cfngin.actions.deploy.BuildAction launch stack.
+
+    Tests the step-by-step state machine transitions during stack creation,
+    update, and rollback. Each test drives the step through multiple
+    provider-state changes to validate correct status progression.
+    """
 
     def setUp(self) -> None:
         """Run before tests."""
@@ -457,14 +550,22 @@ class TestLaunchStack(TestBuildAction):  # TODO (kyle): refactor tests to be pyt
         assert status.reason == expected_reason
 
     def test_launch_stack_disabled(self) -> None:
-        """Test launch stack disabled."""
+        """Test launch stack disabled.
+
+        A disabled stack must immediately return NotSubmittedStatus without
+        interacting with CloudFormation.
+        """
         assert self.step.status == PENDING
 
         self.stack.enabled = False
         self._advance(None, NotSubmittedStatus(), "disabled")
 
     def test_launch_stack_create(self) -> None:
-        """Test launch stack create."""
+        """Test launch stack create.
+
+        Validates the happy-path creation flow: PENDING -> SUBMITTED (stack
+        doesn't exist yet) -> SUBMITTED (in progress) -> COMPLETE.
+        """
         # initial status should be PENDING
         assert self.step.status == PENDING
 
@@ -478,7 +579,12 @@ class TestLaunchStack(TestBuildAction):  # TODO (kyle): refactor tests to be pyt
         self._advance("CREATE_COMPLETE", COMPLETE, "creating new stack")
 
     def test_launch_stack_create_rollback(self) -> None:
-        """Test launch stack create rollback."""
+        """Test launch stack create rollback.
+
+        Verifies the action correctly detects a creation rollback, updates
+        the status reason, avoids duplicating the reason message, and
+        ultimately reports FAILED when the rollback completes.
+        """
         # initial status should be PENDING
         assert self.step.status == PENDING
 
@@ -498,7 +604,12 @@ class TestLaunchStack(TestBuildAction):  # TODO (kyle): refactor tests to be pyt
         self._advance("ROLLBACK_COMPLETE", FAILED, "rolled back new stack")
 
     def test_launch_stack_recreate(self) -> None:
-        """Test launch stack recreate."""
+        """Test launch stack recreate.
+
+        When recreate_failed=True, a stack in ROLLBACK_COMPLETE must be deleted
+        and re-created rather than requiring manual intervention. This tests
+        the full delete-then-create sequence.
+        """
         self.provider.recreate_failed = True
 
         # initial status should be PENDING
@@ -520,7 +631,11 @@ class TestLaunchStack(TestBuildAction):  # TODO (kyle): refactor tests to be pyt
         self._advance("CREATE_COMPLETE", COMPLETE, "re-creating stack")
 
     def test_launch_stack_update_skipped(self) -> None:
-        """Test launch stack update skipped."""
+        """Test launch stack update skipped.
+
+        When the provider raises StackDidNotChange, the action must report
+        SKIPPED rather than FAILED, since a no-op update is not an error.
+        """
         # initial status should be PENDING
         assert self.step.status == PENDING
 
@@ -529,7 +644,12 @@ class TestLaunchStack(TestBuildAction):  # TODO (kyle): refactor tests to be pyt
         self._advance("CREATE_COMPLETE", SKIPPED, "nochange")
 
     def test_launch_stack_update_rollback(self) -> None:
-        """Test launch stack update rollback."""
+        """Test launch stack update rollback.
+
+        An update rollback must transition the step to FAILED after
+        UPDATE_ROLLBACK_COMPLETE, signaling that the stack reverted to its
+        previous state.
+        """
         # initial status should be PENDING
         assert self.step.status == PENDING
 
@@ -546,7 +666,11 @@ class TestLaunchStack(TestBuildAction):  # TODO (kyle): refactor tests to be pyt
         self._advance("UPDATE_ROLLBACK_COMPLETE", FAILED, "rolled back update")
 
     def test_launch_stack_update_success(self) -> None:
-        """Test launch stack update success."""
+        """Test launch stack update success.
+
+        Validates the happy-path update flow: existing stack transitions
+        through UPDATE_IN_PROGRESS to UPDATE_COMPLETE.
+        """
         # initial status should be PENDING
         assert self.step.status == PENDING
 
@@ -561,7 +685,11 @@ class TestLaunchStack(TestBuildAction):  # TODO (kyle): refactor tests to be pyt
 
 
 class TestFunctions(unittest.TestCase):  # TODO (kyle): refactor tests to be pytest tests
-    """Tests for runway.cfngin.actions.deploy module level functions."""
+    """Tests for runway.cfngin.actions.deploy module level functions.
+
+    Validates the parameter resolution helpers that filter, convert, and
+    validate CloudFormation parameters before they are sent to the API.
+    """
 
     def setUp(self) -> None:
         """Run before tests."""
@@ -570,7 +698,12 @@ class TestFunctions(unittest.TestCase):  # TODO (kyle): refactor tests to be pyt
         self.blueprint = MagicMock()
 
     def test_resolve_parameters_unused_parameter(self) -> None:
-        """Test resolve parameters unused parameter."""
+        """Test resolve parameters unused parameter.
+
+        Parameters not defined in the blueprint must be silently dropped to
+        prevent CloudFormation from rejecting the request with an unknown
+        parameter error.
+        """
         self.blueprint.parameter_definitions = {
             "a": {"type": CFNString, "description": "A"},
             "b": {"type": CFNString, "description": "B"},
@@ -581,7 +714,11 @@ class TestFunctions(unittest.TestCase):  # TODO (kyle): refactor tests to be pyt
         assert "a" in resolved_params
 
     def test_resolve_parameters_none_conversion(self) -> None:
-        """Test resolve parameters none conversion."""
+        """Test resolve parameters none conversion.
+
+        None values must be excluded from the resolved set because
+        CloudFormation rejects null parameter values.
+        """
         self.blueprint.parameter_definitions = {
             "a": {"type": CFNString, "description": "A"},
             "b": {"type": CFNString, "description": "B"},
@@ -591,7 +728,11 @@ class TestFunctions(unittest.TestCase):  # TODO (kyle): refactor tests to be pyt
         assert "a" not in resolved_params
 
     def test_resolve_parameters_booleans(self) -> None:
-        """Test resolve parameters booleans."""
+        """Test resolve parameters booleans.
+
+        Python booleans must be converted to lowercase strings ("true"/"false")
+        to match CloudFormation's expected parameter format.
+        """
         self.blueprint.parameter_definitions = {
             "a": {"type": CFNString, "description": "A"},
             "b": {"type": CFNString, "description": "B"},

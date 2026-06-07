@@ -1,5 +1,6 @@
+---
 # https://github.com/release-drafter/release-drafter
-autolabeler:  # cspell:ignore autolabeler
+autolabeler: # cspell:ignore autolabeler
   - label: bug
     branch: [/^(bug|bugfix|fix|hotfix)\/.*/]
   - label: changelog:skip
@@ -40,7 +41,7 @@ exclude-contributors:
 exclude-labels:
   - changelog:skip
   - release
-filter-by-commitish: true  # cspell:ignore commitish
+filter-by-commitish: true # cspell:ignore commitish
 name-template: v$RESOLVED_VERSION
 sort-direction: ascending
 tag-template: v$RESOLVED_VERSION

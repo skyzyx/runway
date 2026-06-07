@@ -1,3 +1,4 @@
+---
 name: Release Management
 
 on:
@@ -25,4 +26,4 @@ jobs:
           # (instead of creating one from the release interface) then connect
           # the release draft to the tag.
         with:
-          commitish: ${{ github.ref }}  # cspell:ignore commitish
+          commitish: ${{ github.ref }} # cspell:ignore commitish

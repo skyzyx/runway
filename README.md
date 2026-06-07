@@ -3,7 +3,7 @@
 [![CI/CD](https://github.com/rackspace/runway/actions/workflows/cicd.yml/badge.svg)](https://github.com/rackspace/runway/actions/workflows/cicd.yml)
 [![codecov](https://codecov.io/gh/rackspace/runway/branch/master/graph/badge.svg?token=Ku28I0RY80)](https://codecov.io/gh/rackspace/runway)
 [![PyPi](https://img.shields.io/pypi/v/runway?style=flat)](https://pypi.org/project/runway/)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.JSON)](https://github.com/astral-sh/ruff)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/rackspace/runway/master.svg)](https://results.pre-commit.ci/latest/github/rackspace/runway/master)
 
 ![runway-example.gif](https://raw.githubusercontent.com/rackspace/runway/master/docs/source/images/runway-example.gif)
@@ -14,19 +14,19 @@ Its main goals are to encourage GitOps best-practices, avoid convoluted Makefile
 
 ## Features
 
-- Centralized environment-specific configuration
-- Automatic environment identification from git branches
-- Support of IAM roles to assume for each deployment
-- Terraform backend/workspace config management w/per-environment tfvars
-- Automatic terraform version management per-environment
+* Centralized environment-specific configuration
+* Automatic environment identification from git branches
+* Support of IAM roles to assume for each deployment
+* Terraform backend/workspace config management w/per-environment tfvars
+* Automatic Terraform version management per-environment
 
-### Supported Deployment Tools
+### Supported deployment tools
 
-- AWS CDK
-- Serverless Framework
-- CFNgin (CloudFormation)
-- Static websites (build & deploy to S3+CloudFront)
-- Terraform
+* AWS CDK
+* Serverless Framework
+* CFNgin (CloudFormation)
+* Static websites (build & deploy to S3+CloudFront)
+* Terraform
 
 ## Example
 
@@ -50,11 +50,11 @@ The example above contains enough information for Runway to deploy all resources
 ## Install
 
 ```shell
-$ pip install runway
-$ runway new
+pip install runway
+runway new
 # OR
-$ poetry add --dev runway
-$ poetry run runway new
+poetry add --dev runway
+poetry run runway new
 ```
 
 ## Documentation

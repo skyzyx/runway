@@ -1,4 +1,10 @@
-"""Factories for tests."""
+"""Factories for tests.
+
+Provides factory functions and lightweight stubs for constructing cfngin test
+objects (contexts, providers, stacks, lookups) with sensible defaults. This
+eliminates boilerplate setup across the test suite and ensures tests use
+consistent, minimal configurations unless explicitly overridden.
+"""
 
 from __future__ import annotations
 
@@ -14,7 +20,11 @@ if TYPE_CHECKING:
 
 
 class Lookup(NamedTuple):
-    """Lookup named tuple."""
+    """Lookup named tuple.
+
+    Models the three components of a resolved lookup reference so tests can
+    assert on type, input, and raw-string form independently without parsing.
+    """
 
     type: str
     input: str
@@ -22,7 +32,12 @@ class Lookup(NamedTuple):
 
 
 class MockThreadingEvent:
-    """Mock thread events."""
+    """Mock thread events.
+
+    Simulates a threading event that never signals, allowing tests to exercise
+    the cancel/timeout paths in cfngin's threaded walker without actual
+    concurrency or timing dependencies.
+    """
 
     def wait(self, timeout: int | None = None) -> bool:  # noqa: ARG002
         """Mock wait method."""
@@ -30,7 +45,12 @@ class MockThreadingEvent:
 
 
 class MockProviderBuilder(ProviderBuilder):
-    """Mock provider builder."""
+    """Mock provider builder.
+
+    Bypasses real AWS session/credential resolution so tests can inject a
+    pre-configured provider directly, isolating cfngin orchestration logic
+    from actual cloud API interactions.
+    """
 
     def __init__(self, *, provider: Provider, region: str | None = None, **_: Any) -> None:
         """Instantiate class."""
@@ -43,12 +63,21 @@ class MockProviderBuilder(ProviderBuilder):
         profile: str | None = None,  # noqa: ARG002
         region: str | None = None,  # noqa: ARG002
     ) -> Provider:
-        """Mock build method."""
+        """Mock build method.
+
+        Always returns the injected provider regardless of profile/region,
+        ensuring tests verify orchestration behavior without AWS credentials.
+        """
         return self.provider
 
 
 def mock_provider(**kwargs: Any) -> MagicMock:
-    """Mock provider."""
+    """Mock provider.
+
+    Creates a MagicMock that satisfies the Provider interface, allowing tests
+    to set up specific return values or side effects for individual AWS
+    operations without a full provider implementation.
+    """
     return MagicMock(**kwargs)
 
 
@@ -57,7 +86,12 @@ def mock_context(
     extra_config_args: dict[str, Any] | None = None,
     **kwargs: Any,
 ) -> CfnginContext:
-    """Mock context."""
+    """Mock context.
+
+    Constructs a CfnginContext with minimal valid configuration, defaulting
+    to an empty environment. This isolates tests from real environment file
+    resolution while still exercising real context initialization logic.
+    """
     config_args = {"namespace": namespace}
     if extra_config_args:
         config_args.update(extra_config_args)
@@ -70,7 +104,12 @@ def mock_context(
 def generate_definition(
     base_name: str, stack_id: Any = None, **overrides: Any
 ) -> CfnginStackDefinitionModel:
-    """Generate definitions."""
+    """Generate definitions.
+
+    Creates stack definitions with predictable naming conventions and default
+    class paths pointing to mock blueprints, so tests can build multi-stack
+    plans without specifying every field on each stack.
+    """
     definition: dict[str, Any] = {
         "name": f"{base_name}-{stack_id}" if stack_id else base_name,
         "class_path": f"tests.unit.cfngin.fixtures.mock_blueprints.{base_name.upper()}",
@@ -81,7 +120,12 @@ def generate_definition(
 
 
 def mock_lookup(lookup_input: Any, lookup_type: str, raw: str | None = None) -> Lookup:
-    """Mock lookup."""
+    """Mock lookup.
+
+    Constructs a Lookup tuple with an auto-generated raw string when none
+    is provided, matching cfngin's actual "type input" format so tests can
+    verify lookup parsing and resolution without string formatting.
+    """
     if raw is None:
         raw = f"{lookup_type} {lookup_input}"
     return Lookup(type=lookup_type, input=lookup_input, raw=raw)
@@ -89,6 +133,10 @@ def mock_lookup(lookup_input: Any, lookup_type: str, raw: str | None = None) -> 
 
 class SessionStub:
     """Stubber class for boto3 sessions made with session_cache.get_session().
+
+    Allows tests to inject a pre-built boto3 stubber client in place of real
+    AWS sessions, enabling deterministic AWS API response testing without
+    network calls or credentials.
 
     This is a helper class that should be used when trying to stub out
     get_session() calls using the boto3.stubber.

@@ -1,6 +1,6 @@
+---
 # Manage the labels of a GitHub repository as code.
 name: Label Maker
-
 
 on:
   push:
@@ -10,7 +10,6 @@ on:
       - .github/workflows/label-maker.yml
       - .github/labels.yml
 
-
 jobs:
   label-maker:
     # Skip running the job from forks.
@@ -18,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
       - name: 🚀 Run Label Maker
         uses: crazy-max/ghaction-github-labeler@v5
         with:

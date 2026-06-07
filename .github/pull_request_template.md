@@ -6,43 +6,43 @@
 
 <!-- A short summary describing what was done... -->
 
-# Why This Is Needed
+## Why this is needed
 
 <!-- Explain why this change is needed. Can be omitted if covered in the summary. -->
 
-# What Changed
+## What changed
 
 <!-- A detailed list of all the changes made, broken down by category. -->
 
-## Added
+### Added
 
 <!-- What was added? -->
 
-## Changed
+### Changed
 
 <!-- Did any functionality change? -->
 
-## Fixed
+### Fixed
 
 <!-- Were any bugs fixed? -->
 
-## Removed
+### Removed
 
 <!-- Was anything removed? -->
 
-# Screenshots
+## Screenshots
 
 <!-- Please include screenshots of any new features to show how it works. -->
 
-# Checklist
+## Checklist
 
 <!-- You can erase any parts of this template not applicable to your Pull Request. -->
 
-- [ ] Have you followed the guidelines in our [Contribution Requirements](https://runway.readthedocs.io/page/developers/contributing.html)?
-- [ ] Have you checked to ensure there aren't other open [Pull Requests](../../../pulls) for the same update/change?
-- [ ] Does your submission pass tests?
-- [ ] Have you linted your code locally prior to submission?
-- [ ] Have you added an explanation of what your changes do and why you'd like us to include them?
-- [ ] Have you written new tests for your core changes, as applicable?
-- [ ] Have you successfully ran tests with your changes locally?
-- [ ] Have you updated documentation, as applicable?
+* [ ] Have you followed the guidelines in our [Contribution Requirements](https://runway.readthedocs.io/page/developers/contributing.html)?
+* [ ] Have you checked to ensure there aren't other open Pull Requestsfor the same update/change?
+* [ ] Does your submission pass tests?
+* [ ] Have you linted your code locally prior to submission?
+* [ ] Have you added an explanation of what your changes do and why you'd like us to include them?
+* [ ] Have you written new tests for your core changes, as applicable?
+* [ ] Have you successfully ran tests with your changes locally?
+* [ ] Have you updated documentation, as applicable?

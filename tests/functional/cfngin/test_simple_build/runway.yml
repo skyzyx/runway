@@ -1,3 +1,4 @@
+---
 deployments:
   - modules:
       - path: simple-build.cfn

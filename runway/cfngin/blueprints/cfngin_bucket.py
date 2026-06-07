@@ -1,4 +1,10 @@
-"""CFNgin Bucket Blueprint."""
+"""CFNgin Bucket Blueprint.
+
+This built-in blueprint is used by the CFNgin init action to bootstrap the S3
+bucket that CFNgin uses for storing rendered CloudFormation templates. Without
+this bucket, CFNgin cannot upload templates that exceed the CloudFormation
+inline size limit.
+"""
 
 from __future__ import annotations
 
@@ -18,7 +24,12 @@ if TYPE_CHECKING:
 
 
 class CfnginBucket(Blueprint):
-    """CFNgin Bucket Blueprint."""
+    """CFNgin Bucket Blueprint.
+
+    Provides a reusable, subclass-friendly blueprint for the CFNgin template
+    storage bucket so that users can customize encryption, tagging, or naming
+    without reimplementing the full bucket resource definition.
+    """
 
     DESCRIPTION: ClassVar[str] = f"{__name__}.CFNginBucket (v{__version__})"
     VARIABLES: ClassVar[dict[str, BlueprintVariableTypeDef]] = {
@@ -49,7 +60,12 @@ class CfnginBucket(Blueprint):
 
     @cached_property
     def bucket(self) -> s3.Bucket:
-        """CFNgin Bucket."""
+        """CFNgin Bucket.
+
+        Consolidates the full bucket resource definition and its outputs in one
+        place so subclasses only need to override individual cached properties
+        (encryption, name, tags) rather than reconstructing the entire resource.
+        """
         bucket = s3.Bucket(
             "Bucket",
             AccessControl=self.variables["AccessControl"].ref,
@@ -77,6 +93,9 @@ class CfnginBucket(Blueprint):
         BucketEncryption property of the bucket without needing to override the
         bucket cached property.
 
+        Defaults to AES256 server-side encryption because it requires no KMS
+        key management while still satisfying security compliance requirements
+        for data-at-rest encryption.
         """
         return s3.BucketEncryption(
             ServerSideEncryptionConfiguration=[
@@ -90,7 +109,14 @@ class CfnginBucket(Blueprint):
 
     @cached_property
     def bucket_name(self) -> AWSHelperFn:
-        """CFNgin Bucket name."""
+        """CFNgin Bucket name.
+
+        Uses a CloudFormation condition to allow the bucket name to be optional;
+        when no name is provided, CloudFormation auto-generates one, avoiding
+        naming collisions across multiple deployments.
+        """
+        # Check both empty string and "undefined" because CFN parameters
+        # cannot truly be optional — the condition handles both sentinel values.
         condition = self.template.add_condition(
             "BucketNameProvided",
             Or(
@@ -112,7 +138,12 @@ class CfnginBucket(Blueprint):
         return Tags(Tag("version", __version__))
 
     def create_template(self) -> None:
-        """Create template."""
+        """Create template.
+
+        Assembles the CloudFormation template by referencing the bucket cached
+        property, which triggers lazy construction of all sub-resources and
+        outputs in the correct dependency order.
+        """
         self.template.set_description(self.DESCRIPTION)
         self.template.set_version("2010-09-09")
         self.template.add_resource(self.bucket)

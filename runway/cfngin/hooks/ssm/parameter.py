@@ -1,4 +1,10 @@
-"""AWS SSM Parameter Store hooks."""
+"""AWS SSM Parameter Store hooks.
+
+These hooks allow SSM parameters to be created, updated, and deleted as part
+of the CFNgin deploy/destroy lifecycle, enabling secrets and configuration
+values to be managed alongside stack resources without being stored in
+CloudFormation templates.
+"""
 
 from __future__ import annotations
 
@@ -34,7 +40,12 @@ class _PutParameterResultTypeDef(TypedDict):
 
 
 class ArgsDataModel(BaseModel):
-    """Parameter hook args."""
+    """Parameter hook args.
+
+    Mirrors the AWS PutParameter API shape so that users can express
+    parameter configuration in their CFNgin hook definitions using the
+    same field names the AWS SDK expects.
+    """
 
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
@@ -99,7 +110,11 @@ class ArgsDataModel(BaseModel):
     @field_validator("policies", mode="before")
     @classmethod
     def _convert_policies(cls, v: list[dict[str, Any]] | str | Any) -> str:
-        """Convert policies to acceptable value."""
+        """Convert policies to acceptable value.
+
+        The AWS API requires policies as a JSON string, but users often
+        provide them as a list of dicts in YAML config for readability.
+        """
         if isinstance(v, str):
             return v
         if isinstance(v, list):
@@ -109,7 +124,11 @@ class ArgsDataModel(BaseModel):
     @field_validator("tags", mode="before")
     @classmethod
     def _convert_tags(cls, v: dict[str, str] | list[dict[str, str]] | Any) -> list[dict[str, str]]:
-        """Convert tags to acceptable value."""
+        """Convert tags to acceptable value.
+
+        Accepts both the AWS-native Key/Value list format and a simpler
+        dict format, normalizing to the list format the API requires.
+        """
         if isinstance(v, list):  # TODO (kyle): improve with `typing.TypeIs` narrowing
             return cast("list[dict[str, str]]", v)
         if isinstance(v, dict):  # TODO (kyle): improve with `typing.TypeIs` narrowing
@@ -120,7 +139,12 @@ class ArgsDataModel(BaseModel):
 
 
 class _Parameter(CfnginHookProtocol):
-    """AWS SSM Parameter Store Parameter."""
+    """AWS SSM Parameter Store Parameter.
+
+    Encapsulates the full CRUD lifecycle of a single SSM parameter so that
+    deployment hooks can create/update on deploy and delete on destroy using
+    the same configuration object.
+    """
 
     ARGS_PARSER: ClassVar = ArgsDataModel
     """Class used to parse arguments passed to the hook."""
@@ -150,11 +174,19 @@ class _Parameter(CfnginHookProtocol):
 
     @cached_property
     def client(self) -> SSMClient:
-        """AWS SSM client."""
+        """AWS SSM client.
+
+        Uses cached_property so a single client instance is reused across
+        multiple API calls within the same hook invocation.
+        """
         return self.ctx.get_session().client("ssm")
 
     def delete(self) -> bool:
-        """Delete parameter."""
+        """Delete parameter.
+
+        Returns True even when the parameter does not exist because
+        the desired end state (parameter absent) is already satisfied.
+        """
         try:
             self.client.delete_parameter(Name=self.args.name)
             LOGGER.info("deleted SSM Parameter %s", self.args.name)
@@ -163,7 +195,13 @@ class _Parameter(CfnginHookProtocol):
         return True
 
     def get(self) -> ParameterTypeDef:
-        """Get parameter."""
+        """Get parameter.
+
+        Fetches the current value so that put() can skip the write when
+        the value is unchanged, avoiding unnecessary parameter versions.
+        """
+        # Guard: force flag intentionally skips the value comparison so that
+        # external changes (e.g., console edits) are always overwritten.
         if self.args.force:  # bypass getting current value
             return {}
         try:
@@ -175,7 +213,11 @@ class _Parameter(CfnginHookProtocol):
             return {}
 
     def get_current_tags(self) -> list[TagTypeDef]:
-        """Get Tags currently applied to Parameter."""
+        """Get Tags currently applied to Parameter.
+
+        Retrieved separately from the parameter value because the SSM API
+        does not include tags in GetParameter responses.
+        """
         try:
             return self.client.list_tags_for_resource(
                 ResourceId=self.args.name, ResourceType="Parameter"
@@ -207,7 +249,11 @@ class _Parameter(CfnginHookProtocol):
         return self.delete()
 
     def put(self) -> _PutParameterResultTypeDef:
-        """Put parameter."""
+        """Put parameter.
+
+        Compares the desired value against the current value to avoid
+        creating unnecessary parameter versions on every deployment.
+        """
         if not self.args.value:
             LOGGER.info(
                 "skipped putting SSM Parameter; value provided for %s is falsy",
@@ -241,8 +287,15 @@ class _Parameter(CfnginHookProtocol):
         return result
 
     def update_tags(self) -> None:
-        """Update tags."""
+        """Update tags.
+
+        Performs a diff between current and desired tags to remove stale
+        keys and apply new ones, since the SSM API has no atomic
+        replace-tags operation.
+        """
         current_tags = self.get_current_tags()
+        # Compute the symmetric difference of tag keys to identify which
+        # tags to remove before applying the desired set.
         if self.args.tags and current_tags:
             diff_tag_keys = list({i["Key"] for i in current_tags} ^ {i.key for i in self.args.tags})
         elif self.args.tags:
@@ -281,7 +334,12 @@ class _Parameter(CfnginHookProtocol):
 
 
 class SecureString(_Parameter):
-    """AWS SSM Parameter Store SecureString Parameter."""
+    """AWS SSM Parameter Store SecureString Parameter.
+
+    Provides a convenience subclass that hardcodes the parameter type to
+    SecureString, preventing accidental storage of sensitive values as
+    plain-text String parameters.
+    """
 
     def __init__(
         self,
@@ -299,6 +357,8 @@ class SecureString(_Parameter):
             **kwargs: Arbitrary keyword arguments.
 
         """
+        # Ensure the type kwarg is always SecureString regardless of what
+        # the user passed, preventing accidental plain-text storage.
         for k in ["Type", "type"]:  # ensure neither of these are set
             kwargs.pop(k, None)
         super().__init__(context, name=name, type="SecureString", **kwargs)

@@ -1,3 +1,4 @@
+---
 modules:
   - sampleapp-01.cfn
 regions:

@@ -1,4 +1,9 @@
-"""Tests for runway.cfngin.actions.destroy."""
+"""Tests for runway.cfngin.actions.destroy.
+
+Validates the destroy action's reversed dependency ordering, force-gating,
+stack-not-found handling, and DELETE_FAILED detection. Ensures stacks are
+destroyed in the correct order and missing stacks are handled gracefully.
+"""
 
 from __future__ import annotations
 
@@ -17,7 +22,11 @@ from ..factories import MockProviderBuilder, MockThreadingEvent
 
 
 class MockStack:
-    """Mock our local CFNgin stack and an AWS provider stack."""
+    """Mock our local CFNgin stack and an AWS provider stack.
+
+    Provides the minimal interface that destroy action methods expect from a
+    stack object without requiring full CfnginStack construction.
+    """
 
     def __init__(self, name: str, *_args: Any, **_kwargs: Any) -> None:
         """Instantiate class."""
@@ -29,7 +38,12 @@ class MockStack:
 
 
 class TestDestroyAction(unittest.TestCase):
-    """Tests for runway.cfngin.actions.destroy.DestroyAction."""
+    """Tests for runway.cfngin.actions.destroy.DestroyAction.
+
+    Exercises the destroy lifecycle: reversed dependency graph generation,
+    force-gate for safety, stack deletion state machine, and persistent
+    graph locking during destroy runs.
+    """
 
     def setUp(self) -> None:
         """Run before tests."""
@@ -63,7 +77,12 @@ class TestDestroyAction(unittest.TestCase):
         return CfnginContext(config=CfnginConfig.parse_obj(config), **kwargs)
 
     def test_generate_plan(self) -> None:
-        """Test generate plan."""
+        """Test generate plan.
+
+        The destroy plan must reverse dependency edges so that dependent stacks
+        are deleted before the stacks they depend on, preventing dependency
+        violations during teardown.
+        """
         plan = self.action._generate_plan(reverse=True)
         assert plan.graph.to_dict() == {
             "vpc": {"db", "instance", "bastion"},
@@ -74,7 +93,11 @@ class TestDestroyAction(unittest.TestCase):
         }
 
     def test_only_execute_plan_when_forced(self) -> None:
-        """Test only execute plan when forced."""
+        """Test only execute plan when forced.
+
+        Destroy is a destructive operation; it must not execute unless
+        force=True to prevent accidental infrastructure teardowns.
+        """
         with patch.object(self.action, "_generate_plan") as mock_generate_plan:
             self.action.run(force=False)
             assert mock_generate_plan().execute.call_count == 0
@@ -86,7 +109,12 @@ class TestDestroyAction(unittest.TestCase):
             assert mock_generate_plan().execute.call_count == 1
 
     def test_destroy_stack_complete_if_state_submitted(self) -> None:
-        """Test destroy stack complete if state submitted."""
+        """Test destroy stack complete if state submitted.
+
+        If the stack is not found and the step was already SUBMITTED, that
+        means deletion succeeded. If the step was never SUBMITTED (still
+        PENDING), the stack was already gone so it should be SKIPPED.
+        """
         # Simulate the provider not being able to find the stack (a result of
         # it being successfully deleted)
         provider = MagicMock()
@@ -102,7 +130,11 @@ class TestDestroyAction(unittest.TestCase):
         assert status == COMPLETE
 
     def test_destroy_stack_delete_failed(self) -> None:
-        """Test _destroy_stack DELETE_FAILED."""
+        """Test _destroy_stack DELETE_FAILED.
+
+        A stack stuck in DELETE_FAILED must surface the failure reason rather
+        than retrying or hanging, so operators can manually resolve the issue.
+        """
         provider = MagicMock()
         provider.get_stack.return_value = {
             "StackName": "test",
@@ -124,7 +156,12 @@ class TestDestroyAction(unittest.TestCase):
         assert status.reason == "reason"
 
     def test_destroy_stack_step_statuses(self) -> None:
-        """Test destroy stack step statuses."""
+        """Test destroy stack step statuses.
+
+        Drives a step through the full deletion lifecycle: stack doesn't exist
+        (SKIPPED), deletion initiated (SUBMITTED), in-progress, and finally
+        confirmed destroyed (COMPLETE). Validates each transition.
+        """
         mock_provider = MagicMock()
         stacks_dict = self.context.stacks_dict
 
@@ -173,7 +210,12 @@ class TestDestroyAction(unittest.TestCase):
         mock_lock: MagicMock,
         mock_graph_tags: PropertyMock,
     ) -> None:
-        """Test run persist."""
+        """Test run persist.
+
+        Validates that persistent-graph-enabled destroys acquire the lock
+        before execution and release it after, preventing concurrent
+        modifications to the shared graph state.
+        """
         mock_graph_tags.return_value = {}
         context = self._get_context(extra_config_args={"persistent_graph_key": "test.json"})
         context._persistent_graph = Graph.from_steps([Step.from_stack_name("removed", context)])

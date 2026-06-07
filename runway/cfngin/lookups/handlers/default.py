@@ -11,7 +11,12 @@ if TYPE_CHECKING:
 
 
 class DefaultLookup(LookupHandler["CfnginContext"]):
-    """Lookup to provide a default value."""
+    """Lookup to provide a default value.
+
+    Exists as the fallback lookup so config authors can define environment-aware
+    defaults inline without requiring every variable to be present in every
+    environment file.
+    """
 
     TYPE_NAME: ClassVar[str] = "default"
     """Name that the Lookup is registered as."""
@@ -43,6 +48,8 @@ class DefaultLookup(LookupHandler["CfnginContext"]):
                 f"Invalid value for default: {value}. Must be in <env_var>::<default value> format."
             ) from None
 
+        # Prefer the environment-defined value when available so that
+        # environment-specific overrides always win over the static default.
         if context and env_var_name in context.parameters:
             return context.parameters[env_var_name]
         return default_val

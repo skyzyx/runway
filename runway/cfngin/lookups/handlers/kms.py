@@ -1,4 +1,9 @@
-"""AWS KMS lookup."""
+"""AWS KMS lookup.
+
+This lookup enables storing encrypted secrets (database passwords, API keys)
+directly in cfngin configuration files and decrypting them at deploy time,
+so that secrets never need to exist as plaintext in source control.
+"""
 
 from __future__ import annotations
 
@@ -18,7 +23,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 class KmsLookup(LookupHandler["CfnginContext"]):
-    """AWS KMS lookup."""
+    """AWS KMS lookup.
+
+    Wraps the KMS Decrypt API behind the standard lookup interface so that
+    encrypted ciphertext blobs in config files are transparently decrypted
+    into plaintext values at deploy time.
+    """
 
     DEPRECATION_MSG = (
         'lookup query syntax "<region>@<encrypted-blob>" has been deprecated; '
@@ -31,6 +41,10 @@ class KmsLookup(LookupHandler["CfnginContext"]):
     @classmethod
     def legacy_parse(cls, value: str) -> tuple[str, ParsedArgsTypeDef]:
         """Retain support for legacy lookup syntax.
+
+        Preserves backward compatibility with the older ``region@blob`` format
+        while emitting a deprecation warning to guide users toward the new
+        key=value argument syntax.
 
         Format of value::
 
@@ -45,11 +59,16 @@ class KmsLookup(LookupHandler["CfnginContext"]):
     def handle(cls, value: str, context: CfnginContext, **_: Any) -> str:
         r"""Decrypt the specified value with a master key in KMS.
 
+        Decryption happens at deploy time so that config files can store only
+        the ciphertext blob, keeping secrets out of version control while still
+        allowing them to flow into CloudFormation parameters.
+
         Args:
             value: Parameter(s) given to this lookup.
             context: Context instance.
 
         """
+        # Support both legacy (region@blob) and new (key=value) query formats.
         if "@" in value:
             query, args = cls.legacy_parse(value)
         else:

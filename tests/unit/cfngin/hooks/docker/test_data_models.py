@@ -36,7 +36,11 @@ def mock_image() -> MagicMock:
 
 
 class TestDockerImage:
-    """Test runway.cfngin.hooks.docker.data_models.DockerImage."""
+    """Test runway.cfngin.hooks.docker.data_models.DockerImage.
+
+    Validates the abstraction over docker-py's Image model, providing
+    parsed repo/tag properties that hooks use for push/tag operations.
+    """
 
     def test_id(self, mock_image: MagicMock) -> None:
         """Test id."""
@@ -65,7 +69,12 @@ class TestDockerImage:
 
 
 class TestElasticContainerRegistry:
-    """Test runway.cfngin.hooks.docker._data_models.ElasticContainerRegistry."""
+    """Test runway.cfngin.hooks.docker._data_models.ElasticContainerRegistry.
+
+    Validates ECR registry configuration for both private (account-based)
+    and public (alias-based) registries, including FQN generation that
+    other hooks use for image tagging.
+    """
 
     def test_fqn_private(self) -> None:
         """Test fqn private."""
@@ -99,7 +108,11 @@ class TestElasticContainerRegistry:
         assert not obj.public
 
     def test_init_no_context(self) -> None:
-        """Test init with no context."""
+        """Test init with no context.
+
+        Ensures validation fails when neither explicit values nor a
+        context (for auto-resolution) is provided.
+        """
         with pytest.raises(ValidationError, match="context is required to resolve values"):
             ElasticContainerRegistry()
 

@@ -1,4 +1,10 @@
-"""CFNgin init action."""
+"""CFNgin init action.
+
+This module bootstraps the S3 bucket that CFNgin uses for template storage,
+ensuring the required infrastructure exists before any deploy action attempts
+to upload templates. Running init as a separate step allows idempotent
+re-runs and cleaner error messages when bucket permissions are misconfigured.
+"""
 
 from __future__ import annotations
 
@@ -23,7 +29,12 @@ LOGGER = cast("RunwayLogger", logging.getLogger(__name__))
 
 
 class Action(BaseAction):
-    """Initialize environment."""
+    """Initialize environment.
+
+    Separated from the deploy action so that bucket creation can be retried
+    independently and so that deploy never has to handle the chicken-and-egg
+    problem of needing a bucket to upload templates for the bucket's own stack.
+    """
 
     NAME = "init"
     DESCRIPTION = "Initialize environment"
@@ -38,6 +49,11 @@ class Action(BaseAction):
 
         This class creates a copy of the context object prior to initialization
         as some of it can perform destructive actions on the context object.
+
+        Copies the context because init mutates stack lists and config
+        properties (e.g. replacing stacks with the default bucket blueprint),
+        and those mutations must not leak into the caller's context for
+        subsequent actions.
 
         Args:
             context: The context for the current run.
@@ -57,6 +73,9 @@ class Action(BaseAction):
     def cfngin_bucket(self) -> Bucket | None:
         """CFNgin bucket.
 
+        Returns None when no bucket is configured so callers can skip bucket
+        operations entirely in bucket-less (inline template) deployments.
+
         Raises:
             CfnginBucketRequired: cfngin_bucket not defined.
 
@@ -71,7 +90,12 @@ class Action(BaseAction):
 
     @cached_property
     def default_cfngin_bucket_stack(self) -> CfnginStackDefinitionModel:
-        """CFNgin bucket stack."""
+        """CFNgin bucket stack.
+
+        Provides a built-in blueprint so that users do not need to manually
+        define a stack for the CFNgin bucket in their config; init can
+        self-bootstrap with sensible defaults including termination protection.
+        """
         return CfnginStackDefinitionModel(
             class_path="runway.cfngin.blueprints.cfngin_bucket.CfnginBucket",
             in_progress_behavior="wait",
@@ -122,8 +146,12 @@ class Action(BaseAction):
         else:
             LOGGER.notice("using default blueprint to create cfngin_bucket...")
             self.context.config.stacks = [self.default_cfngin_bucket_stack]
-            # clear cached values that were populated by checking the previous condition
+            # Clear cached stacks so the context re-evaluates with the new
+            # config; without this, subsequent code would operate on stale
+            # stack objects from the original config.
             self.context._del_cached_property("stacks", "stacks_dict")  # noqa: SLF001
+        # Force the provider to use the bucket region so the deploy action
+        # creates the CloudFormation stack in the same region as the bucket.
         if self.provider_builder:
             self.provider_builder.region = self.context.bucket_region
         deploy.Action(

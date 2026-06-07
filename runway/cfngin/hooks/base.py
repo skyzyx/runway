@@ -1,4 +1,9 @@
-"""Base class for CFNgin hooks."""
+"""Base class for CFNgin hooks.
+
+This module provides an inheritance-based approach for hooks that need to
+manage CloudFormation stacks as part of their lifecycle, centralizing the
+deploy/destroy plumbing so individual hooks only define stage-specific logic.
+"""
 
 from __future__ import annotations
 
@@ -26,7 +31,12 @@ LOGGER = cast("RunwayLogger", logging.getLogger(__name__))
 
 
 class HookArgsBaseModel(BaseModel):
-    """Base model for hook args."""
+    """Base model for hook args.
+
+    Provides a pydantic-validated container so hook arguments are type-checked
+    and normalized before the hook executes, preventing runtime KeyError
+    surprises deep in hook logic.
+    """
 
     tags: dict[str, str] = {}
 
@@ -35,6 +45,10 @@ class Hook(CfnginHookProtocol):
     """Base class for hooks.
 
     Not all hooks need to be classes and not all classes need to be hooks.
+
+    This base class exists so that hooks needing to deploy or destroy
+    CloudFormation stacks can reuse the stack lifecycle machinery without
+    reimplementing action orchestration in every hook.
 
     Attributes:
         args: Keyword arguments passed to the hook, loaded into a MutableMap object.
@@ -58,6 +72,10 @@ class Hook(CfnginHookProtocol):
     def __init__(self, context: CfnginContext, provider: Provider, **kwargs: Any) -> None:
         """Instantiate class.
 
+        Merges user-supplied tags with context-level tags and eagerly creates
+        deploy/destroy action instances so subclasses can call deploy_stack or
+        destroy_stack without additional setup.
+
         Args:
             context: Context instance. (passed in by CFNgin)
             provider: Provider instance. (passed in by CFNgin)
@@ -80,16 +98,27 @@ class Hook(CfnginHookProtocol):
         return Tags(**dict(self.context.tags, **self.args.tags))
 
     def generate_stack(self, **kwargs: Any) -> Stack:
-        """Create a CFNgin Stack object."""
+        """Create a CFNgin Stack object.
+
+        Builds a Stack from a synthetic definition so hooks can deploy
+        CloudFormation stacks without requiring a full stacker config entry.
+        """
         definition = CfnginStackDefinitionModel.model_construct(
             name=self.stack_name, tags=self.args.tags, **kwargs
         )
         stack = Stack(definition, self.context)
+        # Directly assign the blueprint to bypass the normal resolution path,
+        # since hooks construct their own blueprint rather than reading one
+        # from the stack definition.
         stack._blueprint = self.blueprint  # noqa: SLF001
         return stack
 
     def get_template_description(self, suffix: str | None = None) -> str:
         """Generate a template description.
+
+        Produces a human-readable CloudFormation template description that
+        traces the template back to the hook module that generated it,
+        aiding debugging in the AWS console.
 
         Args:
             suffix: Suffix to append to the end of a CloudFormation template
@@ -105,6 +134,9 @@ class Hook(CfnginHookProtocol):
     def deploy_stack(self, stack: Stack | None = None, wait: bool = False) -> Status:
         """Deploy a stack.
 
+        Exposes stack deployment as a simple method call so hooks can create
+        supporting infrastructure without managing action internals.
+
         Args:
             stack: A stack to act on.
             wait: Wither to wait for the stack to complete before returning.
@@ -117,6 +149,9 @@ class Hook(CfnginHookProtocol):
 
     def destroy_stack(self, stack: Stack | None = None, wait: bool = False) -> Status:
         """Destroy a stack.
+
+        Exposes stack teardown as a simple method call so hooks can clean up
+        infrastructure they previously created.
 
         Args:
             stack: A stack to act on.
@@ -148,6 +183,10 @@ class Hook(CfnginHookProtocol):
     def _log_stack(stack: Stack, status: Status) -> None:
         """Log stack status. Mimics normal stack deployment.
 
+        Uses differentiated log levels (notice, success, error) so that hook-managed
+        stacks produce the same operator-visible output as stacks managed by the
+        normal plan executor.
+
         Args:
             stack: The stack being logged.
             status: The status being logged.
@@ -172,6 +211,9 @@ class Hook(CfnginHookProtocol):
         wait: bool = False,
     ) -> Status:
         """Run a CFNgin hook modified for use in hooks.
+
+        Centralizes the submit-then-optionally-wait pattern so deploy_stack and
+        destroy_stack stay as thin wrappers.
 
         Args:
             action: Action to be taken against a stack.
@@ -201,6 +243,10 @@ class Hook(CfnginHookProtocol):
     ) -> Status:
         """Wait for a CloudFormation stack to complete.
 
+        Polls the stack action in a loop because CloudFormation operations are
+        asynchronous and hooks sometimes need a stack to be fully ready before
+        proceeding to the next step.
+
         Args:
             action: Action to be taken against a stack.
             last_status: The last status of the stack.
@@ -226,6 +272,9 @@ class Hook(CfnginHookProtocol):
                 break
             if (till_reason and status.reason) and status.reason == till_reason:
                 break
+            # Log intermediate status transitions (e.g., rollback) so
+            # operators can see what CloudFormation is doing between
+            # submission and final completion.
             if last_status and last_status.reason != status.reason:
                 # log status changes like rollback
                 self._log_stack(stack, status)
@@ -240,8 +289,16 @@ class Hook(CfnginHookProtocol):
 
 
 # TODO (kyle): BREAKING find a better place for this - can cause cyclic imports
+# These action subclasses exist here (rather than in the actions module) to
+# break cyclic imports while giving hooks direct access to single-stack
+# deploy/destroy operations without the full plan machinery.
 class HookDeployAction(deploy.Action):
-    """Deploy action that can be used from hooks."""
+    """Deploy action that can be used from hooks.
+
+    Overrides the base deploy action to accept an externally-provided provider
+    instance, since hooks already have a provider and should not create a
+    second one.
+    """
 
     def __init__(self, context: CfnginContext, provider: Provider) -> None:
         """Instantiate class.
@@ -256,23 +313,45 @@ class HookDeployAction(deploy.Action):
 
     @property
     def provider(self) -> Provider:
-        """Override the inherited property to return the local provider."""
+        """Override the inherited property to return the local provider.
+
+        The base action would normally build a new provider per stack; hooks
+        must reuse the existing provider to share session state and avoid
+        redundant credential calls.
+        """
         return self._provider
 
     def build_provider(self) -> Provider:
-        """Override the inherited method to always return local provider."""
+        """Override the inherited method to always return local provider.
+
+        Prevents the action from constructing a new provider, ensuring the
+        hook's pre-configured provider (with correct region/role) is used.
+        """
         return self._provider
 
     def run(self, **kwargs: Any) -> Status:  # type: ignore
-        """Run the action for one stack."""
+        """Run the action for one stack.
+
+        Delegates directly to _launch_stack to bypass plan-level
+        orchestration, since hooks operate on a single stack at a time.
+        """
         return self._launch_stack(**kwargs)
 
 
 # the build action has logic to destroy stacks so we can just extend the
 # HookDeployAction and change `run` in use the `_destroy_stack` method instead
 class HookDestroyAction(HookDeployAction):
-    """Destroy action that can be used from hooks."""
+    """Destroy action that can be used from hooks.
+
+    Reuses HookDeployAction's provider-injection machinery but routes the
+    run call to _destroy_stack, avoiding code duplication for the teardown
+    path.
+    """
 
     def run(self, **kwargs: Any) -> Status:
-        """Run the action for one stack."""
+        """Run the action for one stack.
+
+        Routes to _destroy_stack instead of _launch_stack so the same
+        single-stack invocation pattern handles teardown.
+        """
         return self._destroy_stack(**kwargs)

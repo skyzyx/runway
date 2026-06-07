@@ -59,7 +59,12 @@ def project(cfngin_context: CfnginContext, tmp_path: Path) -> ProjectTypeAlias:
 
 
 class TestDeploymentPackage:
-    """Test DeploymentPackage."""
+    """Test DeploymentPackage.
+
+    Validates the ZIP-based deployment package that bundles Lambda source
+    code and dependencies for upload to S3, including content hashing,
+    permission fixing, and layer directory insertion.
+    """
 
     def test___init__(self, project: ProjectTypeAlias) -> None:
         """Test __init__."""
@@ -602,7 +607,12 @@ class TestDeploymentPackage:
 
 
 class TestDeploymentPackageS3Object:
-    """Test DeploymentPackageS3Object."""
+    """Test DeploymentPackageS3Object.
+
+    Validates the S3-backed variant of DeploymentPackage that reads
+    metadata from object tags, enabling cache reuse across builds
+    when source code hash hasn't changed.
+    """
 
     def test_build_exists(
         self,

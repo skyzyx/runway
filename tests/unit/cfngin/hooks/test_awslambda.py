@@ -64,7 +64,12 @@ F2_FILES = [p[3:] for p in ALL_FILES if p.startswith("f2")]
 
 
 class TestLambdaHooks(unittest.TestCase):
-    """Tests for runway.cfngin.hooks.aws_lambda."""
+    """Tests for runway.cfngin.hooks.aws_lambda.
+
+    Validates the Lambda deployment hook which packages source code into
+    ZIP files, computes content hashes for idempotent uploads, and stores
+    the artifacts in S3 for CloudFormation to reference.
+    """
 
     _s3 = None
 
@@ -334,7 +339,12 @@ class TestLambdaHooks(unittest.TestCase):
 
     @mock_aws
     def test_idempotence(self) -> None:
-        """Test idempotence."""
+        """Test idempotence.
+
+        Verifies that running the hook twice with identical source produces
+        the same S3 key, preventing unnecessary Lambda updates and ensuring
+        CloudFormation detects no-change correctly.
+        """
         with self.temp_directory_with_files() as temp_dir:
             functions = {"MyFunction": {"path": temp_dir.path + "/f1"}}
 
@@ -361,7 +371,12 @@ class TestLambdaHooks(unittest.TestCase):
                 )
 
     def test_calculate_hash(self) -> None:
-        """Test calculate hash."""
+        """Test calculate hash.
+
+        Confirms that identical file contents produce the same hash, and
+        modified content produces a different hash, ensuring the content-
+        addressed upload scheme works correctly.
+        """
         with self.temp_directory_with_files() as temp_dir1:
             root = cast("str", temp_dir1.path)
             hash1 = _calculate_hash(ALL_FILES, root)
@@ -381,7 +396,12 @@ class TestLambdaHooks(unittest.TestCase):
         assert hash2 != hash3
 
     def test_calculate_hash_diff_filename_same_contents(self) -> None:
-        """Test calculate hash diff filename same contents."""
+        """Test calculate hash diff filename same contents.
+
+        Ensures file paths are included in the hash input so that
+        renaming a file produces a different hash, even with identical
+        content. This prevents stale deployments after file renames.
+        """
         files = ["file1.txt", "f2/file2.txt"]
         file1, file2 = files
         with TempDirectory() as temp_dir:
@@ -393,7 +413,11 @@ class TestLambdaHooks(unittest.TestCase):
         assert hash1 != hash2
 
     def test_calculate_hash_different_ordering(self) -> None:
-        """Test calculate hash different ordering."""
+        """Test calculate hash different ordering.
+
+        Verifies that file enumeration order does not affect the hash,
+        making the build deterministic regardless of filesystem ordering.
+        """
         files1 = ALL_FILES
         files2 = random.sample(ALL_FILES, k=len(ALL_FILES))
         with TempDirectory() as temp_dir1:
@@ -429,7 +453,11 @@ class TestLambdaHooks(unittest.TestCase):
 
     @mock_aws
     def test_follow_symlink_true(self) -> None:
-        """Testing if symlinks are followed."""
+        """Testing if symlinks are followed.
+
+        Validates that follow_symlinks=True includes symlinked directories
+        in the ZIP, needed for monorepo shared-lib patterns.
+        """
         with self.temp_directory_with_files() as temp_dir1:
             root1 = temp_dir1.path
             with self.temp_directory_with_files() as temp_dir2:
@@ -466,7 +494,12 @@ class TestLambdaHooks(unittest.TestCase):
 
     @mock_aws
     def test_follow_symlink_false(self) -> None:
-        """Testing if symlinks are present and not followed."""
+        """Testing if symlinks are present and not followed.
+
+        Validates that follow_symlinks=False excludes symlinked
+        directories, which is the safe default to prevent including
+        unintended dependencies.
+        """
         with self.temp_directory_with_files() as temp_dir1:
             root1 = temp_dir1.path
             with self.temp_directory_with_files() as temp_dir2:
@@ -558,7 +591,12 @@ class TestLambdaHooks(unittest.TestCase):
 
 
 class TestDockerizePip:
-    """Test dockerize_pip."""
+    """Test dockerize_pip.
+
+    Validates the Docker-based pip installation flow used when Lambda
+    packages require native compilation on a Linux-like environment
+    that matches the Lambda runtime.
+    """
 
     command = [
         "/bin/sh",
@@ -638,7 +676,11 @@ class TestDockerizePip:
         )
 
     def test_raises_invalid_config(self) -> None:
-        """Test that InvalidDockerizePipConfiguration is raised."""
+        """Test that InvalidDockerizePipConfiguration is raised.
+
+        Validates all mutually exclusive parameter combinations that
+        should be rejected, preventing ambiguous Docker builds.
+        """
         client = make_fake_client()
         with pytest.raises(InvalidDockerizePipConfiguration):
             dockerized_pip(
@@ -683,7 +725,11 @@ class TestDockerizePip:
 
 
 class TestHandleRequirements:
-    """Test handle_requirements."""
+    """Test handle_requirements.
+
+    Validates requirements file handling which determines whether pip
+    installation is needed for the Lambda package.
+    """
 
     REQUIREMENTS = "-i https://pypi.org/simple\n\n"
 
@@ -711,7 +757,11 @@ class TestHandleRequirements:
 
 
 class TestShouldUseDocker:
-    """Test should_use_docker."""
+    """Test should_use_docker.
+
+    Validates the "non-linux" sentinel value which auto-enables Docker
+    on non-Linux platforms where native Lambda binaries won't work.
+    """
 
     def test_bool_true(self) -> None:
         """Test value bool(True)."""
@@ -744,7 +794,11 @@ class TestShouldUseDocker:
 
 
 def test_copydir() -> None:
-    """Test copydir."""
+    """Test copydir.
+
+    Validates recursive directory copy including nested subdirectories,
+    which is used to stage Lambda source before ZIP creation.
+    """
     with TempDirectory() as tmp_dir:
         dest_path = tmp_dir.makedir("dest")
         src_path = tmp_dir.makedir("src")

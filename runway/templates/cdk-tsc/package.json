@@ -1,6 +1,13 @@
 {
+  "name": "sampleapp",
+  "version": "0.1.0",
   "bin": {
     "newbase": "bin/sample.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "cdk": "cdk",
+    "watch": "tsc -w"
   },
   "dependencies": {
     "@aws-cdk/core": "^1.1.0",
@@ -12,12 +19,5 @@
     "aws-cdk": "^1.1.0",
     "ts-node": "^8.1.0",
     "typescript": "^3.3.3333"
-  },
-  "name": "sampleapp",
-  "scripts": {
-    "build": "tsc",
-    "cdk": "cdk",
-    "watch": "tsc -w"
-  },
-  "version": "0.1.0"
+  }
 }

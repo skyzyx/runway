@@ -1,4 +1,9 @@
-"""AWS Lambda hook."""
+"""AWS Lambda hook.
+
+This is a legacy hook (deprecated in favor of the awslambda subsystem) that
+builds Lambda deployment packages from local source, installs pip dependencies,
+and uploads the resulting ZIP to S3 for use in CloudFormation Lambda resources.
+"""
 
 from __future__ import annotations
 
@@ -46,7 +51,8 @@ if TYPE_CHECKING:
     from ..providers.aws.default import Provider
 
 # mask to retrieve only UNIX file permissions from the external attributes
-# field of a ZIP entry.
+# field of a ZIP entry. Needed because ZIP stores permissions in the upper
+# 16 bits of external_attr alongside platform-specific metadata.
 ZIP_PERMS_MASK = (stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO) << 16
 
 LOGGER = logging.getLogger(__name__)
@@ -68,7 +74,9 @@ def copydir(
 ) -> None:
     """Extend the functionality of shutil.
 
-    Correctly copies files and directories in a source directory.
+    Correctly copies files and directories in a source directory. Exists
+    because shutil.copytree does not support include/exclude glob patterns,
+    which are needed to selectively package Lambda source files.
 
     Args:
         source: Source directory.
@@ -103,6 +111,10 @@ def copydir(
 def find_requirements(root: str) -> dict[str, bool] | None:
     """Identify Python requirement files.
 
+    Determines whether pip dependencies need to be installed alongside the
+    Lambda source. The presence of requirements.txt signals that dependency
+    bundling (local or Docker-based) is required.
+
     Args:
         root: Path that should be searched for files.
 
@@ -123,6 +135,9 @@ def find_requirements(root: str) -> dict[str, bool] | None:
 
 def should_use_docker(dockerize_pip: DockerizePipArgTypeDef = None) -> bool:
     """Assess if Docker should be used based on the value of args.
+
+    Docker is needed to produce Linux-compatible native extensions when
+    building on macOS or Windows, since Lambda runs on Amazon Linux.
 
     Args:
         dockerize_pip: Value to assess if Docker should be used for pip.
@@ -151,7 +166,9 @@ def _zip_files(files: Iterable[str], root: str) -> tuple[bytes, str]:
 
     Files will be stored in the archive with relative names, and have their
     UNIX permissions forced to 755 or 644 (depending on whether they are
-    user-executable in the source filesystem).
+    user-executable in the source filesystem). Permission normalization
+    prevents Lambda execution failures caused by overly restrictive file modes
+    that vary across development environments.
 
     Args:
         files: file names to add to the archive, relative to ``root``.
@@ -187,6 +204,10 @@ def _zip_files(files: Iterable[str], root: str) -> tuple[bytes, str]:
 def _calculate_hash(files: Iterable[str], root: str) -> str:
     """Return a hash of all of the given files at the given root.
 
+    The hash includes both file names and contents so that renames or
+    reorderings produce a different hash, enabling accurate change detection
+    for upload deduplication.
+
     Args:
         files: file names to include in the hash calculation,
             relative to ``root``.
@@ -216,7 +237,8 @@ def _find_files(
     """List files inside a directory based on include and exclude rules.
 
     This is a more advanced version of `glob.glob`, that accepts multiple
-    complex patterns.
+    complex patterns. Uses the formic library to support Ant-style glob
+    patterns that standard library glob does not handle.
 
     Args:
         root: base directory to list files from.
@@ -280,6 +302,9 @@ def _zip_from_file_patterns(
 def handle_requirements(dest_path: str, requirements: dict[str, bool]) -> str:
     """Use the correct requirements file.
 
+    Exists to support potential future requirement file formats (e.g., Pipfile)
+    while currently only requirements.txt is recognized.
+
     Args:
         dest_path: Where to output the requirements file if one needs to be created.
         requirements: Map of requirement file names and whether they exist.
@@ -311,6 +336,10 @@ def dockerized_pip(  # noqa: C901, PLR0912
     **_: Any,
 ) -> None:
     """Run pip with docker.
+
+    Installs dependencies inside a Lambda-compatible Linux container to produce
+    native extensions that match the Lambda execution environment, avoiding
+    platform mismatch issues when building on macOS or Windows.
 
     Args:
         work_dir: Work directory for docker.
@@ -560,6 +589,9 @@ def _zip_package(  # noqa: PLR0912, C901, D417
 def _head_object(s3_conn: S3Client, bucket: str, key: str) -> HeadObjectOutputTypeDef | None:
     """Retrieve information about an object in S3 if it exists.
 
+    Used to check whether a Lambda ZIP with the same content hash already
+    exists in S3, enabling upload deduplication across repeated deployments.
+
     Args:
         s3_conn: S3 connection to use for operations.
         bucket: name of the bucket containing the key.
@@ -595,7 +627,9 @@ def _upload_code(
 
     The key used for the upload will be unique based on the checksum of the
     contents. No changes will be made if the contents in S3 already match the
-    expected contents.
+    expected contents. Content-addressed keys allow multiple deploys with
+    unchanged code to skip the upload entirely, reducing deploy time and S3
+    costs.
 
     Args:
         s3_conn: S3 connection to use for operations.
@@ -641,6 +675,9 @@ def _check_pattern_list(
 ) -> list[str] | None:
     """Validate file search patterns from user configuration.
 
+    Normalizes the flexible YAML input (string, list, or None) into a
+    consistent list format that downstream file-matching functions expect.
+
     Acceptable input is a string (which will be converted to a singleton list),
     a list of strings, or anything falsy (such as None or an empty dictionary).
     Empty or unset input will be converted to a default.
@@ -672,6 +709,9 @@ def _check_pattern_list(
 
 class _UploadFunctionOptionsTypeDef(TypedDict):
     """Type definition for the "options" argument of _upload_function.
+
+    Provides typed structure to the free-form YAML configuration dict so that
+    downstream code can access function options with type safety.
 
     Attributes:
         include: File patterns to include in the payload.
@@ -766,6 +806,9 @@ def select_bucket_region(
     """Return the appropriate region to use when uploading functions.
 
     Select the appropriate region for the bucket where lambdas are uploaded in.
+    Follows a priority chain (hook-level > global config > provider) so that
+    cross-region deployments work correctly while defaulting to the simplest
+    case of same-region.
 
     Args:
         custom_bucket: The custom bucket name provided by the `bucket` kwarg of

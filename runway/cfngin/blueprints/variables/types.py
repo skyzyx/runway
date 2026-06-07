@@ -1,4 +1,10 @@
-"""CFNgin blueprint variable types."""
+"""CFNgin blueprint variable types.
+
+This module defines the two special type markers that let a single VARIABLES
+dict describe both compile-time Python values (TroposphereType) and deploy-time
+CloudFormation Parameters (CFNType). The blueprint renderer inspects variable
+types against these markers to decide how each value flows into the template.
+"""
 
 from __future__ import annotations
 
@@ -28,6 +34,11 @@ class TroposphereType(Generic[TroposphereT]):
     Parameter classes can be defined as dictionary or a list of
     dictionaries. In either case, the keys and values will be used directly
     as constructor parameters.
+
+    This type marker enables blueprints to accept complex nested
+    configuration (YAML dicts/lists) and automatically hydrate them into
+    validated troposphere objects at compile time, bridging the gap between
+    human-readable config and the troposphere object model.
 
     """
 
@@ -66,12 +77,22 @@ class TroposphereType(Generic[TroposphereT]):
 
     @staticmethod
     def _validate_type(defined_type: type[TroposphereT]) -> None:
+        """Validate that the type supports dict-based construction.
+
+        Fails fast at variable definition time rather than at template render
+        time, so misconfigured blueprints are caught during import/load.
+        """
         if not hasattr(defined_type, "from_dict"):
             raise ValueError("Type must have `from_dict` attribute")
 
     @property
     def resource_name(self) -> str:
-        """Name of the type or resource."""
+        """Name of the type or resource.
+
+        Used in error messages and logging to identify which troposphere type
+        failed validation, preferring the CloudFormation resource name when
+        available for clarity in stack diagnostics.
+        """
         return str(getattr(self._type, "resource_name", None) or self._type.__name__)
 
     @overload
@@ -88,6 +109,11 @@ class TroposphereType(Generic[TroposphereT]):
     ) -> TroposphereT | list[TroposphereT] | None:
         """Create the troposphere type from the value.
 
+        This is the core transformation that converts raw configuration data
+        (dicts from YAML) into validated troposphere objects, enabling
+        blueprints to work with strongly-typed AWS resource definitions
+        rather than unstructured dictionaries.
+
         Args:
             value: A dictionary or list of dictionaries (see class documentation
                 for details) to use as parameters to create the Troposphere type instance.
@@ -103,8 +129,9 @@ class TroposphereType(Generic[TroposphereT]):
             return None
 
         if hasattr(self._type, "resource_type"):
-            # Our type is a resource, so ensure we have a dict of title to
-            # parameters
+            # Resources require title keys because CloudFormation uses titles
+            # as logical IDs in the template; the dict structure mirrors
+            # the CFN template's Resources section.
             if not isinstance(value, dict):
                 raise ValueError("Resources must be specified as a dict of title to parameters")
             if not self._many and len(value) > 1:
@@ -124,6 +151,8 @@ class TroposphereType(Generic[TroposphereT]):
         else:
             result = [self._type.from_dict(None, value)]
 
+        # Validate eagerly so template authors see schema errors during
+        # blueprint compilation rather than at CloudFormation deploy time.
         if self._validate:
             for v in result:
                 v._validate_props()  # noqa: SLF001
@@ -131,12 +160,21 @@ class TroposphereType(Generic[TroposphereT]):
         return result[0] if not self._many else result
 
 
+# The CFNType hierarchy below maps CloudFormation's native parameter types
+# into Python's type system. This allows the same VARIABLES dict to declare
+# values that are resolved at deploy time by CloudFormation itself (e.g.,
+# SSM lookups, user-prompted inputs) rather than at compile time by Python.
 class CFNType:
     """Represents a CloudFormation Parameter Type.
 
     :class:`CFNType` can be used as the ``type`` for a Blueprint variable.
     Unlike other variables, a variable with ``type: CFNType``, will
     be submitted to CloudFormation as a Parameter.
+
+    This marker tells the blueprint renderer to emit a Parameters section
+    entry instead of resolving the value in Python. This is essential for
+    values that must remain dynamic at deploy time (e.g., environment-specific
+    AMI IDs, VPC IDs chosen by the deployer).
 
     Attributes:
         parameter_type: Name of the CloudFormation Parameter type to specify when

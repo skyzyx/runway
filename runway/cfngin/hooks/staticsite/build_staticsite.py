@@ -1,4 +1,9 @@
-"""CFNgin hook for building static website."""
+"""CFNgin hook for building static website.
+
+This hook orchestrates the full build lifecycle (hash, build, archive, upload) so
+that static site deployments are idempotent and skip redundant builds when the
+source has not changed.
+"""
 
 from __future__ import annotations
 
@@ -28,7 +33,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class HookArgsOptions(HookArgsBaseModel):
-    """Hook arguments ``options`` block."""
+    """Hook arguments ``options`` block.
+
+    Encapsulates all user-configurable build parameters in a nested model so the
+    hook's public interface stays flat while supporting framework-agnostic builds.
+    """
 
     build_output: str | None = None
     """Path were the build static site will be stored locally before upload."""
@@ -55,7 +64,11 @@ class HookArgsOptions(HookArgsBaseModel):
 
 
 class HookArgs(HookArgsBaseModel):
-    """Hook arguments."""
+    """Hook arguments.
+
+    Separates infrastructure references (artifact bucket) from build options so
+    the hook can resolve cross-stack outputs independently of user build config.
+    """
 
     artifact_bucket_rxref_lookup: str
     """Query for ``RxrefLookup`` to get artifact bucket."""
@@ -67,7 +80,11 @@ class HookArgs(HookArgsBaseModel):
 def zip_and_upload(
     app_dir: str, bucket: str, key: str, session: boto3.Session | None = None
 ) -> None:
-    """Zip built static site and upload to S3."""
+    """Zip built static site and upload to S3.
+
+    Archives the build output as a single zip so it can be stored as a versioned
+    artifact in S3, enabling rollback and deduplication across deployments.
+    """
     s3_client = session.client("s3") if session else boto3.client("s3")
     transfer = S3Transfer(s3_client)
 
@@ -106,6 +123,9 @@ def build(
 
     Arguments parsed by :class:`~runway.cfngin.hooks.staticsite.build_staticsite.HookArgs`.
 
+    This is the main entry point for the build hook. It compares source hashes
+    against a previously stored value in SSM Parameter Store to skip builds when
+    the source has not changed, saving time and avoiding unnecessary invalidations.
     """
     options = options or {}
     options.setdefault("namespace", context.namespace)
@@ -137,6 +157,8 @@ def build(
     LOGGER.debug("application hash: %s", context_dict["hash"])
 
     # Now determine if the current staticsite has already been deployed
+    # Use SSM Parameter Store as a lightweight state backend to track the last
+    # deployed hash, avoiding full S3 scans on every deployment.
     if args.options.source_hashing.enabled:
         context_dict["hash_tracking_parameter"] = (
             args.options.source_hashing.parameter or f"{context_dict['artifact_key_prefix']}hash"
@@ -167,6 +189,8 @@ def build(
         context_dict["deploy_is_current"] = True
         return context_dict
 
+    # If the archive already exists in S3 from a prior build with the same hash,
+    # download it rather than rebuilding, saving build time for repeated deploys.
     if does_s3_object_exist(
         context_dict["artifact_bucket_name"],
         context_dict["current_archive_filename"],

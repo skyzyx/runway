@@ -1,4 +1,10 @@
-"""CFNgin stack."""
+"""CFNgin stack.
+
+This module provides the Stack abstraction that bridges the static configuration
+model (CfnginStackDefinitionModel) with the runtime execution layer (Plan/Step),
+allowing the orchestrator to treat each CloudFormation stack as a self-contained
+unit with its own dependencies, variables, and blueprint resolution lifecycle.
+"""
 
 from __future__ import annotations
 
@@ -24,6 +30,10 @@ def _initialize_variables(
 ) -> list[Variable]:
     """Convert defined variables into a list of ``Variable`` for consumption.
 
+    This wraps raw key/value pairs into Variable objects so they can participate
+    in the lookup resolution system (e.g., cross-stack references, SSM lookups)
+    that requires Variable instances to track dependencies and resolve lazily.
+
     Args:
         stack_def: The stack definition being worked on.
         variables: Optional, explicit variables.
@@ -38,12 +48,20 @@ def _initialize_variables(
 
     """
     variables = variables or stack_def.variables or {}
+    # Deep copy prevents mutations during resolution from affecting the original
+    # configuration, which may be reused across multiple deploy attempts.
     variable_values = deepcopy(variables)
     return [Variable(k, v, "cfngin") for k, v in variable_values.items()]
 
 
 class Stack:
     """Represents gathered information about a stack to be built/updated.
+
+    This class exists as the primary runtime abstraction that the Plan/Step
+    orchestrator operates on. It unifies the static configuration definition
+    with lazily-resolved runtime state (blueprint, variables, outputs) so that
+    the execution engine can treat heterogeneous stack types (troposphere
+    blueprints vs raw templates) through a single interface.
 
     Attributes:
         definition: The stack definition from the config.
@@ -97,6 +115,11 @@ class Stack:
     ) -> None:
         """Instantiate class.
 
+        Accepts both the static definition and runtime overrides so that the
+        Plan executor can construct stacks with context-specific flags (locked,
+        force, enabled) that vary per invocation without mutating the shared
+        configuration model.
+
         Args:
             definition: A stack definition.
             context: Current context for deploying the stack.
@@ -116,6 +139,9 @@ class Stack:
         self.definition = definition
         self.enabled = enabled
         self.force = force
+        # Compute the fully-qualified name early because both the Plan's DAG
+        # and the Provider's CloudFormation API calls rely on it as the unique
+        # identifier for this stack within a namespace.
         self.fqn = context.get_fqn(definition.stack_name or self.name)
         self.in_progress_behavior = definition.in_progress_behavior
         self.locked = locked
@@ -133,12 +159,22 @@ class Stack:
 
     @property
     def requires(self) -> set[str]:
-        """Return a list of stack names this stack depends on."""
+        """Return a list of stack names this stack depends on.
+
+        Merges explicit dependencies from the config with implicit dependencies
+        discovered via variable lookups, so the DAG builder can establish the
+        correct execution order without requiring users to manually declare
+        every cross-stack relationship.
+        """
         requires = set(self.definition.requires or [])
 
-        # Add any dependencies based on output lookups
+        # Add any dependencies based on output lookups — this ensures that if
+        # a variable references another stack's output, the DAG enforces that
+        # the referenced stack is built first.
         for variable in self.variables:
             deps = variable.dependencies
+            # Guard against circular references early to provide a clear error
+            # rather than letting the DAG resolution hang or crash.
             if self.name in deps:
                 raise ValueError(
                     f"Variable {variable.name} in stack {self.name} has a circular reference"
@@ -148,19 +184,35 @@ class Stack:
 
     @property
     def stack_policy(self) -> str | None:
-        """Return the Stack Policy to use for this stack."""
+        """Return the Stack Policy to use for this stack.
+
+        Reads the policy lazily from the file system so that the configuration
+        can reference a path without requiring the file to exist at parse time.
+        """
         if self.definition.stack_policy_path:
             return self.definition.stack_policy_path.read_text() or None
         return None
 
     @property
     def blueprint(self) -> Blueprint:
-        """Return the blueprint associated with this stack."""
+        """Return the blueprint associated with this stack.
+
+        Lazily instantiates the blueprint because the class may need to be
+        dynamically imported from a user-specified path, and construction is
+        deferred until the stack is actually being processed by the executor.
+        """
         if not self._blueprint:
             kwargs: dict[str, Any] = {}
+            # Support two mutually exclusive blueprint sources: a Python class
+            # (troposphere-based) or a raw CloudFormation template file. This
+            # branching allows users to choose between programmatic and
+            # declarative template authoring within the same config.
             if self.definition.class_path:
                 class_path = self.definition.class_path
                 blueprint_class = load_object_from_string(class_path)
+                # Validate the loaded class has the expected interface before
+                # proceeding, to give a clear error at resolution time rather
+                # than a cryptic AttributeError during rendering.
                 if not hasattr(blueprint_class, "rendered"):
                     raise AttributeError(
                         f'Stack class {class_path} does not have a "rendered" attribute.'
@@ -189,6 +241,10 @@ class Stack:
 
         Includes both the global tags, as well as any stack specific tags
         or overrides.
+
+        Merges global context tags with per-stack overrides so that stacks
+        inherit organizational tagging by default while allowing individual
+        stacks to customize or override specific tag values.
 
         """
         tags = self.definition.tags or {}
@@ -224,6 +280,11 @@ class Stack:
         This resolves the Stack variables and then prepares the Blueprint for
         rendering by passing the resolved variables to the Blueprint.
 
+        Separating resolution from construction allows the Plan executor to
+        resolve variables only when a stack is about to be acted upon, ensuring
+        that cross-stack output lookups can reference outputs that become
+        available during the same execution run.
+
         Args:
             context: CFNgin context.
             provider: Subclass of the base provider.
@@ -234,6 +295,10 @@ class Stack:
 
     def set_outputs(self, outputs: dict[str, Any]) -> None:
         """Set stack outputs to the provided value.
+
+        Called after a successful stack operation so that downstream stacks
+        can resolve output lookups against this stack's results within the
+        same execution run.
 
         Args:
             outputs: CloudFormation Stack outputs.

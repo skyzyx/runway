@@ -18,7 +18,12 @@ MODULE = "runway.cfngin.hooks.awslambda.python_requirements._deployment_package"
 
 
 class TestPythonDeploymentPackage:
-    """Test PythonDeploymentPackage."""
+    """Test PythonDeploymentPackage.
+
+    Validates Python-specific packaging behavior including slim mode
+    (removing .pyc, __pycache__, .dist-info), strip mode (.so removal),
+    and layer directory insertion for Lambda layers.
+    """
 
     @pytest.mark.parametrize(
         "slim, strip", [(False, False), (False, True), (True, False), (True, True)]

@@ -1,3 +1,4 @@
+---
 # bad config
 namespace: ${namespace}
 cfngin_bucket: ''

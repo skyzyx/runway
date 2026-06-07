@@ -1,3 +1,4 @@
+---
 namespace: ${namespace}
 cfngin_bucket: ${cfngin_bucket}
 persistent_graph_key: test.json

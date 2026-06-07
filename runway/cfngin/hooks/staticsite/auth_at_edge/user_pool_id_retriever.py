@@ -1,4 +1,9 @@
-"""Retrieve the ID of the Cognito User Pool."""
+"""Retrieve the ID of the Cognito User Pool.
+
+This hook normalizes the User Pool identifier from either an explicit ARN or
+a Runway-created pool ID, providing a single consistent value in hook_data
+that all downstream auth_at_edge hooks can reference.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +16,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 class HookArgs(HookArgsBaseModel):
-    """Hook arguments."""
+    """Hook arguments.
+
+    Accepts both an ARN (for externally-managed pools) and a created ID
+    (for Runway-managed pools) to support both bring-your-own and
+    auto-provisioned Cognito configurations.
+    """
 
     created_user_pool_id: str | None = None
     """The ID of the created Cognito User Pool."""
@@ -34,6 +44,9 @@ def get(*__args: Any, **kwargs: Any) -> dict[str, Any]:
     args = HookArgs.model_validate(kwargs)
 
     # Favor a specific arn over a created one
+    # An explicitly-supplied ARN takes priority because it represents a
+    # deliberate user choice to use an external pool, whereas the created ID
+    # is a fallback for Runway-managed pools.
     if args.user_pool_arn:
         return {"id": args.user_pool_arn.split("/")[-1:][0]}
     if args.created_user_pool_id:

@@ -26,7 +26,11 @@ def test_login(
     mock_docker_client: DockerClient,
     mocker: MockerFixture,
 ) -> None:
-    """Test login."""
+    """Test login.
+
+    Validates the full login flow: args parsing, Docker client login call,
+    and context update so subsequent hooks can use the authenticated client.
+    """
     args = LoginArgs(password="p@ssword", registry="dkr.test.com", username="test-user")
     mocker.patch.object(LoginArgs, "model_validate", return_value=args)
     mock_login = mocker.patch.object(mock_docker_client, "login")
@@ -46,7 +50,11 @@ def test_login(
 
 
 class TestLoginArgs:
-    """Test runway.cfngin.hooks.docker._login.LoginArgs."""
+    """Test runway.cfngin.hooks.docker._login.LoginArgs.
+
+    Validates argument parsing for Docker login, including ECR registry
+    URL resolution from alias/account configuration.
+    """
 
     def test__set_ecr(self, mocker: MockerFixture) -> None:
         """Test _set_ecr."""

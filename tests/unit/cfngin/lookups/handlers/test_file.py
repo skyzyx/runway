@@ -1,4 +1,9 @@
-"""Tests for runway.cfngin.lookups.handlers.file."""
+"""Tests for runway.cfngin.lookups.handlers.file.
+
+Validates the file lookup handler's codec system (plain, base64, json, yaml,
+parameterized variants) that reads local files and transforms their content
+into CloudFormation-compatible values during template generation.
+"""
 
 # pyright: reportUnknownArgumentType=none, reportUnknownVariableType=none
 from __future__ import annotations
@@ -35,7 +40,11 @@ def assert_template_dicts(obj1: Any, obj2: Any) -> None:
 
 
 class TestArgsDataModel:
-    """Test ArgsDataModel."""
+    """Test ArgsDataModel.
+
+    Validates input validation for codec selection, ensuring typos or
+    unsupported codecs fail early before file I/O is attempted.
+    """
 
     def test__validate_supported_codec_raise_value_error(self) -> None:
         """Test _validate_supported_codec raise ValueError."""
@@ -47,7 +56,13 @@ class TestArgsDataModel:
 
 
 class TestFileLookup:
-    """Test FileLookup."""
+    """Test FileLookup.
+
+    Each codec test validates a different file-to-template transformation
+    path. The parameterized variants are particularly important because they
+    convert mustache-style placeholders into CloudFormation Ref/Join
+    intrinsics, enabling templates to use dynamic references.
+    """
 
     def test_handle_base64(self, tmp_path: Path) -> None:
         """Test handle base64."""
@@ -70,7 +85,12 @@ class TestFileLookup:
         assert FileLookup.handle(f"json:{data}") == expected
 
     def test_handle_json_parameterized(self, tmp_path: Path) -> None:
-        """Test handle json-parameterized."""
+        """Test handle json-parameterized.
+
+        Validates that mustache-style placeholders within JSON values are
+        converted to CloudFormation Ref intrinsics while preserving the JSON
+        structure, enabling dynamic references in structured config data.
+        """
         expected = {
             "foo": ["bar", Join("", ["", {"Ref": "fooParam"}, ""])],
             "bar": {
@@ -147,7 +167,11 @@ class TestFileLookup:
             FileLookup.handle("foo:bar")
 
     def test_handle_raise_value_error(self) -> None:
-        """Test handle raise ValueError."""
+        """Test handle raise ValueError.
+
+        Ensures that queries without a codec:content separator are rejected
+        with a clear regex-match error.
+        """
         with pytest.raises(ValueError, match="Query 'foo' doesn't match regex: "):
             FileLookup.handle("foo")
 

@@ -19,7 +19,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 class RxrefLookup(LookupHandler["CfnginContext"]):
-    """Rxref lookup."""
+    """Rxref lookup.
+
+    Provides a relative cross-reference that automatically prepends the current
+    CFNgin namespace to the stack name, so config authors can reference stacks
+    in the same namespace without hard-coding the fully-qualified name.
+    """
 
     DEPRECATION_MSG = (
         'lookup query syntax "<relative-stack-name>::<OutputName>" has been deprecated; '
@@ -32,6 +37,10 @@ class RxrefLookup(LookupHandler["CfnginContext"]):
     @classmethod
     def legacy_parse(cls, value: str) -> tuple[OutputQuery, ParsedArgsTypeDef]:
         """Retain support for legacy lookup syntax.
+
+        Preserves backward compatibility with the deprecated ``::`` separator
+        so existing configs continue working during the migration to the new
+        dot-separated query format.
 
         Format of value:
             <relative-stack-name>::<OutputName>
@@ -64,6 +73,9 @@ class RxrefLookup(LookupHandler["CfnginContext"]):
         except ValueError:
             query, _args = cls.legacy_parse(value)
             raw_args = ""
+        # Expand the relative stack name to a fully-qualified name using the
+        # current namespace, then delegate to CfnLookup which handles the
+        # actual CloudFormation API call.
         stack_fqn = context.get_fqn(query.stack_name)
         return CfnLookup.handle(
             f"{stack_fqn}.{query.output_name}" + (f"::{raw_args}" if raw_args else ""),

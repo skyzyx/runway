@@ -1,4 +1,8 @@
-"""Copy of ``awscli.customizations.cloudformation.yamlhelper.py``."""
+"""Copy of ``awscli.customizations.cloudformation.yamlhelper.py``.
+
+Vendored to avoid a runtime dependency on the full AWS CLI package, which
+would add significant install weight for just YAML/CloudFormation parsing.
+"""
 
 # Copyright 2012-2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
@@ -32,11 +36,16 @@ def intrinsics_multi_constructor(
 
     This will return a dictionary with key being the intrinsic name
 
+    Registered as a multi-constructor so that all ``!``-prefixed YAML tags
+    (e.g. ``!Ref``, ``!Sub``) are handled by a single function rather than
+    requiring a separate constructor per intrinsic.
     """
     # Get the actual tag name excluding the first exclamation
     tag = node.tag[1:]
 
     # Some intrinsic functions doesn't support prefix "Fn::"
+    # Ref and Condition are top-level CloudFormation keywords, not functions
+    # in the Fn:: namespace, so they must be emitted without the prefix.
     prefix = "Fn::"
     if tag in ["Ref", "Condition"]:
         prefix = ""
@@ -65,12 +74,19 @@ def intrinsics_multi_constructor(
 
 
 def yaml_dump(dict_to_dump: dict[str, Any]) -> str:
-    """Dump the dictionary as a YAML document."""
+    """Dump the dictionary as a YAML document.
+
+    Uses safe_dump with block style for human-readable CloudFormation output.
+    """
     return yaml.safe_dump(dict_to_dump, default_flow_style=False)
 
 
 def yaml_parse(yamlstr: str) -> dict[str, Any]:
-    """Parse a yaml string."""
+    """Parse a yaml string.
+
+    Attempts JSON first because PyYAML's JSON handling has edge-case bugs,
+    and many CloudFormation templates are valid JSON.
+    """
     try:
         # PyYAML doesn't support json as well as it should, so if the input
         # is actually just json it is better to parse it with the standard

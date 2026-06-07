@@ -1,4 +1,9 @@
-"""CFNgin blueprint base classes."""
+"""CFNgin blueprint base classes.
+
+Defines the core abstraction that allows users to write CloudFormation templates
+as Python code using troposphere, while CFNgin handles variable resolution,
+template versioning, and parameter propagation to the CloudFormation API.
+"""
 
 from __future__ import annotations
 
@@ -30,6 +35,9 @@ if TYPE_CHECKING:
 
 LOGGER = logging.getLogger(__name__)
 
+# Maps variable definition keys to CloudFormation Parameter property names.
+# This indirection exists because the blueprint variable DSL uses snake_case
+# while CloudFormation parameters use PascalCase.
 PARAMETER_PROPERTIES = {
     "default": "Default",
     "description": "Description",
@@ -45,12 +53,21 @@ PARAMETER_PROPERTIES = {
 
 
 class CFNParameter:
-    """Wrapper around a value to indicate a CloudFormation Parameter."""
+    """Wrapper around a value to indicate a CloudFormation Parameter.
+
+    Exists to distinguish values that should be passed as CloudFormation stack
+    parameters from values that are consumed directly by the blueprint's Python
+    logic. This separation allows CFNgin to build the correct API call payload.
+    """
 
     value: list[Any] | str
 
     def __init__(self, name: str, value: bool | float | list[Any] | str | Any) -> None:
         """Instantiate class.
+
+        Coerces Python types to strings because CloudFormation parameters only
+        accept string values in the API, while users naturally pass native types
+        in their configuration.
 
         Args:
             name: The name of the CloudFormation Parameter.
@@ -89,6 +106,10 @@ class CFNParameter:
 def build_parameter(name: str, properties: BlueprintVariableTypeDef) -> Parameter:
     """Build a troposphere Parameter with the given properties.
 
+    Translates the blueprint's variable definition dict into a troposphere
+    Parameter object so that CFNType variables are correctly propagated as
+    CloudFormation template parameters.
+
     Args:
         name: The name of the parameter.
         properties: Contains the properties that will be applied to the parameter.
@@ -111,6 +132,10 @@ def validate_variable_type(
     value: Any,
 ) -> Any:
     """Ensure the value is the correct variable type.
+
+    Enforces type safety at the boundary between user-provided configuration
+    and the blueprint's internal logic, catching misconfigurations early before
+    they surface as cryptic CloudFormation errors during deployment.
 
     Args:
         var_name: The name of the defined variable on a blueprint.
@@ -143,6 +168,10 @@ def validate_variable_type(
 def validate_allowed_values(allowed_values: list[Any] | None, value: Any) -> bool:
     """Support a variable defining which values it allows.
 
+    Provides an enum-like constraint mechanism in variable definitions so that
+    invalid values are rejected during resolution rather than causing silent
+    deployment failures.
+
     Args:
         allowed_values: A list of allowed values from the variable definition.
         value: The object representing the value provided for the variable.
@@ -151,7 +180,8 @@ def validate_allowed_values(allowed_values: list[Any] | None, value: Any) -> boo
         Boolean for whether or not the value is valid.
 
     """
-    # ignore CFNParameter, troposphere handles these for us
+    # ignore CFNParameter, troposphere handles allowed_values validation
+    # for CloudFormation parameters at deploy time via the template itself.
     if not allowed_values or isinstance(value, CFNParameter):
         return True
     return value in allowed_values
@@ -164,6 +194,10 @@ def resolve_variable(
     blueprint_name: str,
 ) -> Any:
     """Resolve a provided variable value against the variable definition.
+
+    Orchestrates the full variable resolution pipeline — default fallback,
+    validator execution, type coercion, and allowed-value checking — in a
+    single function so that all blueprints share consistent validation behavior.
 
     Args:
         var_name: The name of the defined variable on a blueprint.
@@ -202,7 +236,8 @@ def resolve_variable(
             raise MissingVariable(blueprint_name, var_name)
         value = var_def["default"]
 
-    # If no validator, return the value as is, otherwise apply validator
+    # If no validator, return the value as is, otherwise apply the user-defined
+    # validator function to allow custom cross-field or business-logic checks.
     validator = var_def.get("validator", lambda v: v)
     try:
         value = validator(value)
@@ -228,6 +263,10 @@ def parse_user_data(variables: dict[str, Any], raw_user_data: str, blueprint_nam
     It supports referencing template variables to create userdata
     that's supplemented with information from the stack, as commonly
     required when creating EC2 userdata files.
+
+    Provides string.Template-based interpolation so that EC2 userdata scripts
+    can reference blueprint variables without requiring users to manually
+    construct Fn::Sub expressions or manage escape sequences.
 
     Example:
         Given a raw_user_data string: ``'open file ${file}'``
@@ -274,6 +313,11 @@ def parse_user_data(variables: dict[str, Any], raw_user_data: str, blueprint_nam
 
 class Blueprint(DelCachedPropMixin):
     """Base implementation for rendering a troposphere template.
+
+    Serves as the extension point for all user-defined blueprints, handling the
+    lifecycle of variable resolution, template rendering, and version hashing so
+    that subclasses only need to implement ``create_template()`` with their
+    resource definitions.
 
     Attributes:
         VARIABLES: Class variable that defines the values that can be passed
@@ -337,6 +381,8 @@ class Blueprint(DelCachedPropMixin):
         self.template = template or Template()
 
         if hasattr(self, "PARAMETERS") or hasattr(self, "LOCAL_PARAMETERS"):
+            # Guard against use of the pre-2.0 API so users get an immediate
+            # error pointing them to the migration path.
             raise AttributeError(
                 f"DEPRECATION WARNING: Blueprint {name} uses "
                 "deprecated PARAMETERS or "
@@ -625,7 +671,11 @@ class Blueprint(DelCachedPropMixin):
         return self.variables
 
     def import_mappings(self) -> None:
-        """Import mappings from CFNgin config to the blueprint."""
+        """Import mappings from CFNgin config to the blueprint.
+
+        Allows shared mapping data (e.g., region-to-AMI maps) to be defined
+        once in the CFNgin config and injected into any blueprint that needs it.
+        """
         if not self.mappings:
             return
 
@@ -644,7 +694,12 @@ class Blueprint(DelCachedPropMixin):
         return parse_user_data(self.variables, raw_user_data, self.name)
 
     def render_template(self) -> tuple[str, str]:
-        """Render the Blueprint to a CloudFormation template."""
+        """Render the Blueprint to a CloudFormation template.
+
+        Produces a deterministic JSON output and an MD5-based version hash that
+        CFNgin uses to detect whether a stack's template has changed, avoiding
+        unnecessary update API calls.
+        """
         self.import_mappings()
         self.create_template()
         if self.description:
@@ -655,7 +710,12 @@ class Blueprint(DelCachedPropMixin):
         return version, rendered
 
     def reset_template(self) -> None:
-        """Reset template."""
+        """Reset template.
+
+        Allows a blueprint to be re-rendered with different variables without
+        creating a new instance, which is needed when testing or iterating on
+        template generation.
+        """
         self.template = Template()
         self._rendered = None
         self._version = None
@@ -665,6 +725,10 @@ class Blueprint(DelCachedPropMixin):
 
         This will resolve the values of the `VARIABLES` with values from the
         env file, the config, and any lookups resolved.
+
+        Separating resolution from template rendering enables late-binding: lookups
+        and cross-stack references are evaluated only when all upstream stacks are
+        complete, not at parse time.
 
         Args:
             provided_variables: List of provided variables.
@@ -686,7 +750,12 @@ class Blueprint(DelCachedPropMixin):
         self.template.set_description(description)
 
     def setup_parameters(self) -> None:
-        """Add any CloudFormation parameters to the template."""
+        """Add any CloudFormation parameters to the template.
+
+        Automatically propagates CFNType variables as template parameters so
+        that values can be supplied at deploy time without regenerating the
+        template itself.
+        """
         template = self.template
 
         if not self.parameter_definitions:
@@ -700,6 +769,10 @@ class Blueprint(DelCachedPropMixin):
     def to_json(self, variables: dict[str, Any] | None = None) -> str:
         """Render the blueprint and return the template in json form.
 
+        Provides a self-contained entry point for generating a template without
+        requiring external variable resolution, primarily used by testing utilities
+        and the ``to_json`` CLI helper.
+
         Args:
             variables: Dictionary providing/overriding variable values.
 
@@ -710,9 +783,9 @@ class Blueprint(DelCachedPropMixin):
                 variables_to_resolve.append(Variable(key, value, "cfngin"))
         for k in self.parameter_definitions:
             if not variables or k not in variables:
-                # The provided value for a CFN parameter has no effect in this
-                # context (generating the CFN template), so any string can be
-                # provided for its value - just needs to be something
+                # CFN parameters have no effect in this context (generating the
+                # template JSON), but resolve_variables requires a value for every
+                # defined variable — supply a placeholder to satisfy validation.
                 variables_to_resolve.append(Variable(k, "unused_value", "cfngin"))  # noqa: PERF401
         self.resolve_variables(variables_to_resolve)
 

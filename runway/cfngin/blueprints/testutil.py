@@ -1,4 +1,9 @@
-"""Provides a subclass of unittest.TestCase for testing blueprints."""
+"""Provides a subclass of unittest.TestCase for testing blueprints.
+
+This module exists so blueprint authors have a standardized way to snapshot-test
+their generated CloudFormation templates against known-good JSON fixtures,
+catching unintentional template drift.
+"""
 
 from __future__ import annotations
 
@@ -23,12 +28,21 @@ if TYPE_CHECKING:
 
 
 def diff(first: str, second: str) -> str:
-    """Human readable differ."""
+    """Human readable differ.
+
+    Produces a line-by-line diff so that blueprint test failures show
+    exactly which template lines changed, rather than a raw dict mismatch.
+    """
     return "\n".join(list(difflib.Differ().compare(first.splitlines(), second.splitlines())))
 
 
 class BlueprintTestCase(unittest.TestCase):
-    """Extends the functionality of unittest.TestCase for testing blueprints."""
+    """Extends the functionality of unittest.TestCase for testing blueprints.
+
+    Provides a golden-file assertion pattern: rendered templates are compared
+    against committed JSON fixtures, making CloudFormation output changes
+    visible in code review diffs.
+    """
 
     OUTPUT_PATH: str = "tests/fixtures/blueprints"
 
@@ -44,6 +58,8 @@ class BlueprintTestCase(unittest.TestCase):
         rendered_dict = blueprint.template.to_dict()
         rendered_text = json.dumps(rendered_dict, indent=4, sort_keys=True)
 
+        # Write the actual result to a "-result" sidecar so developers can
+        # inspect and promote it to the fixture when changes are intentional.
         with open(  # noqa: PTH123
             expected_output + "-result", "w", encoding="utf-8"
         ) as expected_output_file:
@@ -79,6 +95,10 @@ class YamlDirTestGenerator:
     directory. In order to use it, subclass it in a directory containing such
     tests, and name the class with a pattern that will include it in nosetests'
     tests (for example, TestGenerator).
+
+    This generator approach lets blueprint authors define test scenarios in YAML
+    rather than writing repetitive Python test code, keeping test definitions
+    closer to the configuration format users already know.
 
     The subclass may override some ``@property`` definitions:
 
@@ -125,7 +145,12 @@ class YamlDirTestGenerator:
     def test_generator(
         self,
     ) -> Iterator[BlueprintTestCase]:
-        """Test generator."""
+        """Test generator.
+
+        Discovers YAML configs and yields callable test instances, enabling
+        data-driven testing where each stack definition becomes its own test
+        case without manual boilerplate.
+        """
         # Search for tests in given paths
         configs: list[str] = []
         for directory in self.yaml_dirs:

@@ -15,7 +15,12 @@ MODULE = "runway.cfngin.hooks.docker.hook_data"
 
 
 class TestDockerHookData:
-    """Test runway.cfngin.hooks.docker._hook_data.DockerHookData."""
+    """Test runway.cfngin.hooks.docker._hook_data.DockerHookData.
+
+    DockerHookData persists Docker client state across hooks in a single
+    cfngin run, avoiding repeated client initialization and enabling
+    image reference sharing between build/push hooks.
+    """
 
     def test___bool__(self) -> None:
         """Test __bool__."""

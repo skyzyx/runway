@@ -1,4 +1,9 @@
-"""Response data models."""
+"""Response data models.
+
+Defines the typed output contract that Lambda hooks produce, ensuring downstream
+lookups and CloudFormation templates receive correctly shaped data with
+CloudFormation-compatible field names via aliases.
+"""
 
 from __future__ import annotations
 
@@ -18,8 +23,13 @@ class AwsLambdaHookDeployResponse(BaseModel):
     This is done so that the ``key`` is a direct match to a CloudFormation
     Property where the value should be used.
 
+    Using aliases that mirror CloudFormation property names eliminates manual
+    key mapping in templates, allowing lookups to pass values directly to
+    resource properties without transformation.
     """
 
+    # Forbid extra fields to catch typos or version mismatches between the hook
+    # that produces the response and the lookup that consumes it.
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     bucket_name: Annotated[str, Field(alias="S3Bucket")]

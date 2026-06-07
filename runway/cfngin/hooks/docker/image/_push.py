@@ -2,6 +2,10 @@
 
 Replicates the functionality of the ``docker image push`` CLI command.
 
+Pushes locally built images to a remote registry so that CloudFormation
+resources (ECS task definitions, Lambda container images) can reference the
+image URI at deploy time.
+
 """
 
 from __future__ import annotations
@@ -27,7 +31,11 @@ LOGGER = logging.getLogger(__name__.replace("._", "."))
 
 
 class ImagePushArgs(BaseModel):
-    """Args passed to image.push."""
+    """Args passed to image.push.
+
+    Resolves which tags to push and to which repository, falling back to the
+    previously built image's metadata when explicit values are not provided.
+    """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -55,7 +63,11 @@ class ImagePushArgs(BaseModel):
     @field_validator("ecr_repo", mode="before")
     @classmethod
     def _set_ecr_repo(cls, v: Any, info: ValidationInfo) -> Any:
-        """Set the value of ``ecr_repo``."""
+        """Set the value of ``ecr_repo``.
+
+        Converts a raw dict into nested Pydantic models early so that
+        downstream validators can access the fully qualified repo name.
+        """
         if v and isinstance(v, dict):
             return ElasticContainerRegistryRepository.model_validate(
                 {
@@ -75,7 +87,12 @@ class ImagePushArgs(BaseModel):
     @field_validator("repo", mode="before")
     @classmethod
     def _set_repo(cls, v: str | None, info: ValidationInfo) -> str | None:
-        """Set the value of ``repo``."""
+        """Set the value of ``repo``.
+
+        Falls back to the previously built image's repo or the ECR repo FQN,
+        allowing push to work without repeating the repo URI when a prior
+        build hook already established it.
+        """
         if v:
             return v
 
@@ -92,7 +109,12 @@ class ImagePushArgs(BaseModel):
     @field_validator("tags", mode="before")
     @classmethod
     def _set_tags(cls, v: list[str], info: ValidationInfo) -> list[str]:
-        """Set the value of ``tags``."""
+        """Set the value of ``tags``.
+
+        Inherits tags from the built image when not explicitly specified,
+        so push automatically covers all tags applied during build without
+        requiring the user to repeat them.
+        """
         if v:
             return v
 
@@ -107,6 +129,9 @@ def push(*, context: CfnginContext, **kwargs: Any) -> DockerHookData:
     """Docker image push hook.
 
     Replicates the functionality of ``docker image push`` CLI command.
+
+    Pushes each tag individually because the Docker SDK does not support
+    multi-tag push in a single call.
 
     kwargs are parsed by :class:`~runway.cfngin.hooks.docker.image.ImagePushArgs`.
 

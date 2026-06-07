@@ -151,10 +151,20 @@ def gen_stack_resource(**kwargs: Any) -> StackResourceTypeDef:
 
 
 class TestCertificate:
-    """Tests for runway.cfngin.hooks.acm.Certificate."""
+    """Tests for runway.cfngin.hooks.acm.Certificate.
+
+    The Certificate hook manages the full lifecycle of ACM certificates
+    including DNS validation via Route53, stack-based deployment, and
+    teardown. These tests verify each lifecycle phase in isolation.
+    """
 
     def test_attributes(self, cfngin_context: MockCfnginContext) -> None:
-        """Test attributes set during __init__."""
+        """Test attributes set during __init__.
+
+        Validates that constructor parameters correctly populate the
+        Certificate's properties, blueprint, template, and stack
+        attributes that drive the CloudFormation deployment.
+        """
         # setup context
         cfngin_context.add_stubber("acm", region="us-east-1")
         cfngin_context.add_stubber("route53", region="us-east-1")
@@ -202,7 +212,12 @@ class TestCertificate:
         assert result.stack.blueprint == result.blueprint  # type: ignore
 
     def test_domain_changed(self, cfngin_context: MockCfnginContext) -> None:
-        """Test for domain_changed."""
+        """Test for domain_changed.
+
+        Exercises multiple provider states (recreatable, in-progress,
+        rolling-back, output mismatches) to ensure domain change detection
+        correctly identifies when the stack's domain no longer matches.
+        """
         # setup context
         cfngin_context.add_stubber("acm", region="us-east-1")
         cfngin_context.add_stubber("route53", region="us-east-1")
@@ -250,7 +265,12 @@ class TestCertificate:
         cfngin_context: MockCfnginContext,
         mock_sleep: None,  # noqa: ARG002
     ) -> None:
-        """Test get_certificate."""
+        """Test get_certificate.
+
+        Validates the retry logic that polls CloudFormation until the
+        Certificate resource has a PhysicalResourceId, handling transient
+        states where the resource is not yet available.
+        """
         # setup context
         cfngin_context.add_stubber("acm", region="us-east-1")
         cfngin_context.add_stubber("route53", region="us-east-1")
@@ -298,7 +318,12 @@ class TestCertificate:
         mock_sleep: None,  # noqa: ARG002
         status: str,
     ) -> None:
-        """Test get_validation_record."""
+        """Test get_validation_record.
+
+        Exercises each validation status to confirm the method waits for
+        the ResourceRecord to appear and correctly filters by status.
+        These statuses represent distinct ACM certificate lifecycle phases.
+        """
         # setup context
         acm_stubber = cfngin_context.add_stubber("acm", region="us-east-1")
         cfngin_context.add_stubber("route53", region="us-east-1")
@@ -356,7 +381,11 @@ class TestCertificate:
     def test_get_validation_record_status_mismatch(
         self, cfngin_context: MockCfnginContext, check: str, found: str
     ) -> None:
-        """Test get get_validation_record with a mismatched record status."""
+        """Test get get_validation_record with a mismatched record status.
+
+        Ensures a ValueError is raised when no validation option matches
+        the requested status, preventing silent misconfiguration.
+        """
         # setup context
         acm_stubber = cfngin_context.add_stubber("acm", region="us-east-1")
         cfngin_context.add_stubber("route53", region="us-east-1")
@@ -386,7 +415,11 @@ class TestCertificate:
         acm_stubber.assert_no_pending_responses()
 
     def test_get_validation_record_gt_one(self, cfngin_context: MockCfnginContext) -> None:
-        """Test get get_validation_record more than one result."""
+        """Test get get_validation_record more than one result.
+
+        Guards against multi-domain certificates which are not supported
+        by this hook; more than one validation option raises ValueError.
+        """
         # setup context
         acm_stubber = cfngin_context.add_stubber("acm", region="us-east-1")
         cfngin_context.add_stubber("route53", region="us-east-1")
@@ -703,7 +736,12 @@ class TestCertificate:
     def test_deploy_domain_changed(
         self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test deploy domain changed."""
+        """Test deploy domain changed.
+
+        Verifies that deploy returns falsy when the domain has changed,
+        forcing a manual resolution since ACM certs cannot be updated
+        in-place with a different domain name.
+        """
         # setup context
         cfngin_context.add_stubber("acm", region="us-east-1")
         cfngin_context.add_stubber("route53", region="us-east-1")
@@ -722,7 +760,12 @@ class TestCertificate:
     def test_deploy_error_destroy(
         self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test deploy with errors that result in destroy being called."""
+        """Test deploy with errors that result in destroy being called.
+
+        Validates error recovery: R53 errors (InvalidChangeBatch,
+        NoSuchHostedZone) trigger destroy with skip_r53=True, while
+        StackFailed triggers destroy with skip_r53=False.
+        """
         # setup context
         cfngin_context.add_stubber("acm", region="us-east-1")
         cfngin_context.add_stubber("route53", region="us-east-1")
@@ -776,7 +819,12 @@ class TestCertificate:
     def test_deploy_error_no_destroy(
         self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test deploy with errors that don't result in destroy being called."""
+        """Test deploy with errors that don't result in destroy being called.
+
+        StackUpdateBadStatus indicates a pre-existing problem with the
+        stack, so destroy should not be invoked since the cert may still
+        be valid.
+        """
         # setup context
         cfngin_context.add_stubber("acm", region="us-east-1")
         cfngin_context.add_stubber("route53", region="us-east-1")
@@ -823,7 +871,12 @@ class TestCertificate:
     def test_destroy_aws_errors(
         self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test destroy with errors from AWS."""
+        """Test destroy with errors from AWS.
+
+        Ensures destroy handles known R53/ACM exceptions gracefully
+        (InvalidChangeBatch, NoSuchHostedZone, ResourceNotFoundException)
+        since the resources may already be gone during cleanup.
+        """
         # setup context
         cfngin_context.add_stubber("acm", region="us-east-1")
         cfngin_context.add_stubber("route53", region="us-east-1")
@@ -856,7 +909,12 @@ class TestCertificate:
     def test_destroy_raise_client_error(
         self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test destroy with ClientError raised."""
+        """Test destroy with ClientError raised.
+
+        Validates that "stack does not exist" ClientErrors are swallowed
+        (idempotent cleanup), while other ClientErrors propagate to
+        alert the operator.
+        """
         # setup context
         cfngin_context.add_stubber("acm", region="us-east-1")
         cfngin_context.add_stubber("route53", region="us-east-1")

@@ -2,6 +2,9 @@
 
 Replicates the functionality of the ``docker image remove`` CLI command.
 
+Cleans up local images after push to free disk space on build machines and
+prevent stale image references from accumulating between deployments.
+
 """
 
 from __future__ import annotations
@@ -28,7 +31,12 @@ LOGGER = logging.getLogger(__name__.replace("._", "."))
 
 
 class ImageRemoveArgs(BaseModel):
-    """Args passed to image.remove."""
+    """Args passed to image.remove.
+
+    Supports the same ECR/image/repo/tags resolution chain as push, so
+    remove can target exactly the same images that were previously pushed
+    without re-specifying all parameters.
+    """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -62,7 +70,11 @@ class ImageRemoveArgs(BaseModel):
     @field_validator("ecr_repo", mode="before")
     @classmethod
     def _set_ecr_repo(cls, v: Any, info: ValidationInfo) -> Any:
-        """Set the value of ``ecr_repo``."""
+        """Set the value of ``ecr_repo``.
+
+        Converts a raw dict into nested Pydantic models early so that
+        downstream validators can access the fully qualified repo name.
+        """
         if v and isinstance(v, dict):
             return ElasticContainerRegistryRepository.model_validate(
                 {
@@ -82,7 +94,11 @@ class ImageRemoveArgs(BaseModel):
     @field_validator("repo", mode="before")
     @classmethod
     def _set_repo(cls, v: str | None, info: ValidationInfo) -> str | None:
-        """Set the value of ``repo``."""
+        """Set the value of ``repo``.
+
+        Falls back to the built image's repo or ECR FQN so that remove
+        targets the same image location without repeating configuration.
+        """
         if v:
             return v
 
@@ -99,7 +115,11 @@ class ImageRemoveArgs(BaseModel):
     @field_validator("tags", mode="before")
     @classmethod
     def _set_tags(cls, v: list[str], info: ValidationInfo) -> list[str]:
-        """Set the value of ``tags``."""
+        """Set the value of ``tags``.
+
+        Inherits tags from the built image when not specified, ensuring
+        all pushed tags are also removed during cleanup.
+        """
         if v:
             return v
 
@@ -114,6 +134,10 @@ def remove(*, context: CfnginContext, **kwargs: Any) -> DockerHookData:
     """Docker image push remove.
 
     Replicates the functionality of ``docker image push`` CLI command.
+
+    Removes each tag individually and gracefully handles missing images
+    (via ImageNotFound) because partial cleanup should not fail the entire
+    deployment.
 
     kwargs are parsed by :class:`~runway.cfngin.hooks.docker.image.ImageRemoveArgs`.
 
@@ -130,6 +154,9 @@ def remove(*, context: CfnginContext, **kwargs: Any) -> DockerHookData:
             LOGGER.info("successfully removed local image %s", image)
         except ImageNotFound:
             LOGGER.warning("local image %s does not exist", image)
+    # Clear the stored image reference only if the removed image matches the
+    # one tracked in hook_data, preventing stale references from confusing
+    # subsequent hooks.
     if (
         docker_hook_data.image
         and kwargs.get("image")

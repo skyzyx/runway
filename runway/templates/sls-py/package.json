@@ -1,12 +1,12 @@
 {
-  "author": "unused",
+  "name": "sampleapp",
+  "version": "1.0.0",
   "description": "Serverless Python app",
+  "license": "unused",
+  "author": "unused",
   "devDependencies": {
     "serverless": "^1.57.0",
     "serverless-iam-roles-per-function": "^2.0.2",
     "serverless-python-requirements": "^5.0.1"
-  },
-  "license": "unused",
-  "name": "sampleapp",
-  "version": "1.0.0"
+  }
 }

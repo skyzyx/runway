@@ -1,4 +1,9 @@
-"""Test runway.cfngin.lookups.handlers.awslambda."""
+"""Test runway.cfngin.lookups.handlers.awslambda.
+
+Validates the Lambda lookup handler that bridges hook-produced deployment
+artifacts (S3 bucket, key, version) into CloudFormation template properties.
+This lookup enables just-in-time Lambda packaging during CFNgin deployments.
+"""
 
 from __future__ import annotations
 
@@ -38,10 +43,19 @@ def hook_data() -> AwsLambdaHookDeployResponse:
 
 
 class TestAwsLambdaLookup:
-    """Test AwsLambdaLookup."""
+    """Test AwsLambdaLookup.
+
+    Validates the core lookup class that retrieves Lambda deployment package
+    metadata from hook_data, initializing and executing hooks on demand when
+    the data is not yet available.
+    """
 
     def test_get_deployment_package_data(self, hook_data: AwsLambdaHookDeployResponse) -> None:
-        """Test get_deployment_package_data."""
+        """Test get_deployment_package_data.
+
+        Validates retrieval from pre-populated hook_data, the fast path when
+        a Lambda hook has already executed and stored its results.
+        """
         data_key = "test.key"
         assert (
             AwsLambdaLookup.get_deployment_package_data(
@@ -57,7 +71,12 @@ class TestAwsLambdaLookup:
         hook_data: AwsLambdaHookDeployResponse,
         mocker: MockerFixture,
     ) -> None:
-        """Test get_deployment_package_data set hook_data when it's missing."""
+        """Test get_deployment_package_data set hook_data when it's missing.
+
+        Validates the lazy-initialization path where the hook has not yet run,
+        so the lookup must locate, instantiate, and execute the hook on demand
+        before caching results in hook_data for subsequent lookups.
+        """
         data_key = "test.key"
         hook = Mock(plan=Mock(return_value=hook_data.model_dump(by_alias=True)))
         init_hook_class = mocker.patch.object(AwsLambdaLookup, "init_hook_class", return_value=hook)
@@ -71,7 +90,11 @@ class TestAwsLambdaLookup:
         assert cfngin_context.hook_data[data_key] == hook_data.model_dump(by_alias=True)
 
     def test_get_deployment_package_data_raise_type_error(self) -> None:
-        """Test get_deployment_package_data."""
+        """Test get_deployment_package_data.
+
+        Ensures a clear TypeError when hook_data contains an unexpected type,
+        which would otherwise cause confusing attribute errors downstream.
+        """
         with pytest.raises(TypeError) as excinfo:
             assert not AwsLambdaLookup.get_deployment_package_data(
                 Mock(hook_data={"test": {"invalid": True}}), "test"
@@ -116,7 +139,11 @@ class TestAwsLambdaLookup:
         hook_class.assert_called_once_with(context, **hook_def.args)
 
     def test_init_hook_class_raise_type_error_not_class(self, mocker: MockerFixture) -> None:
-        """Test init_hook_class raise TypeError not a class."""
+        """Test init_hook_class raise TypeError not a class.
+
+        Guards against config errors where a function is provided instead of a
+        class, which would bypass the AwsLambdaHook lifecycle contract.
+        """
 
         def _test_func() -> None:
             pass
@@ -132,7 +159,11 @@ class TestAwsLambdaLookup:
         )
 
     def test_init_hook_class_raise_type_error_not_subclass(self, mocker: MockerFixture) -> None:
-        """Test init_hook_class raise TypeError not a class."""
+        """Test init_hook_class raise TypeError not a class.
+
+        Ensures classes that don't extend AwsLambdaHook are rejected, because
+        the lookup depends on the hook's plan() interface for execution.
+        """
         hook_class = Mock(return_value="success")
         context = Mock()
         hook_def = Mock(data_key="test", path="foo.bar")
@@ -148,7 +179,12 @@ class TestAwsLambdaLookup:
 
 
 class TestAwsLambdaLookupCode:
-    """Test TestAwsLambdaLookup.Code."""
+    """Test TestAwsLambdaLookup.Code.
+
+    Validates that the Code sub-lookup correctly assembles a troposphere Code
+    object from hook data, which CloudFormation uses to locate the Lambda
+    deployment package in S3.
+    """
 
     def test_handle(self, hook_data: AwsLambdaHookDeployResponse, mocker: MockerFixture) -> None:
         """Test handle."""
@@ -248,7 +284,12 @@ class TestAwsLambdaLookupCompatibleRuntimes:
 
 
 class TestAwsLambdaLookupContent:
-    """Test TestAwsLambdaLookup.Content."""
+    """Test TestAwsLambdaLookup.Content.
+
+    Validates the Content sub-lookup that produces a troposphere Content object
+    for Lambda layer resources, which use a different CloudFormation property
+    structure than function Code.
+    """
 
     def test_handle(self, hook_data: AwsLambdaHookDeployResponse, mocker: MockerFixture) -> None:
         """Test handle."""

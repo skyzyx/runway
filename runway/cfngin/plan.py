@@ -1,4 +1,8 @@
-"""CFNgin plan, plan components, and functions for interacting with a plan."""
+"""CFNgin plan, plan components, and functions for interacting with a plan.
+
+This module forms the orchestration layer of CFNgin, coordinating the execution of
+CloudFormation stack operations by walking a dependency graph in topological order.
+"""
 
 from __future__ import annotations
 
@@ -42,6 +46,9 @@ def json_serial(obj: dict[Any, Any] | int | list[Any] | str) -> NoReturn: ...
 def json_serial(obj: set[Any] | Any) -> Any:
     """Serialize json.
 
+    The DAG stores dependencies as sets, but JSON has no set type, so this
+    custom serializer converts sets to lists for persistent graph storage.
+
     Args:
         obj: A python object.
 
@@ -57,6 +64,9 @@ def json_serial(obj: set[Any] | Any) -> Any:
 def merge_graphs(graph1: Graph, graph2: Graph) -> Graph:
     """Combine two Graphs into one, retaining steps.
 
+    This supports reconciling the local execution graph with the persistent graph
+    stored in S3, ensuring stacks from both sources are included in the plan.
+
     Args:
         graph1: Graph that ``graph2`` will be merged into.
         graph2: Graph that will be merged into ``graph1``.
@@ -69,6 +79,10 @@ def merge_graphs(graph1: Graph, graph2: Graph) -> Graph:
 
 class Step:
     """State machine for executing generic actions related to stacks.
+
+    Encapsulates the lifecycle of a single stack operation (create/update/delete)
+    as a state machine, allowing the DAG-based plan executor to poll for completion
+    without blocking other independent stack operations.
 
     Attributes:
         fn: Function to run to execute the step.
@@ -113,10 +127,17 @@ class Step:
         self.watch_func = watch_func
 
     def run(self) -> bool:
-        """Run this step until it has completed or been skipped."""
+        """Run this step until it has completed or been skipped.
+
+        Uses a polling loop because CloudFormation operations are asynchronous and
+        may take minutes to complete. The watcher thread provides real-time tail
+        output (e.g., stack events) while waiting.
+        """
         stop_watcher = threading.Event()
         watcher = None
         if self.watch_func:
+            # Run the watcher in a separate thread so it can stream stack events
+            # concurrently without blocking the main execution loop.
             watcher = threading.Thread(target=self.watch_func, args=(self.stack, stop_watcher))
             watcher.start()
 
@@ -130,7 +151,12 @@ class Step:
         return self.ok
 
     def _run_once(self) -> Status:
-        """Run a step exactly once."""
+        """Run a step exactly once.
+
+        Isolates a single poll cycle so the outer loop in `run()` can repeatedly
+        check for completion. Catches exceptions to transition the step to a failed
+        state rather than crashing the entire plan.
+        """
         if not self.fn:
             raise TypeError("Step.fn must be type Callable[..., Status] not None")
         try:
@@ -154,12 +180,20 @@ class Step:
 
     @property
     def requires(self) -> set[str]:
-        """Return a list of step names this step depends on."""
+        """Return a list of step names this step depends on.
+
+        Delegates to the stack's dependency declaration so the graph can wire
+        edges without needing to know how dependencies are configured.
+        """
         return self.stack.requires
 
     @property
     def required_by(self) -> set[str]:
-        """Return a list of step names that depend on this step."""
+        """Return a list of step names that depend on this step.
+
+        Provides the inverse dependency direction so the graph can build
+        bidirectional edges from a single stack definition.
+        """
         return self.stack.required_by
 
     @property
@@ -199,6 +233,9 @@ class Step:
     def set_status(self, status: Status) -> None:
         """Set the current step's status.
 
+        Centralizes status transitions to ensure timestamp tracking and UI
+        logging happen consistently regardless of where status changes originate.
+
         Args:
             status: The status to set the step to.
 
@@ -215,7 +252,11 @@ class Step:
         self.set_status(COMPLETE)
 
     def log_step(self) -> None:
-        """Construct a log message for a set and log it to the UI."""
+        """Construct a log message for a set and log it to the UI.
+
+        Routes different status codes to different log levels so operators can
+        visually distinguish successes, submissions, and failures in the output.
+        """
         msg = self.status.name
         if self.status.reason:
             msg += f" ({self.status.reason})"
@@ -247,6 +288,10 @@ class Step:
     ) -> Step:
         """Create a step using only a stack name.
 
+        Constructs a lightweight "fake" Stack from just a name so that steps can
+        be created for stacks in the persistent graph that are not defined in the
+        current configuration (e.g., stacks that need to be destroyed).
+
         Args:
             stack_name: Name of a CloudFormation stack.
             context: Context object. Required to initialize a "fake"
@@ -276,6 +321,10 @@ class Step:
     ) -> list[Step]:
         """Create a steps for a persistent graph dict.
 
+        Rebuilds Step objects from the serialized persistent graph so that stacks
+        tracked in S3 can be operated on (typically destroyed) even when they no
+        longer appear in the local configuration.
+
         Args:
             graph_dict: A graph dict.
             context: Context object. Required to initialize a "fake"
@@ -303,6 +352,10 @@ class Step:
 
 class Graph:
     """Graph represents a graph of steps.
+
+    Wraps the underlying DAG to provide a higher-level interface that operates on
+    Steps rather than raw node names. This separation keeps dependency-ordering logic
+    in the DAG while Step-aware operations (like persistent graph updates) live here.
 
     The :class:`Graph` helps organize the steps needed to execute a particular
     action for a set of :class:`runway.cfngin.stack.Stack` objects. When
@@ -342,6 +395,9 @@ class Graph:
     ) -> None:
         """Add a step to the graph.
 
+        Registers the step in both the name-to-Step mapping and the underlying DAG,
+        keeping the two data structures in sync.
+
         Args:
             step: The step to be added.
             add_dependencies: Connect steps that need to be completed before this
@@ -365,7 +421,9 @@ class Graph:
     ) -> None:
         """Try to add a step to the graph.
 
-        Can be used when failure to add is acceptable.
+        Can be used when failure to add is acceptable. This is needed for the
+        persistent graph where stacks may already exist from a previous deployment
+        and should not be duplicated or error when re-encountered.
 
         Args:
             step: The step to be added.
@@ -397,6 +455,9 @@ class Graph:
     def add_steps(self, steps: list[Step]) -> None:
         """Add a list of steps.
 
+        Separates node registration from edge wiring in two passes to avoid
+        ordering issues where a dependency target hasn't been added yet.
+
         Args:
             steps: The step to be added.
 
@@ -424,6 +485,9 @@ class Graph:
 
     def connect(self, step: str, dep: str) -> None:
         """Connect a dependency to a step.
+
+        Translates DAG-level errors into the CFNgin-specific GraphError to
+        provide clearer context about which step and dependency caused the issue.
 
         Args:
             step: Step name to add a dependency to.
@@ -453,6 +517,9 @@ class Graph:
     ) -> Any:
         """Walk the steps of the graph.
 
+        Bridges the DAG walker (which operates on string node names) to the
+        higher-level Step objects, so walk functions receive fully-hydrated Steps.
+
         Args:
             walker: Function used to walk the steps.
             walk_func: Function called with a :class:`Step` as the only argument
@@ -479,7 +546,8 @@ class Graph:
     def transposed(self) -> Graph:
         """Return a "transposed" version of this graph.
 
-        Useful for walking in reverse.
+        Useful for walking in reverse. Transposing flips all edges so that the
+        destroy action can walk dependencies in reverse order (dependents first).
 
         """
         return Graph(steps=self.steps, dag=self.dag.transpose())
@@ -505,6 +573,9 @@ class Graph:
     def dumps(self, indent: int | None = None) -> str:
         """Output the graph as a json serialized string for storage.
 
+        Produces the format used by the persistent graph stored in S3,
+        enabling state tracking across CFNgin invocations.
+
         Args:
             indent: Number of spaces for each indentation.
 
@@ -518,6 +589,9 @@ class Graph:
         context: CfnginContext,
     ) -> Graph:
         """Create a Graph from a graph dict.
+
+        Reconstructs a Graph from the JSON-serialized persistent graph format,
+        enabling CFNgin to resume awareness of previously deployed stacks.
 
         Args:
             graph_dict: The dictionary used to create the graph.
@@ -545,6 +619,10 @@ class Graph:
 
 class Plan:
     """A convenience class for working on a Graph.
+
+    Orchestrates the end-to-end execution of a deploy or destroy action by
+    combining graph traversal with persistent graph management, locking, and
+    step filtering based on the user-specified target stacks.
 
     Attributes:
         context: Context object.
@@ -589,12 +667,16 @@ class Plan:
         self.reverse = reverse
         self.require_unlocked = require_unlocked
 
+        # Transposing reverses all edges so that destroy operations process
+        # dependent stacks before the stacks they depend on.
         if self.reverse:
             graph = graph.transposed()
 
         if self.context:
             self.locked = self.context.persistent_graph_locked
 
+            # Filter the graph to only the user-specified stacks (if any),
+            # enabling targeted deployments without affecting the full graph.
             if self.context.stack_names:
                 nodes = [target for target in self.context.stack_names if graph.steps.get(target)]
 
@@ -608,7 +690,8 @@ class Plan:
         """Print an outline of the actions the plan is going to take.
 
         The outline will represent the rough ordering of the steps that will be
-        taken.
+        taken. This gives operators a preview of the execution order before any
+        changes are made, supporting dry-run and confirmation workflows.
 
         Args:
             level: a valid log level that should be used to log
@@ -637,6 +720,9 @@ class Plan:
         provider: Provider | None = None,
     ) -> Any:
         """Output the rendered blueprint for all stacks in the plan.
+
+        Writes resolved CloudFormation templates to disk so operators can inspect
+        the exact JSON/YAML that would be submitted before executing a deployment.
 
         Args:
             directory: Directory where files will be created.
@@ -667,6 +753,10 @@ class Plan:
     def execute(self, *args: Any, **kwargs: Any) -> None:
         """Walk each step in the underlying graph.
 
+        Serves as the main entry point for plan execution, enforcing the
+        persistent graph lock and aggregating failures into a single exception
+        after all steps have been attempted.
+
         Raises:
             PersistentGraphLocked: Raised if the persistent graph is
                 locked prior to execution and this session did not lock it.
@@ -684,6 +774,9 @@ class Plan:
     def walk(self, walker: Callable[..., Any]) -> Any:
         """Walk each step in the underlying graph, in topological order.
 
+        Handles persistent graph updates after each step completes, ensuring
+        that the stored graph in S3 reflects the actual state of deployed stacks.
+
         Args:
             walker: a walker function to be passed to :class:`runway.cfngin.dag.DAG`
                 to walk the graph.
@@ -699,9 +792,8 @@ class Plan:
                 step: :class:`Step` to execute.
 
             """
-            # Before we execute the step, we need to ensure that it's
-            # transitive dependencies are all in an "ok" state. If not, we
-            # won't execute this step.
+            # Guard against transitive dependency failures: if any upstream step
+            # failed, this step cannot proceed since its inputs may be invalid.
             for dep in self.graph.downstream(step.name):
                 if not dep.ok:
                     step.set_status(FailedStatus("dependency has failed"))
@@ -712,6 +804,10 @@ class Plan:
             if not self.context or not self.context.persistent_graph:
                 return result
 
+            # Update the persistent graph in S3 to reflect the operation:
+            # - Destroy removes the stack from the graph so future runs won't
+            #   attempt to manage it.
+            # - Launch adds the stack so future destroy runs know about it.
             if step.completed or (
                 step.skipped and step.status.reason == ("does not exist in cloudformation")
             ):
@@ -733,12 +829,20 @@ class Plan:
 
     @property
     def lock_code(self) -> str:
-        """Code to lock/unlock the persistent graph."""
+        """Code to lock/unlock the persistent graph.
+
+        Uses the plan's UUID so that only the session that acquired the lock can
+        release it, preventing concurrent CFNgin runs from corrupting graph state.
+        """
         return str(self.id)
 
     @property
     def steps(self) -> list[Step]:
-        """Return a list of all steps in the plan."""
+        """Return a list of all steps in the plan.
+
+        Returns steps in reverse topological order (leaves first) so that the
+        outline and reporting show execution order from the user's perspective.
+        """
         steps = self.graph.topological_sort()
         steps.reverse()
         return steps

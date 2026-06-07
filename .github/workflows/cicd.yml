@@ -1,7 +1,8 @@
+---
 name: CI/CD
 
 on:
-  pull_request:  # any pull request
+  pull_request: # any pull request
   push:
     branches:
       - master
@@ -13,12 +14,11 @@ defaults:
 env:
   AWS_DEFAULT_OUTPUT: json
   AWS_DEFAULT_REGION: us-east-1
-  AWS_MAX_ATTEMPTS: 20  # retry attempts for AWS API calls
-  AWS_RETRY_MODE: adaptive  # defaults to "legacy"; this handles more errors
+  AWS_MAX_ATTEMPTS: 20 # retry attempts for AWS API calls
+  AWS_RETRY_MODE: adaptive # defaults to "legacy"; this handles more errors
   NODE_VERSION: '20'
   PYTEST_ADDOPTS: --color=yes
   RUNWAY_TEST_NAMESPACE: gh-${{ github.run_id }}
-
 
 jobs:
   changes:
@@ -30,10 +30,10 @@ jobs:
       infra-test-alt: ${{ steps.filter.outputs.infrastructure-test-alt }}
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v5  # not needed for pull_request
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         if: |
           github.event_name == 'push'
-      - uses: dorny/paths-filter@v3  # cspell:ignore dorny
+      - uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590 # v3.0.3
         id: filter
         with:
           filters: |
@@ -57,22 +57,22 @@ jobs:
               - 'infrastructure/blueprints/prevent_privilege_escalation.py'
               - 'infrastructure/blueprints/test_runner_boundary.py'
               - 'infrastructure/test-alt/common/**'
-      - uses: dorny/paths-filter@v3  # cspell:ignore dorny
+      - uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590 # v3.0.3
         id: filter-exclude
         with:
           filters: |
             functional:
               - 'runway/**'
               - '!runway/templates/**'
-          predicate-quantifier: every  # was implemented but not added to the action manifest so results in a warning
+          predicate-quantifier: every # was implemented but not added to the action manifest so results in a warning
   info:
     name: Output useful information
     runs-on: ubuntu-latest
     outputs:
-      is-actor-bot: ${{ steps.gh-context.outputs.is-actor-bot }}  # if the actor (user) is a bot
-      is-fork: ${{ steps.gh-context.outputs.is-fork }}  # if the action is running in or from (PR) a fork
-      repo-head: ${{ steps.gh-context.outputs.repo-head }}  # repo where change occurred
-      repo-origin: ${{ steps.gh-context.outputs.repo-origin }}  # origin of codebase
+      is-actor-bot: ${{ steps.gh-context.outputs.is-actor-bot }} # if the actor (user) is a bot
+      is-fork: ${{ steps.gh-context.outputs.is-fork }} # if the action is running in or from (PR) a fork
+      repo-head: ${{ steps.gh-context.outputs.repo-head }} # repo where change occurred
+      repo-origin: ${{ steps.gh-context.outputs.repo-origin }} # origin of codebase
     steps:
       - name: ℹ️ Output GitHub Context
         id: gh-context
@@ -104,7 +104,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
       - name: 🏗 Setup Python
         uses: finleyfamily/action-setup-python@v1.2.0
         with:
@@ -135,7 +135,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: test
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
       - name: 🏗 Setup Node
         uses: actions/setup-node@v4
         with:
@@ -165,7 +165,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
       - name: 🏗 Setup Node
         uses: actions/setup-node@v4
         with:
@@ -202,7 +202,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: test
     steps:
       - name: ⤵️ Check out code from GitHub (complete)
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           fetch-depth: 0
       - name: 🏗 Setup Node
@@ -217,9 +217,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: ⤵️ Install Node Dependencies
         run: make setup-npm
-      - name: 🏗 Configure Pagefile  # avoid MemoryError during tests
+      - name: 🏗 Configure Pagefile # avoid MemoryError during tests
         if: runner.os == 'Windows'
-        uses: al-cheb/configure-pagefile-action@v1.4  # cspell:ignore cheb
+        uses: al-cheb/configure-pagefile-action@v1.4 # cspell:ignore cheb
         with:
           minimum-size: 16GB
           maximum-size: 16GB
@@ -237,7 +237,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️ Check out code from GitHub (complete)
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           fetch-depth: 0
       - name: 🏗 Setup Python

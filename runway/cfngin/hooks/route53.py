@@ -1,4 +1,9 @@
-"""AWS Route 53 hook."""
+"""AWS Route 53 hook.
+
+This module pre-creates Route 53 hosted zones so that other stacks can
+reference the zone ID without introducing a dependency on the DNS stack
+itself, enabling parallel deployment of resources that need DNS records.
+"""
 
 from __future__ import annotations
 
@@ -23,6 +28,10 @@ class CreateDomainHookArgs(BaseModel):
 
 def create_domain(context: CfnginContext, *_args: Any, **kwargs: Any) -> dict[str, str]:
     """Create a domain within route53.
+
+    This hook delegates to the shared ``create_route53_zone`` utility so that
+    zone creation is idempotent and the zone_id can be stored in hook_data
+    for downstream stacks to reference.
 
     Args:
         context: CFNgin context object.

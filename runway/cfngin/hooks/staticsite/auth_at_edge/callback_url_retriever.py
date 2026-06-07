@@ -3,6 +3,9 @@
 Dependency pre-hook responsible for ensuring correct
 callback urls are retrieved or a temporary one is used in it's place.
 
+Cognito requires valid callback URLs at User Pool Client creation time,
+so this pre-hook resolves existing URLs from the stack or falls back to a
+placeholder to avoid service interruption during initial deploys.
 """
 
 from __future__ import annotations
@@ -19,7 +22,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class HookArgs(HookArgsBaseModel):
-    """Hook arguments."""
+    """Hook arguments.
+
+    Captures the stack identity and optional User Pool ARN needed to
+    locate existing callback URLs from a prior deployment.
+    """
 
     stack_name: str
     """The name of the stack to check against."""
@@ -50,6 +57,8 @@ def get(context: CfnginContext, *_args: Any, **kwargs: Any) -> dict[str, Any]:
     cloudformation_client = session.client("cloudformation")
     cognito_client = session.client("cognito-idp")
 
+    # Default to a placeholder URL so Cognito client creation can proceed
+    # even when no prior stack or client exists yet.
     context_dict = {"callback_urls": ["https://example.org"]}
     try:
         # Return the current stack if one exists
@@ -57,6 +66,8 @@ def get(context: CfnginContext, *_args: Any, **kwargs: Any) -> dict[str, Any]:
         # Get the client_id from the outputs
         outputs = stack_desc["Stacks"][0].get("Outputs", [])
 
+        # Prefer the explicitly-supplied ARN over stack outputs because the
+        # user may reference a pre-existing User Pool not managed by this stack.
         if args.user_pool_arn:
             user_pool_id = args.user_pool_arn.split("/")[-1:][0]
         else:
@@ -77,10 +88,14 @@ def get(context: CfnginContext, *_args: Any, **kwargs: Any) -> dict[str, Any]:
         resp = cognito_client.describe_user_pool_client(UserPoolId=user_pool_id, ClientId=client_id)
 
         # Retrieve the callbacks
+        # Use existing callback URLs to preserve service continuity; falling
+        # back to the placeholder only when no prior URLs are configured.
         callbacks = resp["UserPoolClient"].get("CallbackURLs")
 
         if callbacks:
             context_dict["callback_urls"] = callbacks
         return context_dict
     except Exception:  # noqa: BLE001
+        # Gracefully handle missing stacks (first deploy) or API failures by
+        # returning the placeholder URL so the deployment can proceed.
         return context_dict

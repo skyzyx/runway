@@ -1,4 +1,9 @@
-"""Test runway.cfngin.actions.init."""
+"""Test runway.cfngin.actions.init.
+
+Validates the init action that bootstraps the cfngin bucket. Covers bucket
+existence checks, access-denied handling, the default bucket stack blueprint
+fallback, and region override for cross-region bucket creation.
+"""
 
 from __future__ import annotations
 
@@ -22,10 +27,19 @@ MODULE = "runway.cfngin.actions.init"
 
 
 class TestAction:
-    """Test Action."""
+    """Test Action.
+
+    Exercises the init action's responsibility to ensure the cfngin S3 bucket
+    exists before any deploy can upload templates. Covers creation, pre-existing
+    bucket detection, access-denied errors, and bucket region overrides.
+    """
 
     def test___init__(self, cfngin_context: CfnginContext, mocker: MockerFixture) -> None:
-        """Test __init__."""
+        """Test __init__.
+
+        The init action must copy the context to avoid mutating the caller's
+        state when it modifies the config (e.g., injecting the bucket stack).
+        """
         copied_context = mocker.patch.object(cfngin_context, "copy")
         obj = Action(cfngin_context)
         copied_context.assert_called_once_with()
@@ -49,7 +63,11 @@ class TestAction:
     def test_cfngin_bucket_handle_no_bucket(
         self, cfngin_context: CfnginContext, mocker: MockerFixture
     ) -> None:
-        """Test cfngin_bucket."""
+        """Test cfngin_bucket.
+
+        When bucket_name is None (not configured), the property must return
+        None without attempting to construct a Bucket object.
+        """
         mocker.patch.object(cfngin_context, "copy", return_value=cfngin_context)
         mocker.patch.object(cfngin_context, "s3_client")
         bucket = mocker.patch(f"{MODULE}.Bucket")
@@ -78,7 +96,12 @@ class TestAction:
         cfngin_context: CfnginContext,
         mocker: MockerFixture,
     ) -> None:
-        """Test run."""
+        """Test run.
+
+        When the bucket doesn't exist and no stack is pre-configured, the init
+        action must inject the default bucket blueprint and delegate to deploy
+        with upload_disabled=True (since the bucket doesn't exist yet).
+        """
         caplog.set_level(LogLevels.NOTICE, logger=MODULE)
         cancel = Mock()
         mock_deploy = mocker.patch(f"{MODULE}.deploy")
@@ -107,7 +130,12 @@ class TestAction:
         cfngin_context: CfnginContext,
         mocker: MockerFixture,
     ) -> None:
-        """Test run."""
+        """Test run.
+
+        When a bucket_region is configured that differs from the deploy region,
+        the provider_builder.region must be overridden so the bucket stack is
+        created in the correct region.
+        """
         caplog.set_level(LogLevels.NOTICE, logger=MODULE)
         cancel = Mock()
         mock_deploy = mocker.patch(f"{MODULE}.deploy")
@@ -139,7 +167,11 @@ class TestAction:
         cfngin_context: CfnginContext,
         mocker: MockerFixture,
     ) -> None:
-        """Test run."""
+        """Test run.
+
+        When the bucket already exists, init must short-circuit without
+        deploying anything to avoid unnecessary CloudFormation operations.
+        """
         caplog.set_level(LogLevels.INFO, logger=MODULE)
         cfngin_bucket = mocker.patch.object(
             Action,
@@ -151,7 +183,12 @@ class TestAction:
         assert f"cfngin_bucket {cfngin_bucket.name} already exists" in caplog.messages
 
     def test_run_forbidden(self, cfngin_context: CfnginContext, mocker: MockerFixture) -> None:
-        """Test run."""
+        """Test run.
+
+        If the bucket exists but access is denied, the action must raise
+        CfnginBucketAccessDenied so the operator knows the IAM permissions
+        need fixing rather than proceeding with a broken state.
+        """
         cfngin_bucket = mocker.patch.object(
             Action,
             "cfngin_bucket",
@@ -167,7 +204,12 @@ class TestAction:
         cfngin_context: CfnginContext,
         mocker: MockerFixture,
     ) -> None:
-        """Test run."""
+        """Test run.
+
+        When a pre-existing cfngin-bucket stack is found in the config, init
+        must reuse it (scoping to just that stack) rather than injecting the
+        default blueprint, supporting custom bucket configurations.
+        """
         caplog.set_level(LogLevels.VERBOSE, logger=MODULE)
         cancel = Mock()
         mock_deploy = mocker.patch(f"{MODULE}.deploy")
@@ -196,7 +238,11 @@ class TestAction:
         cfngin_context: CfnginContext,
         mocker: MockerFixture,
     ) -> None:
-        """Test run."""
+        """Test run.
+
+        When no cfngin_bucket is configured at all, init must skip gracefully
+        since templates will be submitted inline without S3.
+        """
         caplog.set_level(LogLevels.INFO, logger=MODULE)
         mocker.patch.object(Action, "cfngin_bucket", None)
         assert not Action(cfngin_context).run()

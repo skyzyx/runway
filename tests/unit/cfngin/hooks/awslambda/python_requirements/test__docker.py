@@ -23,7 +23,12 @@ MODULE = "runway.cfngin.hooks.awslambda.python_requirements._docker"
 
 
 class TestPythonDockerDependencyInstaller:
-    """Test PythonDockerDependencyInstaller."""
+    """Test PythonDockerDependencyInstaller.
+
+    Validates Docker-based pip installation including bind mount setup,
+    environment variable filtering, and runtime detection from the
+    container's Python version.
+    """
 
     def test_bind_mounts(self, tmp_path: Path) -> None:
         """Test bind_mounts."""

@@ -1,11 +1,11 @@
 # Documentation
 
-## Local Testing
+## Local testing
 
 Run `make html` to generate the HTML pages.
 The generated webpages can then be viewed using a web browser.
 
-## runway-example.gif
+## Runway-example.gif
 
 **Changes to the gif should be a rare occurrence. It should only be considered when big UI/UX changes occur.**
 
@@ -14,16 +14,16 @@ To record or render a new gif, terminalizer must be installed (globally is fine)
 
 ### Caveats
 
-- node \<= 10 is required due to dependency requirements (`nvm install 10` or `nvm use 10`)
-- `terminalizer@0.6.1` must be used (`npm i -g terminalizer@0.6.1`)
-  - 0.7 changed the resolution of the GIF which increases the size 3x
+* node \<= 10 is required due to dependency requirements (`nvm install 10` or `nvm use 10`)
+* `terminalizer@0.6.1` must be used (`npm i -g terminalizer@0.6.1`)
+  * 0.7 changed the resolution of the GIF which increases the size 3x
 
 ### Recording
 
 It is not recommended to record a new gif as it will require a new runway project to be setup.
 If absolutely needed, use as many module types as possible in the new recording.
 
-Create a new, local config using the config from the previous recoding that is included in the current yaml.
+Create a new, local config using the config from the previous recoding that is included in the current YAML.
 This will ensure the same settings used for the old recording are used for the new recording.
 The `cwd` value will need to be changed.
 

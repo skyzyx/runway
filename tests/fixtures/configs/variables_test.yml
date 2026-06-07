@@ -1,3 +1,4 @@
+---
 deployments:
   - name: test_deployment
     parameters:

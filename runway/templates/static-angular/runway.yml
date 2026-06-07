@@ -1,3 +1,4 @@
+---
 deployments:
   - modules:
       - path: sampleapp.web

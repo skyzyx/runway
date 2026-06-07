@@ -26,10 +26,20 @@ COMPLETE_W_REASON = CompleteStatus("test successful")
 
 
 class TestHook:
-    """Tests for runway.cfngin.hooks.base.Hook."""
+    """Tests for runway.cfngin.hooks.base.Hook.
+
+    The Hook base class provides the shared deploy/destroy lifecycle
+    for all cfngin hooks, so these tests verify the core orchestration
+    logic that every concrete hook inherits.
+    """
 
     def test_attributes(self, cfngin_context: MockCfnginContext) -> None:
-        """Test attributes set during __init__."""
+        """Test attributes set during __init__.
+
+        Validates that constructor args are correctly merged with context
+        defaults (e.g. namespace tag injection), ensuring hooks receive
+        a consistent configuration baseline.
+        """
         provider = MagicMock()
         args = {"tags": {"key": "val"}}
         result = Hook(cfngin_context, provider, **args)
@@ -43,7 +53,11 @@ class TestHook:
         assert result.stack_name == "stack"
 
     def test_tags(self, cfngin_context: MockCfnginContext) -> None:
-        """Test tags property."""
+        """Test tags property.
+
+        Confirms that hook-level tags and context-level tags are merged,
+        ensuring CloudFormation stacks receive all required tags.
+        """
         cfngin_context.config.tags = {"context_tag": "val"}
 
         hook = Hook(cfngin_context, MagicMock(), tags={"arg_tag": "val"})
@@ -54,7 +68,11 @@ class TestHook:
         ]
 
     def test_get_template_description(self, cfngin_context: MockCfnginContext) -> None:
-        """Test for get_template_description."""
+        """Test for get_template_description.
+
+        Ensures generated templates carry a description indicating their
+        origin module, aiding CloudFormation console identification.
+        """
         hook = Hook(cfngin_context, MagicMock())
 
         result = hook.get_template_description()
@@ -69,7 +87,11 @@ class TestHook:
     def test_deploy_stack(
         self, cfngin_context: MockCfnginContext, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Test for deploy_stack."""
+        """Test for deploy_stack.
+
+        Validates the no-wait path: a single action run that completes
+        immediately logs the final status without entering a poll loop.
+        """
         hook = Hook(cfngin_context, MagicMock())
         stack = MagicMock()
         stack.name = "test-stack"
@@ -86,7 +108,11 @@ class TestHook:
     def test_deploy_stack_wait(
         self, cfngin_context: MockCfnginContext, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Test for deploy_stack with wait."""
+        """Test for deploy_stack with wait.
+
+        Exercises the wait=True poll loop: first run returns SUBMITTED,
+        second returns COMPLETE, verifying the hook polls until done.
+        """
         hook = Hook(cfngin_context, MagicMock())
         stack = MagicMock()
         stack.name = "test-stack"
@@ -105,7 +131,11 @@ class TestHook:
     def test_deploy_stack_wait_skipped(
         self, cfngin_context: MockCfnginContext, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Test for deploy_stack with wait and skip."""
+        """Test for deploy_stack with wait and skip.
+
+        Ensures a SKIPPED status exits the wait loop immediately rather
+        than polling indefinitely for a terminal state.
+        """
         hook = Hook(cfngin_context, MagicMock())
         stack = MagicMock()
         stack.name = "test-stack"
@@ -117,7 +147,11 @@ class TestHook:
 
     @patch("runway.cfngin.hooks.base.HookDeployAction.run", MagicMock(side_effect=[FAILED]))
     def test_deploy_stack_wait_failed(self, cfngin_context: MockCfnginContext) -> None:
-        """Test for deploy_stack with wait and skip."""
+        """Test for deploy_stack with wait and failure.
+
+        Verifies that a FAILED status raises StackFailed to abort the
+        hook pipeline, preventing dependent operations from proceeding.
+        """
         hook = Hook(cfngin_context, MagicMock())
         stack = MagicMock()
         stack.name = "test-stack"
@@ -132,7 +166,11 @@ class TestHook:
     def test_destroy_stack(
         self, cfngin_context: MockCfnginContext, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Test for destroy_stack with wait."""
+        """Test for destroy_stack with wait.
+
+        Validates the destroy poll loop and that a CompleteStatus with
+        a reason is logged with the reason string for debugging.
+        """
         hook = Hook(cfngin_context, MagicMock())
         stack = MagicMock()
         stack.name = "test-stack"
@@ -148,7 +186,12 @@ class TestHook:
         )
 
     def test_wait_for_stack_till_reason(self, cfngin_context: MockCfnginContext) -> None:
-        """Test _wait_for_stack till_reason option."""
+        """Test _wait_for_stack till_reason option.
+
+        Validates the till_reason short-circuit: the wait loop exits
+        early when a SubmittedStatus matches the expected reason string,
+        used during stack recreation to detect intermediate states.
+        """
         hook = Hook(cfngin_context, MagicMock())
         stack = MagicMock(fqn="test-stack", name="stack")
         action = MagicMock()
@@ -166,7 +209,11 @@ class TestHook:
     def test_wait_for_stack_log_change(
         self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test _wait_for_stack log status change."""
+        """Test _wait_for_stack log status change.
+
+        Ensures status transitions are logged via _log_stack so
+        operators can track stack progress in real time.
+        """
         hook = Hook(cfngin_context, MagicMock())
         stack = MagicMock(fqn="test-stack", name="stack")
         new_status = SubmittedStatus("new")
@@ -187,7 +234,11 @@ class TestHook:
         assert mock_log.call_count == 2
 
     def test_post_deploy(self, cfngin_context: MockCfnginContext) -> None:
-        """Test post_deploy."""
+        """Test post_deploy.
+
+        Confirms the base class raises NotImplementedError, enforcing
+        that subclasses must override lifecycle methods they support.
+        """
         hook = Hook(cfngin_context, MagicMock())
 
         with pytest.raises(NotImplementedError):
@@ -216,10 +267,18 @@ class TestHook:
 
 
 class TestHookDeployAction:
-    """Tests for runway.cfngin.hooks.base.HookDeployAction."""
+    """Tests for runway.cfngin.hooks.base.HookDeployAction.
+
+    HookDeployAction wraps the provider's deploy logic for use within
+    hook-managed stacks, decoupling hooks from direct provider calls.
+    """
 
     def test_provider(self, cfngin_context: MockCfnginContext) -> None:
-        """Test provider property."""
+        """Test provider property.
+
+        Ensures the action exposes the same provider instance it was
+        constructed with, since hooks depend on provider state.
+        """
         provider = MagicMock()
         obj = HookDeployAction(cfngin_context, provider)
 
@@ -241,7 +300,11 @@ class TestHookDeployAction:
 
 
 class TestHookDestroyAction:
-    """Tests for runway.cfngin.hooks.base.HookDestroyAction."""
+    """Tests for runway.cfngin.hooks.base.HookDestroyAction.
+
+    HookDestroyAction wraps the provider's destroy logic, mirroring
+    HookDeployAction for teardown operations.
+    """
 
     def test_run(self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test run."""

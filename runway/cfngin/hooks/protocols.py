@@ -1,5 +1,9 @@
 """Protocols for structural typing.
 
+Protocols enable duck-typing for hooks so that user-defined hook classes do not
+need to inherit from a base class — they only need to match the expected method
+signatures, improving flexibility and reducing coupling.
+
 For more information on protocols, refer to
 `PEP 544 <https://www.python.org/dev/peps/pep-0544/>`__.
 
@@ -26,6 +30,10 @@ class CfnginHookArgsProtocol(Protocol):
     classes. It is recommended to use the provided base class in place of this
     when authoring a new argument class.
 
+    Defines the minimum attribute-access contract that hook execution code
+    relies on, so argument containers can be pydantic models, dataclasses, or
+    plain dicts without changing the hook runner.
+
     """
 
     @overload
@@ -39,6 +47,9 @@ class CfnginHookArgsProtocol(Protocol):
     @abstractmethod
     def get(self, _name: str, _default: Any | _T = None) -> Any | _T:
         """Safely get the value of an attribute.
+
+        Provides a dict-like safe accessor so hook code can retrieve optional
+        arguments without catching AttributeError.
 
         Args:
             name: Attribute name to return the value for.
@@ -72,6 +83,9 @@ class CfnginHookProtocol(Protocol):
     Classes used for hooks do not need to subclass this hook. They only need to
     implement a similar interface. While not required, it is still acceptable
     to subclass this class for full type checking of a hook class.
+
+    The runtime_checkable decorator allows isinstance() checks in handle_hooks
+    to distinguish class-based hooks from function-based hooks at dispatch time.
 
     """
 

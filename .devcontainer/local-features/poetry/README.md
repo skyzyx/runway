@@ -2,7 +2,7 @@
 
 Install `poetry` using `pipx` included on the image.
 
-## Example Usage
+## Example usage
 
 ```json
 "features": {

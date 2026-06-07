@@ -95,7 +95,11 @@ def test_get_content_yaml() -> None:
 
 
 def test_get_content_unknown() -> None:
-    """Get content unknown."""
+    """Get content unknown.
+
+    Ensures unsupported content types raise ValueError to prevent silent
+    data corruption from incorrect serialization.
+    """
     with pytest.raises(ValueError):  # noqa: PT011
         get_content(RunwayStaticSiteExtraFileDataModel(content={"a": 0}, name=""))
 
@@ -179,7 +183,11 @@ def test_sync_extra_files_yaml_content(cfngin_context: MockCfnginContext) -> Non
 
 
 def test_sync_extra_files_empty_content(cfngin_context: MockCfnginContext) -> None:
-    """Test sync_extra_files empty content is not uploaded."""
+    """Test sync_extra_files empty content is not uploaded.
+
+    Prevents uploading empty files which would overwrite valid content
+    in the S3 bucket with nothing.
+    """
     s3_stub = cfngin_context.add_stubber("s3")
 
     with s3_stub as stub:
@@ -248,7 +256,12 @@ def test_sync_extra_files_file_reference_with_content_type(
 
 
 def test_sync_extra_files_hash_unchanged(cfngin_context: MockCfnginContext) -> None:
-    """Test sync_extra_files upload is skipped if the has was unchanged."""
+    """Test sync_extra_files upload is skipped if the hash was unchanged.
+
+    Validates the content-addressed caching: when the hash matches the
+    SSM parameter, no upload occurs, saving S3 PUT costs and CloudFront
+    invalidation triggers.
+    """
     s3_stub = cfngin_context.add_stubber("s3")
     ssm_stub = cfngin_context.add_stubber("ssm")
 

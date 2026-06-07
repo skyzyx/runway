@@ -1,4 +1,10 @@
-"""Environment variable lookup."""
+"""Environment variable lookup.
+
+Provides a lookup interface to OS environment variables, enabling CI/CD
+pipelines and local development workflows to inject values without modifying
+configuration files.
+
+"""
 
 import logging
 import os
@@ -11,7 +17,13 @@ LOGGER = logging.getLogger(__name__)
 
 
 class EnvvarLookup(LookupHandler[Any]):
-    """Environment variable lookup."""
+    """Environment variable lookup.
+
+    Deprecated predecessor to the ``env`` lookup. Retained for backward
+    compatibility with existing configuration files but emits a warning to
+    encourage migration.
+
+    """
 
     DEPRECATION_MSG = "envvar Lookup has been deprecated; use the env lookup instead"
     TYPE_NAME: ClassVar[str] = "envvar"

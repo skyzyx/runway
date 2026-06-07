@@ -1,6 +1,6 @@
 # Contributor Covenant Code of Conduct
 
-## Our Pledge
+## Our pledge
 
 We as members, contributors, and leaders pledge to make participation in our
 community a harassment-free experience for everyone, regardless of age, body
@@ -12,31 +12,31 @@ and orientation.
 We pledge to act and interact in ways that contribute to an open, welcoming,
 diverse, inclusive, and healthy community.
 
-## Our Standards
+## Our standards
 
 Examples of behavior that contributes to a positive environment for our
 community include:
 
-- Demonstrating empathy and kindness toward other people
-- Being respectful of differing opinions, viewpoints, and experiences
-- Giving and gracefully accepting constructive feedback
-- Accepting responsibility and apologizing to those affected by our mistakes,
+* Demonstrating empathy and kindness toward other people
+* Being respectful of differing opinions, viewpoints, and experiences
+* Giving and gracefully accepting constructive feedback
+* Accepting responsibility and apologizing to those affected by our mistakes,
   and learning from the experience
-- Focusing on what is best not just for us as individuals, but for the
+* Focusing on what is best not just for us as individuals, but for the
   overall community
 
 Examples of unacceptable behavior include:
 
-- The use of sexualized language or imagery, and sexual attention or
+* The use of sexualized language or imagery, and sexual attention or
   advances of any kind
-- Trolling, insulting or derogatory comments, and personal or political attacks
-- Public or private harassment
-- Publishing others' private information, such as a physical or email
+* Trolling, insulting or derogatory comments, and personal or political attacks
+* Public or private harassment
+* Publishing others' private information, such as a physical or email
   address, without their explicit permission
-- Other conduct which could reasonably be considered inappropriate in a
+* Other conduct which could reasonably be considered inappropriate in a
   professional setting
 
-## Enforcement Responsibilities
+## Enforcement responsibilities
 
 Community leaders are responsible for clarifying and enforcing our standards of
 acceptable behavior and will take appropriate and fair corrective action in
@@ -66,12 +66,12 @@ promptly and fairly.
 All community leaders are obligated to respect the privacy and security of the
 reporter of any incident.
 
-## Enforcement Guidelines
+## Enforcement guidelines
 
 Community leaders will follow these Community Impact Guidelines in determining
 the consequences for any action they deem in violation of this Code of Conduct:
 
-### 1. Correction
+### 1. correction
 
 **Community Impact**: Use of inappropriate language or other behavior deemed
 unprofessional or unwelcome in the community.
@@ -80,7 +80,7 @@ unprofessional or unwelcome in the community.
 clarity around the nature of the violation and an explanation of why the
 behavior was inappropriate. A public apology may be requested.
 
-### 2. Warning
+### 2. warning
 
 **Community Impact**: A violation through a single incident or series
 of actions.
@@ -92,7 +92,7 @@ includes avoiding interactions in community spaces as well as external channels
 like social media. Violating these terms may lead to a temporary or
 permanent ban.
 
-### 3. Temporary Ban
+### 3. temporary ban
 
 **Community Impact**: A serious violation of community standards, including
 sustained inappropriate behavior.
@@ -103,7 +103,7 @@ private interaction with the people involved, including unsolicited interaction
 with those enforcing the Code of Conduct, is allowed during this period.
 Violating these terms may lead to a permanent ban.
 
-### 4. Permanent Ban
+### 4. permanent ban
 
 **Community Impact**: Demonstrating a pattern of violation of community
 standards, including sustained inappropriate behavior, harassment of an

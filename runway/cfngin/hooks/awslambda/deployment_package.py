@@ -1,4 +1,10 @@
-"""Deployment package."""
+"""Deployment package.
+
+This module centralizes Lambda deployment package lifecycle (build, hash,
+upload, tag) so that cfngin stacks can reference a single artifact in S3
+without duplicating packaging logic across hooks.
+
+"""
 
 from __future__ import annotations
 
@@ -48,8 +54,14 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
     only call the methods defined within this parent class. This ensures
     compatibility with the S3 object class that can be returned.
 
+    This class exists as the primary abstraction over the build-hash-upload
+    pipeline, enabling content-addressable caching in S3 so that identical
+    source code produces the same object key and avoids redundant uploads.
+
     """
 
+    # S3 object tags store deployment metadata so that subsequent runs can
+    # retrieve hashes and runtime info without re-downloading the archive.
     META_TAGS: ClassVar[dict[str, str]] = {
         "code_sha256": "runway.cfngin:awslambda.code_sha256",
         "compatible_architectures": "runway.cfngin:awslambda.compatible_architectures",
@@ -105,6 +117,10 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
         changes to runtime which is more important than needing to be mindful
         of where this is used.
 
+        The filename encodes source hash so that any source change produces a
+        distinct path, enabling safe concurrent builds and simple cache
+        invalidation.
+
         """
         return self.project.build_directory / (
             f"{self.project.source_code.root_directory.name}."
@@ -114,7 +130,12 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
 
     @cached_property
     def bucket(self) -> Bucket:
-        """AWS S3 bucket where deployment package will be uploaded."""
+        """AWS S3 bucket where deployment package will be uploaded.
+
+        Eagerly validates access and existence so that permission or
+        missing-bucket errors surface before expensive build operations run.
+
+        """
         bucket = Bucket(self.project.ctx, self.project.args.bucket_name)
         if bucket.forbidden:
             raise BucketAccessDeniedError(bucket)
@@ -125,6 +146,10 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
     @cached_property
     def code_sha256(self) -> str:
         """SHA256 of the archive file.
+
+        AWS Lambda requires a base64-encoded SHA256 to enable
+        ``AWS::Lambda::Version.CodeSha256`` integrity verification at deploy
+        time.
 
         Returns:
             Value to pass to CloudFormation ``AWS::Lambda::Version.CodeSha256``.
@@ -172,6 +197,9 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
     def md5_checksum(self) -> str:
         """MD5 of the archive file.
 
+        S3's ``ContentMD5`` header provides end-to-end integrity verification
+        during upload, catching network corruption before the object is stored.
+
         Returns:
             Value to pass as ContentMD5 when uploading to AWS S3.
 
@@ -185,7 +213,12 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
 
     @cached_property
     def object_key(self) -> str:
-        """Key to use when upload object to AWS S3."""
+        """Key to use when upload object to AWS S3.
+
+        The key is content-addressed via the source hash so that unchanged
+        code maps to the same S3 path, avoiding redundant uploads.
+
+        """
         prefix = f"awslambda/{self.usage_type}s"
         if self.project.args.object_prefix:
             prefix = f"{prefix}/{self.project.args.object_prefix.lstrip('/').rstrip('/')}"
@@ -213,7 +246,13 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
         return self.project.runtime
 
     def build(self) -> Path:
-        """Build the deployment package."""
+        """Build the deployment package.
+
+        Guards against rebuilding an already-valid archive to keep idempotent
+        re-runs fast while still detecting empty archives that would silently
+        deploy broken Lambda functions.
+
+        """
         if self.exists and self.archive_file.stat().st_size > self.SIZE_EOCD:
             LOGGER.info("build skipped; %s already exists", self.archive_file.name)
             return self.archive_file
@@ -235,6 +274,11 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
 
     def _build_fix_file_permissions(self, archive_file: zipfile.ZipFile) -> None:
         """Fix file permissions of the files contained within the archive file.
+
+        Lambda's runtime requires executable permissions on handler files and
+        shared libraries. Docker-based builds or Windows hosts may produce
+        archives with incorrect permissions, so we normalize them inside the
+        zip to avoid runtime ``Permission denied`` errors.
 
         Only need to ensure that the file is executable. Permissions will be
         change to 755 or 655 if needed. The change will occur within the
@@ -266,6 +310,10 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
         archive_file: zipfile.ZipFile,
     ) -> None:
         """Handle installing & zipping dependencies.
+
+        Dependencies are installed first then archived so that platform-specific
+        compiled extensions (e.g. C shared objects) are included alongside
+        pure-Python packages.
 
         Args:
             archive_file: Archive file that is currently open and ready to be
@@ -316,6 +364,10 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
 
     def build_tag_set(self, *, url_encoded: bool = True) -> dict[str, str] | str:
         """Build tag set to be applied to the S3 object.
+
+        Tags embed deployment metadata directly on the S3 object so that
+        later runs can reconstruct state (hashes, runtime) without downloading
+        the archive or maintaining a separate metadata store.
 
         Args:
             layer: Tag the deployment package as a Lambda Layer or not.
@@ -378,6 +430,10 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
 
         If ``gitignore_filter`` is set, it will be used to exclude files.
 
+        Filters out directories and gitignored paths to prevent packaging
+        build artifacts (e.g. ``__pycache__``, ``.dist-info``) that would
+        bloat the deployment package without providing runtime value.
+
         """
         for child in self.project.dependency_directory.rglob("*"):
             if child.is_dir():
@@ -432,6 +488,10 @@ class DeploymentPackage(DelCachedPropMixin, Generic[_ProjectTypeVar]):
         directly as it will automatically account for the S3 object already
         existing.
 
+        Acts as a factory that returns an S3-backed instance when the object
+        already exists in the bucket, avoiding a full rebuild when only
+        metadata (tags) needs updating.
+
         Args:
             project: Project that is being built into a deployment package.
             usage_type: How the deployment package can be used by AWS Lambda.
@@ -460,6 +520,11 @@ class DeploymentPackageS3Object(DeploymentPackage[_ProjectTypeVar]):
 
     This should not need to be subclassed as the interactions required should
     be universal.
+
+    This subclass overrides parent properties to read metadata from S3 tags
+    rather than the local filesystem, allowing cfngin to skip the entire
+    build-and-upload cycle when an identical package already exists in the
+    bucket.
 
     Attributes:
         project: Project that is being built into a deployment package.
@@ -505,7 +570,12 @@ class DeploymentPackageS3Object(DeploymentPackage[_ProjectTypeVar]):
 
     @cached_property
     def head(self) -> HeadObjectOutputTypeDef | None:
-        """Response from HeadObject API call."""
+        """Response from HeadObject API call.
+
+        Uses HeadObject (not GetObject) to probe existence and fetch version
+        info without transferring the full archive payload.
+
+        """
         try:
             return self.bucket.client.head_object(Bucket=self.bucket.name, Key=self.object_key)
         except self.bucket.client.exceptions.ClientError as exc:
@@ -551,7 +621,13 @@ class DeploymentPackageS3Object(DeploymentPackage[_ProjectTypeVar]):
 
     @cached_property
     def object_tags(self) -> dict[str, str]:
-        """S3 object tags."""
+        """S3 object tags.
+
+        Retrieves tags separately from HeadObject because S3 does not return
+        tags in the HEAD response — they require a dedicated GetObjectTagging
+        call.
+
+        """
         response = self.bucket.client.get_object_tagging(
             Bucket=self.bucket.name, Key=self.object_key
         )
@@ -624,7 +700,13 @@ class DeploymentPackageS3Object(DeploymentPackage[_ProjectTypeVar]):
             )
 
     def update_tags(self) -> None:
-        """Update tags of the S3 object."""
+        """Update tags of the S3 object.
+
+        Reconciles local metadata with S3 tags so that external tag changes
+        (e.g. added cfngin context tags) are reflected without re-uploading
+        the entire archive.
+
+        """
         new_tags = self.build_tag_set(url_encoded=False)
         if new_tags == self.object_tags:
             LOGGER.debug(

@@ -1,3 +1,4 @@
+---
 modules:
   - path: sampleapp-01.cfn
     tags:

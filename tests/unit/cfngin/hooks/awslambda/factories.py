@@ -14,7 +14,12 @@ if TYPE_CHECKING:
 
 
 class MockProject(Project[AwsLambdaHookArgs]):
-    """Mock Project."""
+    """Mock Project.
+
+    Provides a concrete implementation of the abstract Project base class
+    for testing shared project lifecycle behavior without depending on a
+    real language-specific project (e.g. Python/Node).
+    """
 
     @cached_property
     def build_directory(self) -> Path:

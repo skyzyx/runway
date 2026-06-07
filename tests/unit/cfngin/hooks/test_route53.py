@@ -15,7 +15,12 @@ MODULE = "runway.cfngin.hooks.route53"
 
 
 def test_create_domain(cfngin_context: MockCfnginContext, mocker: MockerFixture) -> None:
-    """Test create_domain."""
+    """Test create_domain.
+
+    Verifies the hook delegates to create_route53_zone and returns the
+    expected dict structure with domain name and zone_id that downstream
+    stacks depend on.
+    """
     domain = "foo"
     create_route53_zone = mocker.patch(f"{MODULE}.create_route53_zone", return_value="bar")
     _ = cfngin_context.add_stubber("route53")

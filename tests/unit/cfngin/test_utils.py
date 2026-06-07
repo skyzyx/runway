@@ -1,4 +1,9 @@
-"""Tests for runway.cfngin.utils."""
+"""Tests for runway.cfngin.utils.
+
+Validates the utility functions that support S3 bucket management, file path
+resolution, YAML parsing, CloudFormation template processing, archive
+extraction, and the SourceProcessor for fetching remote package sources.
+"""
 
 from __future__ import annotations
 
@@ -41,6 +46,9 @@ from runway.config.models.cfngin import GitCfnginPackageSourceDefinitionModel
 if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
+# All AWS regions that CFNgin supports, used by tests that validate
+# region-dependent behavior like S3 endpoint construction and location
+# constraints.
 AWS_REGIONS = [
     "us-east-1",
     "cn-north-1",
@@ -60,14 +68,19 @@ MODULE = "runway.cfngin.utils"
 def mock_create_cache_directories(self: Any, **kwargs: Any) -> int:  # noqa: ARG001
     """Mock create cache directories.
 
-    Don't actually need the directories created in testing
-
+    Don't actually need the directories created in testing.
+    Avoids filesystem side-effects so SourceProcessor tests focus on
+    git ref resolution and URI sanitization logic.
     """
     return 1
 
 
 def test_ensure_s3_bucket() -> None:
-    """Test ensure_s3_bucket."""
+    """Test ensure_s3_bucket.
+
+    Verifies the happy path: an existing bucket is detected via
+    head_bucket and no creation attempt is made.
+    """
     s3_client = boto3.client("s3")
     stubber = Stubber(s3_client)
     stubber.add_response("head_bucket", {}, {"Bucket": "test-bucket"})
@@ -77,7 +90,12 @@ def test_ensure_s3_bucket() -> None:
 
 
 def test_ensure_s3_bucket_forbidden(caplog: pytest.LogCaptureFixture) -> None:
-    """Test ensure_s3_bucket."""
+    """Test ensure_s3_bucket.
+
+    Validates that a 403 Forbidden error (bucket exists but owned by
+    another account) raises with a helpful log message about globally
+    unique naming — a common user mistake.
+    """
     caplog.set_level(logging.ERROR, logger=MODULE)
     s3_client = boto3.client("s3")
     stubber = Stubber(s3_client)
@@ -92,7 +110,11 @@ def test_ensure_s3_bucket_forbidden(caplog: pytest.LogCaptureFixture) -> None:
 
 
 def test_ensure_s3_bucket_not_found(mocker: MockerFixture) -> None:
-    """Test ensure_s3_bucket."""
+    """Test ensure_s3_bucket.
+
+    Verifies that a missing bucket triggers auto-creation with the
+    correct location constraint derived from the region.
+    """
     mock_s3_bucket_location_constraint = mocker.patch(
         f"{MODULE}.s3_bucket_location_constraint", return_value="something"
     )
@@ -116,7 +138,11 @@ def test_ensure_s3_bucket_not_found(mocker: MockerFixture) -> None:
 
 
 def test_ensure_s3_bucket_not_found_not_create() -> None:
-    """Test ensure_s3_bucket."""
+    """Test ensure_s3_bucket.
+
+    Confirms that when create=False, a missing bucket raises rather
+    than being silently created — important for read-only operations.
+    """
     s3_client = boto3.client("s3")
     stubber = Stubber(s3_client)
     stubber.add_client_error("head_bucket", service_message="Not Found")
@@ -126,7 +152,11 @@ def test_ensure_s3_bucket_not_found_not_create() -> None:
 
 
 def test_ensure_s3_bucket_not_found_persist_graph() -> None:
-    """Test ensure_s3_bucket."""
+    """Test ensure_s3_bucket.
+
+    When persist_graph is enabled and the bucket doesn't exist yet,
+    versioning must be enabled during creation to support graph history.
+    """
     s3_client = boto3.client("s3")
     stubber = Stubber(s3_client)
     stubber.add_client_error("head_bucket", service_message="Not Found")
@@ -142,7 +172,11 @@ def test_ensure_s3_bucket_not_found_persist_graph() -> None:
 
 
 def test_ensure_s3_bucket_persist_graph(caplog: pytest.LogCaptureFixture) -> None:
-    """Test ensure_s3_bucket."""
+    """Test ensure_s3_bucket.
+
+    Confirms that an existing bucket with versioning already enabled
+    produces no warnings — the ideal state for persistent graphs.
+    """
     caplog.set_level(logging.WARNING, logger=MODULE)
     s3_client = boto3.client("s3")
     stubber = Stubber(s3_client)
@@ -155,7 +189,11 @@ def test_ensure_s3_bucket_persist_graph(caplog: pytest.LogCaptureFixture) -> Non
 
 
 def test_ensure_s3_bucket_persist_graph_mfa_delete(caplog: pytest.LogCaptureFixture) -> None:
-    """Test ensure_s3_bucket."""
+    """Test ensure_s3_bucket.
+
+    MFADelete prevents programmatic graph object deletion, so CFNgin
+    must warn users that persistent graph management will fail.
+    """
     caplog.set_level(logging.WARNING, logger=MODULE)
     s3_client = boto3.client("s3")
     stubber = Stubber(s3_client)
@@ -180,7 +218,12 @@ def test_ensure_s3_bucket_persist_graph_mfa_delete(caplog: pytest.LogCaptureFixt
 def test_ensure_s3_bucket_persist_graph_versioning_not_enabled(
     caplog: pytest.LogCaptureFixture, versioning_response: dict[str, Any]
 ) -> None:
-    """Test ensure_s3_bucket."""
+    """Test ensure_s3_bucket.
+
+    Parametrized across all non-enabled versioning states to verify
+    the warning fires whenever versioning isn't active — important
+    because persistent graphs rely on version history for rollback.
+    """
     caplog.set_level(logging.WARNING, logger=MODULE)
     s3_client = boto3.client("s3")
     stubber = Stubber(s3_client)
@@ -195,7 +238,12 @@ def test_ensure_s3_bucket_persist_graph_versioning_not_enabled(
 
 
 def test_ensure_s3_bucket_raise_client_error(caplog: pytest.LogCaptureFixture) -> None:
-    """Test ensure_s3_bucket."""
+    """Test ensure_s3_bucket.
+
+    Validates that unexpected AWS errors (not 403 or 404) propagate
+    with a logged message, since they indicate infrastructure problems
+    rather than user configuration issues.
+    """
     caplog.set_level(logging.ERROR, logger=MODULE)
     s3_client = boto3.client("s3")
     stubber = Stubber(s3_client)
@@ -207,40 +255,64 @@ def test_ensure_s3_bucket_raise_client_error(caplog: pytest.LogCaptureFixture) -
 
 
 def test_read_value_from_path_abs(tmp_path: Path) -> None:
-    """Test read_value_from_path absolute path."""
+    """Test read_value_from_path absolute path.
+
+    Validates the basic contract: file:// URIs with absolute paths
+    resolve and return file contents.
+    """
     test_file = tmp_path / "test.txt"
     test_file.write_text("success")
     assert read_value_from_path(f"file://{test_file.absolute()}") == "success"
 
 
 def test_read_value_from_path_dir(tmp_path: Path) -> None:
-    """Test read_value_from_path directory."""
+    """Test read_value_from_path directory.
+
+    Directories are not valid value sources; must raise to prevent
+    silent misconfigurations.
+    """
     with pytest.raises(ValueError):  # noqa: PT011
         read_value_from_path(f"file://{tmp_path.absolute()}")
 
 
 def test_read_value_from_path_not_exist(tmp_path: Path) -> None:
-    """Test read_value_from_path does not exist."""
+    """Test read_value_from_path does not exist.
+
+    Missing files must raise rather than returning empty, since a
+    missing value source is always a configuration error.
+    """
     with pytest.raises(ValueError):  # noqa: PT011
         read_value_from_path(f"file://{(tmp_path / 'something.txt').absolute()}")
 
 
 def test_read_value_from_path_no_root_path(cd_tmp_path: Path) -> None:
-    """Test read_value_from_path no root_path."""
+    """Test read_value_from_path no root_path.
+
+    Verifies relative file:// URIs resolve against cwd when no
+    explicit root_path is provided.
+    """
     test_file = cd_tmp_path / "test.txt"
     test_file.write_text("success")
     assert read_value_from_path(f"file://./{test_file.name}") == "success"
 
 
 def test_read_value_from_path_root_path_dir(tmp_path: Path) -> None:
-    """Test read_value_from_path root_path is dir."""
+    """Test read_value_from_path root_path is dir.
+
+    Validates that relative URIs resolve against root_path when it
+    points to a directory.
+    """
     test_file = tmp_path / "test.txt"
     test_file.write_text("success")
     assert read_value_from_path(f"file://./{test_file.name}", root_path=tmp_path) == "success"
 
 
 def test_read_value_from_path_root_path_file(tmp_path: Path) -> None:
-    """Test read_value_from_path root_path is file."""
+    """Test read_value_from_path root_path is file.
+
+    When root_path points to a file, the parent directory is used
+    for resolution — supports config files referencing sibling files.
+    """
     test_file = tmp_path / "test.txt"
     test_file.write_text("success")
     assert (
@@ -250,7 +322,12 @@ def test_read_value_from_path_root_path_file(tmp_path: Path) -> None:
 
 
 class TestUtil(unittest.TestCase):
-    """Tests for runway.cfngin.utils."""
+    """Tests for runway.cfngin.utils.
+
+    Groups tests for pure utility functions (cf_safe_name, camel_to_snake,
+    YAML parsing) and filesystem-dependent operations (tar extraction,
+    path traversal protection) that need setUp/tearDown lifecycle.
+    """
 
     tmp_path: Path
 
@@ -276,13 +353,23 @@ class TestUtil(unittest.TestCase):
         shutil.rmtree(self.tmp_path, ignore_errors=True)
 
     def test_cf_safe_name(self) -> None:
-        """Test cf safe name."""
+        """Test cf safe name.
+
+        Validates the conversion of arbitrary identifiers to
+        CloudFormation-safe names (PascalCase, no special chars),
+        which is required by the CF API for resource naming.
+        """
         tests = (("abc-def", "AbcDef"), ("GhI", "GhI"), ("jKlm.noP", "JKlmNoP"))
         for test in tests:
             assert cf_safe_name(test[0]) == test[1]
 
     def test_camel_to_snake(self) -> None:
-        """Test camel to snake."""
+        """Test camel to snake.
+
+        Covers standard camelCase, PascalCase, mixed underscore, and
+        all-lowercase inputs to ensure the regex-based conversion
+        handles edge cases without data loss.
+        """
         tests = (
             ("TestTemplate", "test_template"),
             ("testTemplate", "test_template"),
@@ -293,7 +380,11 @@ class TestUtil(unittest.TestCase):
             assert camel_to_snake(test[0]) == test[1]
 
     def test_yaml_to_ordered_dict(self) -> None:
-        """Test yaml to ordered dict."""
+        """Test yaml to ordered dict.
+
+        Confirms key ordering is preserved during YAML parsing, which
+        is critical for hook execution order where sequence matters.
+        """
         raw_config = """
         pre_deploy:
           hook2:
@@ -306,26 +397,45 @@ class TestUtil(unittest.TestCase):
         assert config["pre_deploy"]["hook2"]["path"] == "foo.bar"
 
     def test_get_client_region(self) -> None:
-        """Test get client region."""
+        """Test get client region.
+
+        Verifies region extraction from boto3 clients across multiple
+        partitions, ensuring CFNgin can determine deployment region
+        from existing client objects.
+        """
         regions = ["us-east-1", "us-west-1", "eu-west-1", "sa-east-1"]
         for region in regions:
             client = boto3.client("s3", region_name=region)
             assert get_client_region(client) == region
 
     def test_get_s3_endpoint(self) -> None:
-        """Test get s3 endpoint."""
+        """Test get s3 endpoint.
+
+        Validates custom endpoint URL extraction, needed for S3-compatible
+        services (e.g., localstack, MinIO) used in testing and private clouds.
+        """
         endpoint_url = "https://example.com"
         client = boto3.client("s3", region_name="us-east-1", endpoint_url=endpoint_url)
         assert get_s3_endpoint(client) == endpoint_url
 
     def test_s3_bucket_location_constraint(self) -> None:
-        """Test s3 bucket location constraint."""
+        """Test s3 bucket location constraint.
+
+        us-east-1 is special: AWS requires an empty string (not the
+        region name) as the location constraint when creating buckets
+        there. All other regions use their name directly.
+        """
         tests = (("us-east-1", ""), ("us-west-1", "us-west-1"))
         for region, result in tests:
             assert s3_bucket_location_constraint(region) == result
 
     def test_parse_cloudformation_template(self) -> None:
-        """Test parse cloudformation template."""
+        """Test parse cloudformation template.
+
+        Validates that CF-specific YAML tags (!Ref, !Join) are correctly
+        resolved into their JSON equivalents, ensuring templates can be
+        round-tripped through CFNgin's YAML parser.
+        """
         template = """AWSTemplateFormatVersion: "2010-09-09"
 Parameters:
   Param1:
@@ -363,7 +473,12 @@ Outputs:
         assert parse_cloudformation_template(template) == parsed_template
 
     def test_is_within_directory(self) -> None:
-        """Test is within directory."""
+        """Test is within directory.
+
+        Exercises the path containment check that guards against path
+        traversal attacks in archive extraction — tests both valid
+        membership and escape attempts.
+        """
         directory = Path("my_directory")
 
         # Assert if the target is within the directory.
@@ -379,13 +494,22 @@ Outputs:
         assert is_within_directory(directory, target)
 
     def test_safe_tar_extract_all_within(self) -> None:
-        """Test when all tar file contents are within the specified directory."""
+        """Test when all tar file contents are within the specified directory.
+
+        Happy path: extraction succeeds when no members escape the
+        target directory.
+        """
         path = self.tmp_path / "my_directory"
         with tarfile.open(self.tmp_path / self.tar_file, "r") as tar:
             assert safe_tar_extract(tar, path) is None
 
     def test_safe_tar_extract_path_traversal(self) -> None:
-        """Test when a tar file tries to go outside the specified area."""
+        """Test when a tar file tries to go outside the specified area.
+
+        Security test: malicious tar files with "../" prefixed members
+        must be rejected to prevent arbitrary file overwrites (CVE-type
+        vulnerability in naive tar extraction).
+        """
         with tarfile.open(self.tmp_path / self.tar_file, "r") as tar:
             for member in tar.getmembers():
                 member.name = f"../{member.name}"
@@ -396,7 +520,12 @@ Outputs:
             assert str(excinfo.value) == "Attempted Path Traversal in Tar File"  # type: ignore
 
     def test_extractors(self) -> None:
-        """Test extractors."""
+        """Test extractors.
+
+        Verifies the extractor class hierarchy correctly associates
+        file extensions with archive types, ensuring the right
+        extraction strategy is selected by filename.
+        """
         assert Extractor(Path("test.zip")).archive == Path("test.zip")
         assert TarExtractor().extension == ".tar"
         assert TarGzipExtractor().extension == ".tar.gz"
@@ -406,7 +535,12 @@ Outputs:
             assert i.archive.name.endswith(i.extension) is True  # type: ignore
 
     def test_SourceProcessor_helpers(self) -> None:  # noqa: N802
-        """Test SourceProcessor helpers."""
+        """Test SourceProcessor helpers.
+
+        Validates git path sanitization (special chars to underscores),
+        URI sanitization, branch/tag/commit ref resolution, and the
+        mutual exclusivity constraint on git ref config options.
+        """
         with mock.patch.object(
             SourceProcessor,
             "create_cache_directories",
@@ -486,7 +620,12 @@ class MockException(Exception):
 
 
 class TestExceptionRetries(unittest.TestCase):
-    """Test exception retries."""
+    """Test exception retries.
+
+    Validates the retry mechanism helper functions used to test that
+    operations succeed on retry, fail with specific exceptions, and
+    respect exception type filtering.
+    """
 
     def setUp(self) -> None:
         """Run before tests."""

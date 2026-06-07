@@ -1,3 +1,4 @@
+---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Deploys an ec2 instance with Runway pre-configured for evaluation
 
@@ -29,12 +30,10 @@ Parameters:
     Type: String
     Default: none
 
-
 Conditions:
   DeployWindows: !Equals [!Ref OS, Windows]
   DeployLinux: !Equals [!Ref OS, Linux]
   DeployIamRole: !Equals [!Ref IamRole, auto/admin]
-
 
 Mappings:
   AMIs:
@@ -83,7 +82,6 @@ Mappings:
     sa-east-1:
       Linux: ami-4b6a3127
       Windows: ami-ff6e3593
-
 
 Resources:
   RunwayLinuxInstance:
@@ -200,7 +198,7 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.0.0/24
-      AvailabilityZone: !Select ['0', !GetAZs Ref: 'AWS::Region']
+      AvailabilityZone: !Select ['0', {!GetAZs Ref: 'AWS::Region'}]
 
   PublicRouteTable:
     Type: AWS::EC2::RouteTable

@@ -1,3 +1,4 @@
+---
 name: pull_request_target
 
 on:
@@ -9,7 +10,7 @@ jobs:
     if: ${{ !endswith(github.actor, '[bot]') && (github.event.action == 'opened' || github.event.action == 'reopened') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: technote-space/assign-author@v1  # cspell:ignore technote
+      - uses: technote-space/assign-author@v1 # cspell:ignore technote
   enforce-branch-name:
     name: Enforce Branch Name
     runs-on: ubuntu-latest

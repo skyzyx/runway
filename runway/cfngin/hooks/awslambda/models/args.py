@@ -1,4 +1,9 @@
-"""Argument data models."""
+"""Argument data models.
+
+Centralizing hook arguments as Pydantic models enables early validation of user
+configuration at parse time, surfacing misconfiguration before any AWS API calls
+or Docker operations begin.
+"""
 
 from __future__ import annotations
 
@@ -13,8 +18,15 @@ from ...base import HookArgsBaseModel
 
 
 class DockerOptions(BaseModel):
-    """Docker options."""
+    """Docker options.
 
+    Encapsulates Docker-specific configuration as a nested model so that Docker
+    concerns remain optional and self-contained, avoiding pollution of the main
+    hook argument namespace.
+    """
+
+    # Ignore unknown fields so that forward-compatible config files with newer
+    # Docker options don't break older versions of this hook.
     model_config = ConfigDict(extra="ignore")
 
     disabled: bool = False
@@ -123,7 +135,12 @@ class DockerOptions(BaseModel):
 
 
 class AwsLambdaHookArgs(HookArgsBaseModel):
-    """Base class for AWS Lambda hook arguments."""
+    """Base class for AWS Lambda hook arguments.
+
+    Provides the shared configuration schema for all Lambda packaging hooks,
+    ensuring consistent S3, Docker, and caching behavior regardless of the
+    target runtime (Python, Node, etc.).
+    """
 
     bucket_name: str
     """Name of the S3 Bucket where deployment package is/will  be stored.
@@ -265,7 +282,12 @@ class AwsLambdaHookArgs(HookArgsBaseModel):
     @field_validator("runtime", mode="before")
     @classmethod
     def _validate_runtime_or_docker(cls, v: str | None, info: ValidationInfo) -> str | None:
-        """Validate that either runtime is provided or Docker image is provided."""
+        """Validate that either runtime is provided or Docker image is provided.
+
+        This cross-field validation enforces that at least one mechanism exists
+        to determine the Lambda runtime environment, catching impossible
+        configurations before any build work begins.
+        """
         if v:  # if runtime was provided, we don't need to check anything else
             return v
         docker: DockerOptions = info.data["docker"]
@@ -277,8 +299,14 @@ class AwsLambdaHookArgs(HookArgsBaseModel):
 
 
 class PythonHookArgs(AwsLambdaHookArgs):
-    """Hook arguments for a Python AWS Lambda deployment package."""
+    """Hook arguments for a Python AWS Lambda deployment package.
 
+    Extends the base arguments with Python-specific options (pip args, stripping,
+    poetry) because Python dependency installation has unique constraints that
+    other runtimes do not share.
+    """
+
+    # Ignore unknown fields for forward-compatibility with newer config options.
     model_config = ConfigDict(extra="ignore")
 
     extend_pip_args: list[str] | None = None
@@ -324,7 +352,11 @@ class PythonHookArgs(AwsLambdaHookArgs):
     @field_validator("extend_pip_args", mode="after")
     @classmethod
     def _validate_extend_pip_args_no_requirement(cls, v: list[str | None]) -> list[str | None]:
-        """Validate that ``--requirement`` is not present in the value."""
+        """Validate that ``--requirement`` is not present in the value.
+
+        The hook already passes its own --requirement flag to pip; duplicating
+        it would cause pip to fail or install from the wrong requirements file.
+        """
         if v and ("--requirement" in v or "-r" in v):
             raise ValueError(
                 "can't contain '--requirement' or '-r'; conflicts with arguments provided by the hook"
@@ -334,7 +366,11 @@ class PythonHookArgs(AwsLambdaHookArgs):
     @field_validator("extend_pip_args", mode="after")
     @classmethod
     def _validate_extend_pip_args_no_target(cls, v: list[str | None]) -> list[str | None]:
-        """Validate that ``--target`` is not present in the value."""
+        """Validate that ``--target`` is not present in the value.
+
+        The hook controls the --target directory to ensure dependencies land in
+        the correct location within the deployment package structure.
+        """
         if v and ("--target" in v or "-t" in v):
             raise ValueError(
                 "can't contain '--target' or '-t'; conflicts with arguments provided by the hook"

@@ -1,4 +1,5 @@
-ignore_git_branch: true  # using dir name
+---
+ignore_git_branch: true # using dir name
 
 deployments:
   - modules:

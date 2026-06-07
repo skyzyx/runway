@@ -11,7 +11,7 @@ variable "region" {}
 # Provider and access setup
 provider "aws" {
   version = "~> 2.0"
-  region = "${var.region}"
+  region  = var.region
 }
 
 # Data and resources

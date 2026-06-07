@@ -1,3 +1,4 @@
+---
 deployments:
   - name: deployment_1
     env_vars:

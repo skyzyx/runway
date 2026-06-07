@@ -1,4 +1,9 @@
-"""Tests for runway.cfngin.lookups.handlers.rxref."""
+"""Tests for runway.cfngin.lookups.handlers.rxref.
+
+Validates the relative cross-reference lookup that prepends the namespace to
+stack names before delegating to CfnLookup, enabling namespace-aware
+cross-stack references without repeating the namespace in every lookup.
+"""
 
 from __future__ import annotations
 
@@ -19,7 +24,12 @@ MODULE = "runway.cfngin.lookups.handlers.rxref"
 
 
 class TestRxrefLookup:
-    """Tests for runway.cfngin.lookups.handlers.rxref.RxrefLookup."""
+    """Tests for runway.cfngin.lookups.handlers.rxref.RxrefLookup.
+
+    Rxref wraps the CloudFormation lookup by automatically prefixing the
+    configured namespace to the stack name, eliminating namespace duplication
+    in multi-environment deployments.
+    """
 
     @pytest.mark.parametrize(
         "provided, expected",
@@ -48,7 +58,11 @@ class TestRxrefLookup:
         cfn.handle.assert_called_once_with(expected, context=cfngin_context, provider=provider)
 
     def test_legacy_parse(self, caplog: pytest.LogCaptureFixture, mocker: MockerFixture) -> None:
-        """Test legacy_parse."""
+        """Test legacy_parse.
+
+        Ensures backward-compatible parsing emits a deprecation warning,
+        guiding users to migrate to the new query syntax.
+        """
         query = "foo"
         caplog.set_level(LogLevels.WARNING, MODULE)
         deconstruct = mocker.patch(f"{MODULE}.deconstruct", return_value="success")

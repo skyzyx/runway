@@ -23,7 +23,12 @@ MODULE = "runway.cfngin.hooks.awslambda.python_requirements._project"
 
 
 class TestPythonProject:
-    """Test PythonProject."""
+    """Test PythonProject.
+
+    Validates the Python-specific project handling including pip/poetry
+    detection, requirements.txt generation, dependency installation,
+    cleanup, and runtime resolution.
+    """
 
     @pytest.mark.parametrize(
         "file_exists, poetry_value",

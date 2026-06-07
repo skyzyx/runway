@@ -1,4 +1,9 @@
-"""CFNgin hooks for AWS Certificate Manager."""
+"""CFNgin hooks for AWS Certificate Manager.
+
+This module exists because ACM DNS-validated certificates require out-of-band
+Route 53 record creation that CloudFormation cannot orchestrate natively; the
+hook bridges the gap between stack creation and certificate validation.
+"""
 
 from __future__ import annotations
 
@@ -32,7 +37,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 class HookArgs(HookArgsBaseModel):
-    """Hook arguments."""
+    """Hook arguments.
+
+    Captures the minimum configuration needed to request and validate an ACM
+    certificate via DNS, tying the certificate lifecycle to a specific
+    Route 53 hosted zone.
+    """
 
     alt_names: list[str] = []
     domain: str
@@ -43,6 +53,11 @@ class HookArgs(HookArgsBaseModel):
 
 class Certificate(Hook):
     r"""Hook for managing a **AWS::CertificateManager::Certificate**.
+
+    This class exists because ACM certificate DNS validation requires creating
+    Route 53 records outside of the certificate's own CloudFormation stack, then
+    polling until validation completes — a multi-step asynchronous workflow that
+    CloudFormation's built-in resources cannot handle alone.
 
     Keyword Args:
         alt_names (list[str]): Additional FQDNs to be included in the
@@ -118,7 +133,12 @@ class Certificate(Hook):
         )
 
     def _create_blueprint(self) -> BlankBlueprint:
-        """Create CFNgin Blueprint."""
+        """Create CFNgin Blueprint.
+
+        Uses a BlankBlueprint with tracking variables so that domain and TTL
+        changes can be detected across deploys without requiring a full
+        stack replacement.
+        """
         var_description = (
             "NO NOT CHANGE MANUALLY! Used to track the "
             "state of a value set outside of CloudFormation"
@@ -147,7 +167,12 @@ class Certificate(Hook):
         return blueprint
 
     def domain_changed(self) -> bool:
-        """Check to ensure domain has not changed for existing stack."""
+        """Check to ensure domain has not changed for existing stack.
+
+        ACM does not support changing the domain on an existing certificate, so
+        this guard prevents a deployment that would inevitably fail at the API
+        level with a confusing error.
+        """
         if not self.stack:  # cov: ignore
             raise NotImplementedError("stack not present on hook")
         try:
@@ -178,6 +203,10 @@ class Certificate(Hook):
     def get_certificate(self, interval: int = 5) -> str:
         """Get the certificate being created by a CloudFormation.
 
+        Polls recursively because CloudFormation may report the resource before
+        ACM assigns a PhysicalResourceId (certificate ARN), creating a race
+        condition that requires retry logic.
+
         Args:
             interval: Number of seconds to wait between attempts.
 
@@ -205,6 +234,10 @@ class Certificate(Hook):
         status: str = "PENDING_VALIDATION",
     ) -> ResourceRecordTypeDef:
         """Get validation record from the certificate being created.
+
+        Polls recursively because ACM populates DomainValidationOptions and
+        ResourceRecord asynchronously after certificate creation; these fields
+        are not immediately available in the API response.
 
         Args:
             cert_arn: ARN of the certificate to validate.
@@ -252,6 +285,10 @@ class Certificate(Hook):
     def put_record_set(self, record_set: ResourceRecordTypeDef) -> None:
         """Create/update a record set on a Route 53 Hosted Zone.
 
+        Creates the DNS validation record that ACM checks to prove domain
+        ownership, which is required before the certificate can transition
+        from PENDING_VALIDATION to ISSUED.
+
         Args:
             record_set: Record set to be added to Route 53.
 
@@ -261,6 +298,10 @@ class Certificate(Hook):
 
     def remove_validation_records(self, records: list[ResourceRecordTypeDef] | None = None) -> None:
         """Remove all record set entries used to validate an ACM Certificate.
+
+        Cleans up the DNS records that were created outside of CloudFormation
+        for validation, since CloudFormation has no awareness of them and would
+        leave orphaned records in the hosted zone.
 
         Args:
             records: List of validation records to remove from Route 53.
@@ -289,6 +330,10 @@ class Certificate(Hook):
     def update_record_set(self, record_set: ResourceRecordTypeDef) -> None:
         """Update a validation record set when the cert has not changed.
 
+        Uses UPSERT to ensure the TTL or other record attributes stay in sync
+        with the hook configuration, even when the certificate itself was not
+        recreated.
+
         Args:
             record_set: Record set to be updated in Route 53.
 
@@ -302,6 +347,10 @@ class Certificate(Hook):
         record_sets: list[ResourceRecordTypeDef],
     ) -> None:
         """Wrap boto3.client('acm').change_resource_record_sets.
+
+        Centralizes Route 53 change logic so that TTL, record formatting, and
+        hosted zone targeting are consistent across create, update, and delete
+        operations.
 
         Args:
             action: Change action.
@@ -336,7 +385,13 @@ class Certificate(Hook):
         )
 
     def deploy(self, status: Status | None = None) -> dict[str, str]:
-        """Deploy an ACM Certificate."""
+        """Deploy an ACM Certificate.
+
+        Orchestrates the full certificate lifecycle: stack creation, DNS
+        validation record management, and waiting for validation to complete.
+        Handles rollback by destroying the stack and cleaning up Route 53
+        records on failure to avoid leaving orphaned resources.
+        """
         record = None
         try:
             if self.domain_changed():
@@ -405,6 +460,10 @@ class Certificate(Hook):
     ) -> bool:
         """Destroy an ACM certificate.
 
+        Removes both the CloudFormation stack and the out-of-band Route 53
+        validation records, since CloudFormation only manages the certificate
+        resource and has no knowledge of the DNS records created by this hook.
+
         Args:
             records: List of validation records to remove from Route 53.
                 This can be provided in cases were the certificate has been
@@ -437,17 +496,35 @@ class Certificate(Hook):
         return True
 
     def post_deploy(self) -> dict[str, str]:
-        """Run during the **post_deploy** stage."""
+        """Run during the **post_deploy** stage.
+
+        Delegates to deploy so the certificate is available after the main
+        stack deploy completes, supporting stacks that reference the cert ARN.
+        """
         return self.deploy()
 
     def post_destroy(self) -> bool:
-        """Run during the **post_destroy** stage."""
+        """Run during the **post_destroy** stage.
+
+        Cleans up the certificate and validation records after the dependent
+        stacks have been destroyed to avoid dangling references.
+        """
         return self.destroy()
 
     def pre_deploy(self) -> dict[str, str]:
-        """Run during the **pre_deploy** stage."""
+        """Run during the **pre_deploy** stage.
+
+        Provisions the certificate before the main stack so that dependent
+        resources (e.g., CloudFront distributions, ALB listeners) can reference
+        the validated certificate ARN at creation time.
+        """
         return self.deploy()
 
     def pre_destroy(self) -> bool:
-        """Run during the **pre_destroy** stage."""
+        """Run during the **pre_destroy** stage.
+
+        Removes the certificate before dependent stacks are destroyed, ensuring
+        CloudFormation does not encounter deletion failures from resources still
+        referencing the certificate.
+        """
         return self.destroy()

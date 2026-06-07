@@ -50,12 +50,20 @@ DESTROYING_STATUS = SubmittedStatus("submitted for destruction")
 
 
 def build_stack_tags(stack: Stack) -> list[TagTypeDef]:
-    """Build a common set of tags to attach to a stack."""
+    """Build a common set of tags to attach to a stack.
+
+    CloudFormation requires tags in a specific key/value dict format rather
+    than a flat mapping, so this converts the stack's user-friendly tag dict
+    into the API-required structure.
+    """
     return [{"Key": t[0], "Value": t[1]} for t in stack.tags.items()]
 
 
 def should_update(stack: Stack) -> bool:
     """Test whether a stack should be submitted for updates to CloudFormation.
+
+    Locked stacks are protected from accidental updates in shared environments;
+    the --force flag provides an escape hatch for intentional overrides.
 
     Args:
         stack: The stack object to check.
@@ -72,6 +80,9 @@ def should_update(stack: Stack) -> bool:
 def should_submit(stack: Stack) -> bool:
     """Test whether a stack should be submitted to CF for update/create.
 
+    Allows users to conditionally disable stacks in configuration without
+    removing them from the dependency graph.
+
     Args:
         stack: The stack object to check.
 
@@ -86,6 +97,9 @@ def should_submit(stack: Stack) -> bool:
 def should_ensure_cfn_bucket(outline: bool, dump: bool) -> bool:
     """Test whether access to the cloudformation template bucket is required.
 
+    Outline and dump modes only render the plan locally without submitting to
+    AWS, so they do not need S3 bucket access for template uploads.
+
     Args:
         outline: The outline action.
         dump: The dump action.
@@ -99,6 +113,10 @@ def should_ensure_cfn_bucket(outline: bool, dump: bool) -> bool:
 
 def _resolve_parameters(parameters: dict[str, Any], blueprint: Blueprint) -> dict[str, Any]:
     """Resolve CloudFormation Parameters for a given blueprint.
+
+    CloudFormation only accepts string parameter values and rejects unknown
+    parameters, so this filters and coerces user-supplied values to match
+    the blueprint's declared parameter set before submission.
 
     Given a list of parameters, handles:
         - discard any parameters that the blueprint does not use
@@ -133,7 +151,12 @@ def _resolve_parameters(parameters: dict[str, Any], blueprint: Blueprint) -> dic
 
 
 class UsePreviousParameterValue:
-    """Class used to indicate a Parameter should use it's existing value."""
+    """Class used to indicate a Parameter should use it's existing value.
+
+    Acts as a sentinel type so that the parameter-building logic can
+    distinguish "reuse the existing stack value" from an explicit user-supplied
+    value, mapping to the CloudFormation UsePreviousValue flag.
+    """
 
 
 def _handle_missing_parameters(
@@ -145,6 +168,11 @@ def _handle_missing_parameters(
     """Handle any missing parameters.
 
     If an existing_stack is provided, look up missing parameters there.
+
+    During stack updates, users often only specify parameters they want to
+    change. This function fills in the rest from the existing stack's live
+    values, preventing unnecessary drift and avoiding CloudFormation errors
+    for required parameters that haven't changed.
 
     Args:
         parameter_values: key/value dictionary of stack definition parameters.
@@ -190,6 +218,10 @@ def handle_hooks(
 ) -> None:
     """Handle pre/post hooks.
 
+    Hooks are skipped during outline and dump modes because those modes only
+    inspect the plan without making real infrastructure changes, so running
+    side-effecting hooks would be inappropriate.
+
     Args:
         stage: The name of the hook stage - pre_deploy/post_deploy.
         hooks: A list of dictionaries containing the hooks to execute.
@@ -205,6 +237,11 @@ def handle_hooks(
 
 class Action(BaseAction):
     """Responsible for building & deploying CloudFormation stacks.
+
+    Serves as the primary "create or update" orchestrator for the cfngin
+    lifecycle. It encapsulates the decision logic for when to create a new
+    stack versus update an existing one, including handling stacks stuck in
+    failed-create states that need to be recreated.
 
     Generates the deploy plan based on stack dependencies (these dependencies
     are determined automatically based on output lookups from other stacks).
@@ -229,7 +266,12 @@ class Action(BaseAction):
 
     @property
     def upload_disabled(self) -> bool:
-        """Whether the CloudFormation template should be uploaded to S3."""
+        """Whether the CloudFormation template should be uploaded to S3.
+
+        Checks both explicit user override and implicit fallback when no
+        bucket is configured, ensuring templates are inlined when S3 upload
+        is not possible.
+        """
         if self.upload_explicitly_disabled:
             return True
         return bool(not self.bucket_name)
@@ -237,6 +279,10 @@ class Action(BaseAction):
     @upload_disabled.setter
     def upload_disabled(self, value: bool) -> None:
         """Set the value of upload_disabled.
+
+        Guards against contradictory configuration: a user cannot request
+        uploads (set False) when no bucket exists, as templates would have
+        nowhere to go.
 
         Raises:
             CfnginBucketRequired: Attempted to explicitly enable upload but cfngin_bucket
@@ -255,6 +301,11 @@ class Action(BaseAction):
         stack: Stack, provider_stack: StackTypeDef | None = None
     ) -> list[ParameterTypeDef]:
         """Build the CloudFormation Parameters for our stack.
+
+        Bridges the gap between the user's stack definition (simple key/value
+        pairs) and CloudFormation's parameter API (list of typed dicts with
+        UsePreviousValue support), handling resolution, missing-parameter
+        fallback, and format conversion in one pass.
 
         Args:
             stack: A CFNgin stack.
@@ -289,6 +340,11 @@ class Action(BaseAction):
 
         Used to remove stacks that exist in the persistent graph but not
         have been removed from the "local" graph.
+
+        This handles the "drift removal" case during deploys: when a stack is
+        removed from the config but still exists in the persistent graph, it
+        must be torn down to keep infrastructure in sync with the declared
+        configuration.
 
         Args:
             stack: Stack to be deleted.
@@ -342,6 +398,11 @@ class Action(BaseAction):
         Also makes sure that we don't try to create or update a stack while
         it is already updating or creating.
 
+        Implements a polling state machine: each call checks the current
+        provider state and returns the appropriate status. The plan executor
+        re-invokes this method until a terminal status (complete/failed) is
+        reached, enabling concurrent stack operations without blocking threads.
+
         Args:
             stack: Stack to be launched.
             status: The Stack's status represented by a CFNgin status object.
@@ -394,7 +455,8 @@ class Action(BaseAction):
                 # Continue with creation afterwards
             # Failure must be checked *before* completion, as both will be true
             # when completing a rollback, and we don't want to consider it as
-            # a successful update.
+            # a successful update. CloudFormation marks a rolled-back stack as
+            # both "failed" and "complete", so order of checks matters.
             elif provider.is_stack_failed(provider_stack):
                 reason = status.reason
                 if reason and "rolling" in reason:
@@ -475,7 +537,11 @@ class Action(BaseAction):
 
     @property
     def _stack_action(self) -> Callable[..., Status]:
-        """Run against a step."""
+        """Run against a step.
+
+        Returns the launch function as the per-stack callable so that the
+        base class plan executor invokes create/update logic for each stack.
+        """
         return self._launch_stack
 
     def _template(self, blueprint: Blueprint) -> Template:
@@ -484,6 +550,10 @@ class Action(BaseAction):
         If an S3 bucket is set, then the template will be uploaded to S3 first,
         and CreateStack/UpdateStack operations will use the uploaded template.
         If not bucket is set, then the template will be inlined.
+
+        S3 upload is preferred because CloudFormation has a 51,200-byte limit
+        on inline template bodies, while S3-sourced templates can be up to
+        1 MB.
 
         """
         if self.upload_disabled:
@@ -503,6 +573,11 @@ class Action(BaseAction):
         If not using a persistent graph. the default method for creating
         a plan is used.
 
+        The persistent graph enables multi-config deployments to share state
+        about which stacks exist. When stacks are removed from config, this
+        method detects the difference and schedules their destruction in
+        reverse-dependency order alongside the normal deploy steps.
+
         Args:
             tail: Whether to tail the stack progress.
 
@@ -515,6 +590,9 @@ class Action(BaseAction):
         inverse_steps: list[Step] = []
         persist_graph = self.context.persistent_graph.transposed()
 
+        # Walk the transposed persistent graph to find stacks removed from
+        # config. Transposing reverses dependency edges so deletions happen
+        # in the correct order (dependents destroyed before their dependencies).
         for ind_node, dep_nodes in persist_graph.dag.graph.items():
             if ind_node not in config_stack_names:
                 inverse_steps.append(
@@ -529,7 +607,8 @@ class Action(BaseAction):
 
         graph.add_steps(inverse_steps)
 
-        # invert what is going to be destroyed to retain dependencies
+        # Transpose back so the destroy steps execute in correct dependency
+        # order when merged with the deploy steps in a single plan.
         graph = graph.transposed()
 
         steps = [
@@ -572,6 +651,11 @@ class Action(BaseAction):
         """Kicks off the create/update of the stacks in the stack_definitions.
 
         This is the main entry point for the action.
+
+        Supports three execution modes: outline (print plan), dump (write
+        templates to disk), and execute (submit to CloudFormation). The
+        persistent graph is locked during execution to prevent concurrent
+        deploys from corrupting shared state.
 
         Args:
             concurrency: The maximum number of concurrent deployments.

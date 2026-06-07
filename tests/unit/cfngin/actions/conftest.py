@@ -1,4 +1,8 @@
-"""Pytest fixtures and plugins."""
+"""Pytest fixtures and plugins.
+
+Provides shared fixtures for action tests that need a mocked AWS provider,
+avoiding real CloudFormation API calls while exercising action decision logic.
+"""
 
 from __future__ import annotations
 
@@ -18,7 +22,12 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def provider_get_stack(mocker: MockerFixture) -> MagicMock:
-    """Patches ``runway.cfngin.providers.aws.default.Provider.get_stack``."""
+    """Patches ``runway.cfngin.providers.aws.default.Provider.get_stack``.
+
+    Actions branch heavily on the current stack state returned by the provider.
+    This fixture supplies a stable "stack exists in CREATE_COMPLETE" baseline so
+    tests can override individual fields without hitting AWS.
+    """
     return_value: StackTypeDef = {
         "CreationTime": datetime(2015, 1, 1),
         "Description": "something",

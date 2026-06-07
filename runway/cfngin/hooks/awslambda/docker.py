@@ -1,4 +1,10 @@
-"""Docker logic for the awslambda hook."""
+"""Docker logic for the awslambda hook.
+
+This module provides Docker-based dependency installation so that compiled
+extensions (C/C++ shared libraries) are built against the same OS and glibc
+version as the AWS Lambda execution environment.
+
+"""
 
 from __future__ import annotations
 
@@ -32,7 +38,13 @@ LOGGER = cast("RunwayLogger", logging.getLogger(__name__))
 
 
 class DockerDependencyInstaller:
-    """Docker dependency installer."""
+    """Docker dependency installer.
+
+    Encapsulates the full container lifecycle (image resolution, mount setup,
+    command execution, cleanup) so that language-specific subclasses only need
+    to override ``install_commands`` to produce correctly compiled dependencies.
+
+    """
 
     CACHE_DIR: ClassVar[str] = "/var/task/cache_dir"
     """Mount path where dependency managers can cache data."""
@@ -85,7 +97,13 @@ class DockerDependencyInstaller:
 
     @cached_property
     def bind_mounts(self) -> list[Mount]:
-        """Bind mounts that will be used by the container."""
+        """Bind mounts that will be used by the container.
+
+        Bind mounts share the host filesystem with the container so that
+        installed dependencies persist after the container exits and can be
+        zipped into the deployment package.
+
+        """
         mounts = [
             Mount(
                 target=self.DEPENDENCY_DIR,
@@ -115,12 +133,19 @@ class DockerDependencyInstaller:
         This is a subset of the environment variables stored in the context
         object as some will cause issues if they are passed.
 
+        Only forwards DOCKER-prefixed variables to avoid leaking credentials
+        or host-specific paths that could interfere with the container build.
+
         """
         return {k: v for k, v in self.ctx.env.vars.items() if k.startswith("DOCKER")}
 
     @cached_property
     def image(self) -> Image | str:
         """Docker image that will be used.
+
+        Implements a resolution chain (Dockerfile > explicit image > SAM image
+        from runtime) so that users can progressively customize their build
+        environment from fully automatic to fully custom.
 
         Raises:
             ValueError: Insufficient data to determine the desired Docker image.
@@ -144,7 +169,13 @@ class DockerDependencyInstaller:
 
     @cached_property
     def post_install_commands(self) -> list[str]:
-        """Commands to run after dependencies have been installed."""
+        """Commands to run after dependencies have been installed.
+
+        Copies extra files into the dependency directory and resets ownership
+        to the host user so that the zip step can read the files without
+        permission errors on POSIX systems.
+
+        """
         cmds = [
             *[
                 # wildcards need to exist outside of the quotes to work
@@ -169,7 +200,13 @@ class DockerDependencyInstaller:
 
     @cached_property
     def pre_install_commands(self) -> list[str]:
-        """Commands to run before dependencies have been installed."""
+        """Commands to run before dependencies have been installed.
+
+        Resets ownership to root so that package managers running as root
+        inside the container can write to the mounted directories without
+        permission errors.
+
+        """
         cmds = [
             f"chown -R 0:0 {self.DEPENDENCY_DIR}",
         ]
@@ -271,6 +308,10 @@ class DockerDependencyInstaller:
         - :attr:`~runway.cfngin.hooks.awslambda.docker.DockerDependencyInstaller.install_commands`
         - :attr:`~runway.cfngin.hooks.awslambda.docker.DockerDependencyInstaller.post_install_commands`
 
+        Orchestrates the three command phases in fixed order so that
+        permission setup, dependency installation, and ownership restoration
+        always execute in a predictable sequence.
+
         """
         for cmd in self.pre_install_commands:
             self.run_command(cmd)
@@ -305,6 +346,9 @@ class DockerDependencyInstaller:
 
     def run_command(self, command: str, *, level: int = logging.INFO) -> list[str]:
         """Execute equivalent of ``docker container run``.
+
+        Uses a create-start-wait-remove pattern (rather than ``run``) to stream
+        logs in real time and guarantee container cleanup even on failure.
 
         Args:
             command: Command to be run.
@@ -342,6 +386,10 @@ class DockerDependencyInstaller:
         """Instantiate class from a project.
 
         High-level method that wraps instantiation in error handling.
+
+        Serves as the public factory that translates Docker SDK exceptions into
+        meaningful runway errors, keeping container connectivity concerns out
+        of calling code.
 
         Args:
             project: Project being processed.

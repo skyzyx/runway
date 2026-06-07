@@ -1,4 +1,10 @@
-"""Test runway.cfngin.exceptions."""
+"""Test runway.cfngin.exceptions.
+
+Validates that cfngin exception classes produce correct human-readable
+messages from various combinations of optional parameters. These messages
+surface directly in CLI output, so formatting correctness affects
+operator experience during deploy failures.
+"""
 
 from __future__ import annotations
 
@@ -19,8 +25,15 @@ if TYPE_CHECKING:
 
 
 class TestCfnginBucketRequired:
-    """Test CfnginBucketRequired."""
+    """Test CfnginBucketRequired.
 
+    This exception is raised when a cfngin operation needs S3 storage (for
+    templates, persistent graph) but no bucket is configured. The message must
+    clearly indicate which config triggered the error.
+    """
+
+    # Parametrized to cover all combinations of optional fields (config_path,
+    # reason) since the message format changes depending on which are provided.
     @pytest.mark.parametrize(
         "config_path, reason, expected",
         [
@@ -42,7 +55,12 @@ class TestCfnginBucketRequired:
 
 
 class TestInvalidConfig:
-    """Test InvalidConfig."""
+    """Test InvalidConfig.
+
+    InvalidConfig aggregates one or more validation errors into a single
+    exception. Tests verify both single-string and list-of-errors inputs
+    produce correctly formatted messages for CLI display.
+    """
 
     @pytest.mark.parametrize(
         "errors, expected_msg",
@@ -56,7 +74,12 @@ class TestInvalidConfig:
 
 
 class TestPersistentGraphLocked:
-    """Test PersistentGraphLocked."""
+    """Test PersistentGraphLocked.
+
+    The persistent graph lock prevents concurrent cfngin runs from corrupting
+    shared state. These tests verify message construction for all combinations
+    of custom message vs reason parameters.
+    """
 
     @pytest.mark.parametrize(
         "message, reason, expected_msg",
@@ -79,7 +102,12 @@ class TestPersistentGraphLocked:
 
 
 class TestPersistentGraphUnlocked:
-    """Test PersistentGraphUnlocked."""
+    """Test PersistentGraphUnlocked.
+
+    Counterpart to the locked exception — raised when an operation requires
+    the graph to be locked but it isn't. Same parametrized pattern verifies
+    consistent message formatting between both lock-state exceptions.
+    """
 
     @pytest.mark.parametrize(
         "message, reason, expected_msg",

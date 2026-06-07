@@ -31,7 +31,11 @@ def test_remove(
     mock_docker_client: DockerClient,
     mocker: MockerFixture,
 ) -> None:
-    """Test remove."""
+    """Test remove.
+
+    Validates the full remove flow: each tag is removed via the Docker
+    API, the hook data image reference is cleared, and context is updated.
+    """
     repo = "dkr.test.com/image"
     tags = ["latest", "oldest"]
     image = DockerImage(image=Image({"RepoTags": [f"{repo}:{tag}" for tag in tags]}))
@@ -64,7 +68,11 @@ def test_remove_image_not_found(
     mock_docker_client: DockerClient,
     mocker: MockerFixture,
 ) -> None:
-    """Test remove ImageNotFound."""
+    """Test remove ImageNotFound.
+
+    Ensures removal is idempotent: if the image is already gone, the
+    hook succeeds rather than raising an error.
+    """
     args = ImageRemoveArgs(repo="dkr.test.com/image", tags=["latest"])
     mocker.patch.object(ImageRemoveArgs, "model_validate", return_value=args)
     mocker.patch.object(DockerHookData, "client", mock_docker_client)
@@ -85,7 +93,11 @@ def test_remove_image_not_found(
 
 
 class TestImageRemoveArgs:
-    """Test runway.cfngin.hooks.docker.image._remove.ImageRemoveArgs."""
+    """Test runway.cfngin.hooks.docker.image._remove.ImageRemoveArgs.
+
+    Validates remove argument resolution from ECR repos, DockerImage
+    instances, and explicit values.
+    """
 
     def test__set_ecr_repo_from_dict(self) -> None:
         """Test _set_ecr_repo from Dict."""

@@ -1,3 +1,4 @@
+---
 service: serverless-test-promotezip
 configValidationMode: error
 

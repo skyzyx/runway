@@ -1,3 +1,4 @@
+---
 tests:
   - name: hello_world
     type: script

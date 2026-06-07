@@ -1,4 +1,10 @@
-"""CFNgin exceptions."""
+"""CFNgin exceptions.
+
+This module defines a hierarchy of CFNgin-specific exceptions that provide
+structured error context (stack names, changeset IDs, configuration paths)
+so callers can programmatically react to failures rather than parsing
+generic error strings.
+"""
 
 from __future__ import annotations
 
@@ -14,13 +20,21 @@ if TYPE_CHECKING:
 
 
 class CfnginError(RunwayError):
-    """Base class for custom exceptions raised by Runway."""
+    """Base class for custom exceptions raised by Runway.
+
+    All CFNgin exceptions inherit from this class so that callers can catch
+    the entire family with a single except clause when needed.
+    """
 
     message: str
 
 
 class CancelExecution(CfnginError):
-    """Raised when we want to cancel executing the plan."""
+    """Raised when we want to cancel executing the plan.
+
+    Provides a clean abort path (e.g. from a pre-deploy hook) that the plan
+    executor can distinguish from an unexpected failure.
+    """
 
     message: str = "Plan canceled"
 
@@ -31,6 +45,8 @@ class CfnginBucketAccessDenied(CfnginError):
     This can occur when the bucket exists in another AWS account and/or the
     credentials being used do not have adequate permissions to access the bucket.
 
+    Raised early to give operators a clear signal that IAM permissions need
+    adjustment, rather than failing deep in a template upload operation.
     """
 
     bucket_name: str
@@ -58,6 +74,8 @@ class CfnginBucketNotFound(CfnginError):
     This can occur when using a custom stack to deploy the CFNgin bucket but the
     custom stack does not create bucket that is expected.
 
+    Raised before template upload so the operator knows the bucket prerequisite
+    is missing, rather than receiving a cryptic S3 NoSuchBucket error.
     """
 
     bucket_name: str
@@ -80,7 +98,12 @@ class CfnginBucketNotFound(CfnginError):
 
 
 class CfnginBucketRequired(CfnginError):
-    """CFNgin bucket is required to use a feature but it not provided/disabled."""
+    """CFNgin bucket is required to use a feature but it not provided/disabled.
+
+    Some features (e.g. persistent graph, large template upload) depend on
+    the CFNgin S3 bucket. This exception surfaces the misconfiguration at
+    plan-build time with a clear reason rather than at execution time.
+    """
 
     config_path: Path | None
     reason: str | None
@@ -111,7 +134,11 @@ class CfnginBucketRequired(CfnginError):
 
 
 class CfnginOnlyLookupError(CfnginError):
-    """Attempted to use a CFNgin lookup outside of CFNgin."""
+    """Attempted to use a CFNgin lookup outside of CFNgin.
+
+    Some lookups (e.g. hook_data, rxref) depend on CFNgin-specific context
+    objects that do not exist in the broader Runway execution environment.
+    """
 
     lookup_name: str
 
@@ -127,7 +154,12 @@ class CfnginOnlyLookupError(CfnginError):
 
 
 class ChangesetDidNotStabilize(CfnginError):
-    """Raised when the applying a changeset fails."""
+    """Raised when the applying a changeset fails.
+
+    CloudFormation changesets can stall in intermediate states; this exception
+    surfaces the specific changeset ID so operators can inspect it in the
+    console for root-cause diagnosis.
+    """
 
     message: str
     change_set_id: str
@@ -149,7 +181,12 @@ class ChangesetDidNotStabilize(CfnginError):
 
 
 class GraphError(CfnginError):
-    """Raised when the graph is invalid (e.g. acyclic dependencies)."""
+    """Raised when the graph is invalid (e.g. acyclic dependencies).
+
+    Catches DAG construction errors early (typically circular dependencies)
+    and surfaces both the offending stack and dependency so operators can
+    fix the configuration without debugging the graph traversal.
+    """
 
     message: str
 
@@ -182,7 +219,12 @@ class GraphError(CfnginError):
 
 
 class ImproperlyConfigured(CfnginError):
-    """Raised when a component is improperly configured."""
+    """Raised when a component is improperly configured.
+
+    Wraps instantiation failures for dynamically-loaded classes (hooks,
+    lookups, blueprints) so the user sees which class failed and why,
+    rather than a raw import or constructor traceback.
+    """
 
     kls: Any
     error: Exception
@@ -209,7 +251,12 @@ class ImproperlyConfigured(CfnginError):
 
 
 class InvalidConfig(CfnginError):
-    """Provided config file is invalid."""
+    """Provided config file is invalid.
+
+    Aggregates all validation errors into a single exception so operators
+    see the full list of problems in one pass rather than fixing them
+    one at a time.
+    """
 
     errors: str | list[Exception | str]
     message: str
@@ -235,7 +282,11 @@ class InvalidConfig(CfnginError):
 
 
 class InvalidDockerizePipConfiguration(CfnginError):
-    """Raised when the provided configuration for dockerized pip is invalid."""
+    """Raised when the provided configuration for dockerized pip is invalid.
+
+    Dockerized pip has specific requirements (image name, volume mounts) that
+    differ from standard pip usage; this exception clarifies what went wrong.
+    """
 
     message: str
 
@@ -255,6 +306,8 @@ class InvalidUserdataPlaceholder(CfnginError):
 
     E.g ``${100}`` would raise this.
 
+    Userdata placeholders must be valid Python identifiers; numeric or
+    otherwise invalid names cause string.Template to fail at render time.
     """
 
     blueprint_name: str
@@ -292,7 +345,12 @@ class InvalidUserdataPlaceholder(CfnginError):
 
 
 class MissingEnvironment(CfnginError):
-    """Raised when an environment lookup is used but the key doesn't exist."""
+    """Raised when an environment lookup is used but the key doesn't exist.
+
+    Catches typos and missing environment variables at config-resolution time
+    rather than letting them propagate as empty values into CloudFormation
+    parameters.
+    """
 
     message: str
     key: str
@@ -316,7 +374,11 @@ class MissingEnvironment(CfnginError):
 
 
 class MissingParameterException(CfnginError):
-    """Raised if a required parameter with no default is missing."""
+    """Raised if a required parameter with no default is missing.
+
+    Validates that all required CloudFormation parameters have values before
+    the API call, providing a clearer error than the CFN service response.
+    """
 
     message: str
     parameters: list[str]
@@ -340,7 +402,12 @@ class MissingParameterException(CfnginError):
 
 
 class MissingVariable(CfnginError):
-    """Raised when a variable with no default is not provided a value."""
+    """Raised when a variable with no default is not provided a value.
+
+    Ensures blueprint authors receive immediate feedback about missing
+    variable bindings at resolution time rather than hitting NoneType
+    errors during template rendering.
+    """
 
     blueprint_name: str
     variable_name: str
@@ -373,7 +440,12 @@ class MissingVariable(CfnginError):
 
 
 class PipError(CfnginError):
-    """Raised when pip returns a non-zero exit code."""
+    """Raised when pip returns a non-zero exit code.
+
+    Wraps the subprocess failure into a CFNgin exception so the Lambda
+    packaging hook can report the error through the standard hook failure
+    path rather than an unhandled CalledProcessError.
+    """
 
     message: str
 
@@ -387,7 +459,11 @@ class PipError(CfnginError):
 
 
 class PersistentGraphCannotLock(CfnginError):
-    """Raised when the persistent graph in S3 cannot be locked."""
+    """Raised when the persistent graph in S3 cannot be locked.
+
+    Locking prevents concurrent CFNgin runs from modifying the graph
+    simultaneously, which could lead to orphaned stacks or lost state.
+    """
 
     message: str
     reason: str
@@ -404,7 +480,11 @@ class PersistentGraphCannotLock(CfnginError):
 
 
 class PersistentGraphCannotUnlock(CfnginError):
-    """Raised when the persistent graph in S3 cannot be unlocked."""
+    """Raised when the persistent graph in S3 cannot be unlocked.
+
+    An unlock failure leaves the graph in a locked state, blocking subsequent
+    runs until manually resolved; this exception makes that situation explicit.
+    """
 
     message: str
     reason: str | Exception
@@ -425,6 +505,8 @@ class PersistentGraphLocked(CfnginError):
 
     The action being executed requires it to be unlocked before attempted.
 
+    Prevents accidental concurrent modifications; the operator must explicitly
+    unlock the graph or wait for the other run to complete.
     """
 
     reason: str | None
@@ -451,6 +533,8 @@ class PersistentGraphLockCodeMismatch(CfnginError):
     The code used to unlock the persistent graph must match the s3 object lock
     code.
 
+    This verification prevents one CFNgin run from accidentally releasing
+    a lock held by a different concurrent run.
     """
 
     provided_code: str
@@ -477,6 +561,8 @@ class PersistentGraphUnlocked(CfnginError):
 
     The action being executed requires it to be locked before attempted.
 
+    Some operations (e.g. destroy with graph cleanup) require exclusive
+    access; this exception prevents running them on an unprotected graph.
     """
 
     reason: str | None
@@ -498,7 +584,12 @@ class PersistentGraphUnlocked(CfnginError):
 
 
 class PlanFailed(CfnginError):
-    """Raised if any step of a plan fails."""
+    """Raised if any step of a plan fails.
+
+    Aggregates all failed steps into a single exception so the top-level
+    executor can report every failure at once rather than stopping at the
+    first one.
+    """
 
     message: str
     failed_steps: list[Step]
@@ -524,13 +615,22 @@ class PlanFailed(CfnginError):
 
 
 class StackDidNotChange(CfnginError):
-    """Raised when there are no changes to be made by the provider."""
+    """Raised when there are no changes to be made by the provider.
+
+    Used as a control-flow signal so the action layer can distinguish
+    "no-op" from "error" and set the appropriate status (NO_CHANGE).
+    """
 
     message: str = "Stack did not change"
 
 
 class StackDoesNotExist(CfnginError):
-    """Raised when a stack does not exist in AWS."""
+    """Raised when a stack does not exist in AWS.
+
+    Surfaces which stack is missing and whether it's an output-lookup
+    failure or a dependency issue, aiding troubleshooting of cross-stack
+    references.
+    """
 
     message: str
     stack_name: str
@@ -557,7 +657,12 @@ class StackDoesNotExist(CfnginError):
 
 
 class StackUpdateBadStatus(CfnginError):
-    """Raised if the state of a stack can't be handled."""
+    """Raised if the state of a stack can't be handled.
+
+    Some CloudFormation states (e.g. ROLLBACK_COMPLETE) require manual
+    intervention; this exception prevents the provider from attempting an
+    update that would fail with an unhelpful API error.
+    """
 
     stack_name: str
     stack_status: str
@@ -601,6 +706,8 @@ class StackFailed(CfnginError):
 
     Primarily used with hooks that act on stacks.
 
+    Provides a unified failure signal for hooks that wait on stack
+    operations, carrying the status reason from CloudFormation events.
     """
 
     stack_name: str
@@ -629,7 +736,12 @@ class StackFailed(CfnginError):
 
 
 class UnableToExecuteChangeSet(CfnginError):
-    """Raised if changeset execution status is not ``AVAILABLE``."""
+    """Raised if changeset execution status is not ``AVAILABLE``.
+
+    CloudFormation may mark a changeset as UNAVAILABLE or OBSOLETE if another
+    change superseded it; attempting execution in that state would silently
+    fail without this guard.
+    """
 
     stack_name: str
     change_set_id: str
@@ -672,6 +784,9 @@ class UnhandledChangeSetStatus(CfnginError):
 
     Handled failure reasons include: no changes
 
+    Acts as a catch-all for unexpected changeset creation failures so the
+    provider doesn't silently proceed when CloudFormation returns an
+    unknown status.
     """
 
     stack_name: str
@@ -713,7 +828,11 @@ class UnhandledChangeSetStatus(CfnginError):
 
 
 class UnresolvedBlueprintVariable(CfnginError):
-    """Raised when trying to use a variable before it has been resolved."""
+    """Raised when trying to use a variable before it has been resolved.
+
+    Lookups must be resolved before a blueprint accesses variable values;
+    this guard prevents rendering templates with placeholder objects.
+    """
 
     blueprint_name: str
     variable: Variable
@@ -749,7 +868,12 @@ class UnresolvedBlueprintVariable(CfnginError):
 
 
 class UnresolvedBlueprintVariables(CfnginError):
-    """Raised when trying to use variables before they has been resolved."""
+    """Raised when trying to use variables before they has been resolved.
+
+    Similar to UnresolvedBlueprintVariable but covers the case where the
+    entire variable set was never resolved, catching blueprint logic that
+    skips the resolution step entirely.
+    """
 
     message: str
     blueprint_name: str
@@ -774,7 +898,12 @@ class UnresolvedBlueprintVariables(CfnginError):
 
 
 class ValidatorError(CfnginError):
-    """Used for errors raised by custom validators of blueprint variables."""
+    """Used for errors raised by custom validators of blueprint variables.
+
+    Blueprint variables can declare custom validator functions; this exception
+    wraps their failures with the variable name and value context so
+    operators know exactly which input violated which constraint.
+    """
 
     variable: str
     validator: str
@@ -821,7 +950,12 @@ class ValidatorError(CfnginError):
 
 
 class VariableTypeRequired(CfnginError):
-    """Raised when a variable defined in a blueprint is missing a type."""
+    """Raised when a variable defined in a blueprint is missing a type.
+
+    Types are required so that the variable resolution system knows how
+    to coerce and validate the raw config value before passing it to the
+    blueprint template logic.
+    """
 
     blueprint_name: str
     variable_name: str

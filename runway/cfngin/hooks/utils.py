@@ -1,4 +1,9 @@
-"""Hook utils."""
+"""Hook utils.
+
+This module contains the central hook dispatch logic (handle_hooks) and
+shared helpers that the hook system depends on. It is intentionally separate
+from base.py to avoid circular imports with the actions module.
+"""
 
 from __future__ import annotations
 
@@ -24,7 +29,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 class BlankBlueprint(Blueprint):
-    """Blueprint that can be built programmatically."""
+    """Blueprint that can be built programmatically.
+
+    Exists so hooks can construct a troposphere template in code without
+    being forced to override create_template with real logic — the hook
+    populates the template object directly after instantiation.
+    """
 
     def create_template(self) -> None:
         """Create template without raising NotImplementedError."""
@@ -32,7 +42,12 @@ class BlankBlueprint(Blueprint):
 
 # TODO (kyle): BREAKING move to runway.providers.aws.models.TagModel
 class TagDataModel(BaseModel):
-    """AWS Resource Tag data model."""
+    """AWS Resource Tag data model.
+
+    Provides a validated representation of an AWS tag key/value pair so that
+    hooks producing tags can rely on pydantic validation instead of manually
+    checking dict structure.
+    """
 
     model_config = pydantic.ConfigDict(extra="forbid", populate_by_name=True)
 
@@ -41,7 +56,12 @@ class TagDataModel(BaseModel):
 
 
 def full_path(path: str) -> str:
-    """Return full path."""
+    """Return full path.
+
+    Resolves relative paths to absolute so hooks that interact with the
+    filesystem operate on unambiguous locations regardless of the working
+    directory at invocation time.
+    """
     return str(Path(path).absolute())
 
 
@@ -56,6 +76,12 @@ def handle_hooks(  # noqa: C901, PLR0912, PLR0915
 
     These are pieces of code that we want to run before/after deploying
     stacks.
+
+    This is the central dispatch function for hook execution. It handles both
+    class-based and function-based hooks, resolves variable lookups in hook
+    arguments, and enforces the required/optional contract — making it the
+    single integration point between the action lifecycle and user-defined
+    hook code.
 
     Args:
         stage: The current stage (pre_run, post_run, etc).
@@ -91,6 +117,10 @@ def handle_hooks(  # noqa: C901, PLR0912, PLR0915
 
         if hook.args:
             args = [Variable(k, v) for k, v in hook.args.items()]
+            # Resolve lookups (e.g., ${output ...}) in hook arguments. This
+            # must happen after stacks are deployed for post_* hooks, and will
+            # intentionally fail for pre_* hooks that reference outputs that
+            # don't exist yet.
             try:  # handling for output or similar being used in pre_deploy
                 resolve_variables(args, context, provider)
             except FailedVariableLookup:
@@ -108,6 +138,10 @@ def handle_hooks(  # noqa: C901, PLR0912, PLR0915
             kwargs = {}
 
         try:
+            # Dispatch: class-based hooks are instantiated and the stage method
+            # is called; function-based hooks are called directly. This dual
+            # dispatch allows simple hooks to remain plain functions while
+            # complex hooks can maintain state across the lifecycle.
             if isinstance(method, type):
                 result: Any = getattr(method(context=context, provider=provider, **kwargs), stage)()
             else:
@@ -123,6 +157,8 @@ def handle_hooks(  # noqa: C901, PLR0912, PLR0915
                 LOGGER.error("required hook %s failed; return value: %s", hook.path, result)
                 sys.exit(1)
             LOGGER.warning("non-required hook %s failed; return value: %s", hook.path, result)
+        # Store hook result data in context so downstream hooks and stacks
+        # can reference it via the hook_data lookup.
         elif isinstance(result, (collections.abc.Mapping, pydantic.BaseModel)):
             if hook.data_key:
                 LOGGER.debug(

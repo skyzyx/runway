@@ -43,7 +43,11 @@ def tmp_dockerfile(cd_tmp_path: Path) -> Path:
 
 
 def test_build(cfngin_context: MockCfnginContext, mocker: MockerFixture, tmp_path: Path) -> None:
-    """Test build."""
+    """Test build.
+
+    Validates the full build flow: Dockerfile resolution, Docker API call,
+    image tagging, and context update with the built image reference.
+    """
     (tmp_path / "Dockerfile").touch()
     mock_image = MagicMock(spec=Image, id=FAKE_IMAGE_ID, tags=MagicMock(return_value=["latest"]))
     mock_logs = [{"stream": "log message\n"}, {"not-stream": "no log"}]
@@ -97,7 +101,11 @@ class TestDockerImageBuildApiOptions:
 
 @pytest.mark.usefixtures("tmp_dockerfile")
 class TestImageBuildArgs:
-    """Test runway.cfngin.hooks.docker.image._build.ImageBuildArgs."""
+    """Test runway.cfngin.hooks.docker.image._build.ImageBuildArgs.
+
+    Validates argument parsing for Docker image builds including ECR repo
+    resolution and Dockerfile path validation.
+    """
 
     @pytest.mark.parametrize(
         "repo, tag, expected",
@@ -171,7 +179,11 @@ class TestImageBuildArgs:
         assert ImageBuildArgs(path=tmp_path, ecr_repo=repo).repo == repo.fqn
 
     def test__validate_dockerfile_raise_value_error(self, tmp_path: Path) -> None:
-        """Test _validate_dockerfile raise ValueError."""
+        """Test _validate_dockerfile raise ValueError.
+
+        Prevents builds from starting with an invalid Dockerfile path,
+        which would fail later with a confusing Docker daemon error.
+        """
         with pytest.raises(
             ValidationError,
             match="dockerfile\n  Value error, Dockerfile does not exist at path provided",

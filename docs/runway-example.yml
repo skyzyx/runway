@@ -1,3 +1,4 @@
+---
 # The configurations that used for the recording, feel free to edit them
 config:
 
@@ -224,7 +225,7 @@ records:
   - delay: 530
     content: "Serverless: Checking Stack create progress...\r\n"
   - delay: 90
-    content: ...
+    content: '...'
   - delay: 90
     content: .
   - delay: 90
@@ -240,15 +241,15 @@ records:
   - delay: 300
     content: "Serverless: Checking Stack update progress...\r\n"
   - delay: 300
-    content: .......
+    content: '.......'
   - delay: 90
-    content: .....
+    content: '.....'
   - delay: 90
-    content: ...
+    content: '...'
   - delay: 90
-    content: ....
+    content: '....'
   - delay: 90
-    content: .........
+    content: '.........'
   - delay: 90
     content: ..
   - delay: 90

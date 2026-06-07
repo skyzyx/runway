@@ -9,12 +9,12 @@ This directory uses a **Makefile** to orchestrate runway actions across multiple
 To execute Runway for an AWS account, use the following command syntax.
 
 ```shell
-$ make <runway-subcommand> <aws-account>
+make <runway-subcommand> <aws-account>
 ```
 
 ### Example
 
 ```shell
-$ make deploy testing
-$ make test public
+make deploy testing
+make test public
 ```

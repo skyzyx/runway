@@ -1,3 +1,4 @@
+---
 assume_role: arn:aws:iam::123456789012:role/test
 modules:
   - sampleapp-01.cfn

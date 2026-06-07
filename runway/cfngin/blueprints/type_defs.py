@@ -1,4 +1,9 @@
-"""CFNgin Blueprint type definitions."""
+"""CFNgin Blueprint type definitions.
+
+These TypedDict definitions provide static type safety for the Blueprint
+VARIABLES dictionary, enabling IDE autocompletion and type checking for
+blueprint variable declarations without runtime overhead.
+"""
 
 from __future__ import annotations
 
@@ -8,13 +13,22 @@ from typing_extensions import TypedDict
 
 
 class _RequiredBlueprintVariableTypeDef(TypedDict, total=False):
-    """Type definition for runway.cfngin.blueprints.base.Blueprint.VARIABLES items."""
+    """Type definition for runway.cfngin.blueprints.base.Blueprint.VARIABLES items.
+
+    Separated from optional fields so TypedDict can enforce that ``type`` is
+    always present while other fields remain optional.
+    """
 
     type: Any
 
 
 class _OptionalBlueprintVariableTypeDef(TypedDict, total=False):
-    """Type definition for runway.cfngin.blueprints.base.Blueprint.VARIABLES items."""
+    """Type definition for runway.cfngin.blueprints.base.Blueprint.VARIABLES items.
+
+    Split into a separate class from _RequiredBlueprintVariableTypeDef so that
+    the final BlueprintVariableTypeDef inherits both, giving TypedDict the
+    required/optional distinction via multiple inheritance.
+    """
 
     allowed_pattern: str
     allowed_values: list[Any]
@@ -33,6 +47,10 @@ class BlueprintVariableTypeDef(
     _RequiredBlueprintVariableTypeDef, _OptionalBlueprintVariableTypeDef
 ):
     """Type definition for :attr:`runway.cfngin.blueprints.base.Blueprint.VARIABLES` items.
+
+    Uses multiple inheritance from two TypedDicts to express a mix of required
+    and optional keys — the standard pattern for TypedDict with partial
+    required fields before Python 3.11's Required/NotRequired annotations.
 
     Attributes:
         allowed_pattern: Only valid for variables whose type subclasses
