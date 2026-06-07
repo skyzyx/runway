@@ -27,9 +27,7 @@ class GitCfnginPackageSourceDefinitionModel(ConfigProperty):
         validate_assignment=True,
     )
 
-    branch: Annotated[
-        str | None, Field(title="Git Branch", examples=["ENV-dev", "ENV-prod", "master"])
-    ] = None
+    branch: Annotated[str | None, Field(title="Git Branch", examples=["ENV-dev", "ENV-prod", "master"])] = None
     """Branch name."""
 
     commit: Annotated[str | None, Field(title="Git Commit Hash")] = None
@@ -46,18 +44,14 @@ class GitCfnginPackageSourceDefinitionModel(ConfigProperty):
 
     paths: Annotated[
         list[str],
-        Field(
-            description="Array of paths relative to the root of the package source to add to $PATH."
-        ),
+        Field(description="Array of paths relative to the root of the package source to add to $PATH."),
     ] = []
     """List of paths to append to ``sys.path``."""
 
     tag: Annotated[str | None, Field(title="Git Tag", examples=["1.0.0", "v1.0.0"])] = None
     """Git tag."""
 
-    uri: Annotated[
-        str, Field(title="Git Repository URI", examples=["git@github.com:rackspace/runway.git"])
-    ]
+    uri: Annotated[str, Field(title="Git Repository URI", examples=["git@github.com:rackspace/runway.git"])]
     """Remote git repo URI."""
 
     @model_validator(mode="before")
@@ -100,17 +94,14 @@ class LocalCfnginPackageSourceDefinitionModel(ConfigProperty):
 
     paths: Annotated[
         list[str],
-        Field(
-            description="Array of paths relative to the root of the package source to add to $PATH."
-        ),
+        Field(description="Array of paths relative to the root of the package source to add to $PATH."),
     ] = []
     """List of paths to append to ``sys.path``."""
 
     source: Annotated[
         str,
         Field(
-            description="Path relative to the current configuration file that is the "
-            "root of the local package source."
+            description="Path relative to the current configuration file that is the root of the local package source."
         ),
     ]
     """Source."""
@@ -152,17 +143,13 @@ class S3CfnginPackageSourceDefinitionModel(ConfigProperty):
 
     paths: Annotated[
         list[str],
-        Field(
-            description="Array of paths relative to the root of the package source to add to $PATH."
-        ),
+        Field(description="Array of paths relative to the root of the package source to add to $PATH."),
     ] = []
     """List of paths to append to ``sys.path``."""
 
     requester_pays: Annotated[
         bool,
-        Field(
-            description="Confirms that the requester knows that they will be charged for the request."
-        ),
+        Field(description="Confirms that the requester knows that they will be charged for the request."),
     ] = False
     """AWS S3 requester pays option."""
 
@@ -179,8 +166,7 @@ class CfnginPackageSourcesDefinitionModel(ConfigProperty):
     model_config = ConfigDict(
         extra="forbid",
         json_schema_extra={
-            "description": "Map of additional package sources to include when "
-            "processing this configuration file."
+            "description": "Map of additional package sources to include when processing this configuration file."
         },
         title="CFNgin Package Sources Definition",
         validate_default=True,

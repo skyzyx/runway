@@ -69,8 +69,7 @@ class RunwayDeploymentDefinition(ConfigComponentDefinition[RunwayDeploymentDefin
             regions = self.regions or self.parallel_regions
         except UnresolvedVariable as err:
             LOGGER.debug(
-                "attempted to use variable %s before it was resolved; "
-                "using literal value in menu entry",
+                "attempted to use variable %s before it was resolved; using literal value in menu entry",
                 err.variable.name,
             )
             regions = self._data.regions or self._data.parallel_regions
@@ -95,11 +94,9 @@ class RunwayDeploymentDefinition(ConfigComponentDefinition[RunwayDeploymentDefin
             TypeError: The provided value does not match the required types.
 
         """
-        if not all(isinstance(i, RunwayModuleDefinition) for i in modules):  # type: ignore
+        if not all(isinstance(i, RunwayModuleDefinition) for i in modules):
             raise TypeError("modules must be type list[RunwayModuleDefinition]")
-        self._data.modules = [
-            RunwayModuleDefinitionModel.model_validate(mod.data) for mod in modules
-        ]
+        self._data.modules = [RunwayModuleDefinitionModel.model_validate(mod.data) for mod in modules]
 
     def reverse(self) -> None:
         """Reverse the order of modules and regions."""
@@ -110,9 +107,7 @@ class RunwayDeploymentDefinition(ConfigComponentDefinition[RunwayDeploymentDefin
             if isinstance(prop, list):
                 prop.reverse()
 
-    def set_modules(
-        self, modules: list[RunwayModuleDefinition | RunwayModuleDefinitionModel]
-    ) -> None:
+    def set_modules(self, modules: list[RunwayModuleDefinition | RunwayModuleDefinitionModel]) -> None:
         """Set the value of modules.
 
         Args:
@@ -122,13 +117,13 @@ class RunwayDeploymentDefinition(ConfigComponentDefinition[RunwayDeploymentDefin
             TypeError: The provided value does not match the required types.
 
         """
-        if not isinstance(modules, list):  # type: ignore
+        if not isinstance(modules, list):
             raise TypeError(f"expected list[RunwayModuleDefinition]; got {type(modules)}")
         sanitized: list[RunwayModuleDefinitionModel] = []
         for i, mod in enumerate(modules):
             if isinstance(mod, RunwayModuleDefinition):
                 sanitized.append(RunwayModuleDefinitionModel.model_validate(mod.data))
-            elif isinstance(mod, RunwayModuleDefinitionModel):  # type: ignore
+            elif isinstance(mod, RunwayModuleDefinitionModel):
                 sanitized.append(mod)
             else:
                 raise TypeError(
@@ -147,9 +142,7 @@ class RunwayDeploymentDefinition(ConfigComponentDefinition[RunwayDeploymentDefin
                 as a variable if it contains a lookup.
 
         """
-        self._vars[var_name] = Variable(
-            name=f"{self.name}.{var_name}", value=var_value, variable_type="runway"
-        )
+        self._vars[var_name] = Variable(name=f"{self.name}.{var_name}", value=var_value, variable_type="runway")
 
     @overload  # type: ignore[override]
     @classmethod
@@ -177,5 +170,5 @@ class RunwayDeploymentDefinition(ConfigComponentDefinition[RunwayDeploymentDefin
 
         """
         if isinstance(obj, (list, set, tuple)):
-            return [cls(RunwayDeploymentDefinitionModel.parse_obj(o)) for o in obj]  # type: ignore
+            return [cls(RunwayDeploymentDefinitionModel.parse_obj(o)) for o in obj]
         return cls(RunwayDeploymentDefinitionModel.model_validate(obj))

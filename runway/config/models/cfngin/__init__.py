@@ -40,9 +40,7 @@ class CfnginHookDefinitionModel(ConfigProperty):
 
     model_config = ConfigDict(
         extra="forbid",
-        json_schema_extra={
-            "description": "Python classes or functions run before or after deploy/destroy actions."
-        },
+        json_schema_extra={"description": "Python classes or functions run before or after deploy/destroy actions."},
         title="CFNgin Hook Definition",
         validate_default=True,
         validate_assignment=True,
@@ -55,14 +53,14 @@ class CfnginHookDefinitionModel(ConfigProperty):
             description="Arguments that will be passed to the hook. (supports lookups)",
         ),
     ] = {}
-    data_key: Annotated[
-        str | None, Field(description="Key to use when storing the returned result of the hook.")
-    ] = None
+    data_key: Annotated[str | None, Field(description="Key to use when storing the returned result of the hook.")] = (
+        None
+    )
     enabled: Annotated[bool, Field(description="Whether the hook will be run.")] = True
     path: Annotated[str, Field(description="Python importable path to the hook.")]
-    required: Annotated[
-        bool, Field(description="Whether to continue execution if the hook results in an error.")
-    ] = True
+    required: Annotated[bool, Field(description="Whether to continue execution if the hook results in an error.")] = (
+        True
+    )
 
 
 @staticmethod  # type: ignore[misc]
@@ -106,9 +104,7 @@ class CfnginStackDefinitionModel(ConfigProperty):
 
     class_path: Annotated[
         str | None,
-        Field(
-            title="Blueprint Class Path", description="Python importable path to a blueprint class."
-        ),
+        Field(title="Blueprint Class Path", description="Python importable path to a blueprint class."),
     ] = None
     """Python importable path to a blueprint class."""
 
@@ -145,20 +141,14 @@ class CfnginStackDefinitionModel(ConfigProperty):
 
     protected: Annotated[
         bool,
-        Field(
-            description="Whether to force all updates to the stack to be performed interactively."
-        ),
+        Field(description="Whether to force all updates to the stack to be performed interactively."),
     ] = False
     """Whether to force all updates to the stack to be performed interactively."""
 
-    required_by: Annotated[
-        list[str], Field(description="Array of stacks (by name) that require this stack.")
-    ] = []
+    required_by: Annotated[list[str], Field(description="Array of stacks (by name) that require this stack.")] = []
     """Array of stacks (by name) that require this stack."""
 
-    requires: Annotated[
-        list[str], Field(description="Array of stacks (by name) that this stack requires.")
-    ] = []
+    requires: Annotated[list[str], Field(description="Array of stacks (by name) that this stack requires.")] = []
     """Array of stacks (by name) that this stack requires."""
 
     stack_name: Annotated[
@@ -172,15 +162,11 @@ class CfnginStackDefinitionModel(ConfigProperty):
 
     stack_policy_path: Annotated[
         Path | None,
-        Field(
-            description="Path to a stack policy document that will be applied to the CloudFormation stack."
-        ),
+        Field(description="Path to a stack policy document that will be applied to the CloudFormation stack."),
     ] = None
     """Path to a stack policy document that will be applied to the CloudFormation stack."""
 
-    tags: Annotated[
-        dict[str, Any], Field(description="Tags that will be applied to the CloudFormation stack.")
-    ] = {}
+    tags: Annotated[dict[str, Any], Field(description="Tags that will be applied to the CloudFormation stack.")] = {}
     """Tags that will be applied to the CloudFormation stack."""
 
     template_path: Annotated[
@@ -210,9 +196,7 @@ class CfnginStackDefinitionModel(ConfigProperty):
     ] = {}
     """Parameter values that will be passed to the Blueprint/CloudFormation stack. (supports lookups)"""
 
-    _resolve_path_fields = field_validator("stack_policy_path", "template_path")(
-        utils.resolve_path_field
-    )
+    _resolve_path_fields = field_validator("stack_policy_path", "template_path")(utils.resolve_path_field)
 
     @model_validator(mode="before")
     @classmethod
@@ -256,8 +240,7 @@ class CfnginConfigDefinitionModel(ConfigProperty):
         str | None,
         Field(
             title="CFNgin Bucket Region",
-            description="AWS Region where the CFNgin Bucket is located. "
-            "If not provided, the current region is used.",
+            description="AWS Region where the CFNgin Bucket is located. If not provided, the current region is used.",
         ),
     ] = None
     cfngin_cache_dir: Annotated[
@@ -284,29 +267,25 @@ class CfnginConfigDefinitionModel(ConfigProperty):
     namespace: Annotated[
         str,
         Field(
-            description="The namespace used to prefix stack names to create separation "
-            "within an AWS account.",
+            description="The namespace used to prefix stack names to create separation within an AWS account.",
         ),
     ]
     namespace_delimiter: Annotated[
         str,
         Field(
-            description="Character used to separate the namespace and stack name "
-            "when the namespace is prepended.",
+            description="Character used to separate the namespace and stack name when the namespace is prepended.",
         ),
     ] = "-"
     package_sources: Annotated[
         CfnginPackageSourcesDefinitionModel,
         Field(
-            description="Map of additional package sources to include when "
-            "processing this configuration file.",
+            description="Map of additional package sources to include when processing this configuration file.",
         ),
     ] = CfnginPackageSourcesDefinitionModel()
     persistent_graph_key: Annotated[
         str | None,
         Field(
-            description="Key for an AWS S3 object used to track a graph of stacks "
-            "between executions.",
+            description="Key for an AWS S3 object used to track a graph of stacks between executions.",
         ),
     ] = None
     post_deploy: Annotated[
@@ -363,9 +342,7 @@ class CfnginConfigDefinitionModel(ConfigProperty):
 
     @field_validator("post_deploy", "post_destroy", "pre_deploy", "pre_destroy", mode="before")
     @classmethod
-    def _convert_hook_definitions(
-        cls, v: dict[str, Any] | list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
+    def _convert_hook_definitions(cls, v: dict[str, Any] | list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Convert hooks defined as a dict to a list."""
         if isinstance(v, list):
             return v
@@ -373,9 +350,7 @@ class CfnginConfigDefinitionModel(ConfigProperty):
 
     @field_validator("stacks", mode="before")
     @classmethod
-    def _convert_stack_definitions(
-        cls, v: dict[str, Any] | list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
+    def _convert_stack_definitions(cls, v: dict[str, Any] | list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Convert ``stacks`` defined as a dict to a list."""
         if isinstance(v, list):
             return v
@@ -387,9 +362,7 @@ class CfnginConfigDefinitionModel(ConfigProperty):
 
     @field_validator("stacks")
     @classmethod
-    def _validate_unique_stack_names(
-        cls, stacks: list[CfnginStackDefinitionModel]
-    ) -> list[CfnginStackDefinitionModel]:
+    def _validate_unique_stack_names(cls, stacks: list[CfnginStackDefinitionModel]) -> list[CfnginStackDefinitionModel]:
         """Validate that each Stack has a unique name."""
         stack_names = [stack.name for stack in stacks]
         if len(set(stack_names)) != len(stack_names):
@@ -404,7 +377,5 @@ class CfnginConfigDefinitionModel(ConfigProperty):
     ) -> Self:
         """Parse a file."""
         return cls.model_validate(
-            yaml.safe_load(
-                Path(path).read_text(encoding=locale.getpreferredencoding(do_setlocale=False))
-            )
+            yaml.safe_load(Path(path).read_text(encoding=locale.getpreferredencoding(do_setlocale=False)))
         )

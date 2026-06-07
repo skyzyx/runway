@@ -80,16 +80,11 @@ class RunwayModuleDefinitionModel(ConfigProperty):
 
     name: Annotated[
         str,
-        Field(
-            description="The name of the module to be displayed in logs and the "
-            "interactive selection menu."
-        ),
+        Field(description="The name of the module to be displayed in logs and the interactive selection menu."),
     ] = "undefined"
     """The name of the module to be displayed in logs and the interactive selection menu."""
 
-    options: Annotated[
-        dict[str, Any] | str, Field(description="Module type specific options. (supports lookups)")
-    ] = {}
+    options: Annotated[dict[str, Any] | str, Field(description="Module type specific options. (supports lookups)")] = {}
     """Module type specific options. (supports lookups)"""
 
     parameters: Annotated[
@@ -108,8 +103,7 @@ class RunwayModuleDefinitionModel(ConfigProperty):
     path: Annotated[
         Path | str | None,
         Field(
-            description="Directory (relative to the Runway config file) containing IaC. "
-            "(supports lookups)",
+            description="Directory (relative to the Runway config file) containing IaC. (supports lookups)",
             examples=["./", "sampleapp-${env DEPLOY_ENVIRONMENT}.cfn", "sampleapp.sls"],
         ),
     ] = None
@@ -133,9 +127,7 @@ class RunwayModuleDefinitionModel(ConfigProperty):
 
     type: Annotated[
         RunwayModuleTypeTypeDef | None,
-        Field(
-            description="Explicitly define the module type. If not provided, this will be inferred."
-        ),
+        Field(description="Explicitly define the module type. If not provided, this will be inferred."),
     ] = None
     """Explicitly define the module type. If not provided, this will be inferred."""
 
@@ -177,9 +169,7 @@ class RunwayModuleDefinitionModel(ConfigProperty):
 
     @field_validator("parallel", mode="before")
     @classmethod
-    def _validate_parallel(
-        cls, v: list[dict[str, Any] | str], info: ValidationInfo
-    ) -> list[dict[str, Any]]:
+    def _validate_parallel(cls, v: list[dict[str, Any] | str], info: ValidationInfo) -> list[dict[str, Any]]:
         """Validate parallel."""
         if v and info.data.get("path"):
             raise ValueError("only one of parallel or path can be defined")
@@ -192,6 +182,6 @@ class RunwayModuleDefinitionModel(ConfigProperty):
         return result
 
     # TODO(kyle): add regex to schema
-    _validate_string_is_lookup = field_validator(
-        "env_vars", "environments", "options", "parameters", mode="before"
-    )(utils.validate_string_is_lookup)
+    _validate_string_is_lookup = field_validator("env_vars", "environments", "options", "parameters", mode="before")(
+        utils.validate_string_is_lookup
+    )

@@ -59,17 +59,13 @@ class BaseSync:
     @staticmethod
     def _check_sync_type(sync_type: str) -> None:
         if sync_type not in VALID_SYNC_TYPES:
-            raise ValueError(
-                f"Unknown sync_type: {sync_type}.\nValid options are {VALID_SYNC_TYPES}."
-            )
+            raise ValueError(f"Unknown sync_type: {sync_type}.\nValid options are {VALID_SYNC_TYPES}.")
 
     def register_strategy(self, session: Session) -> None:
         """Register the sync strategy class to the given session."""
-        session.register("choosing-s3-sync-strategy", self.use_sync_strategy)  # type: ignore[arg-type]
+        session.register("choosing-s3-sync-strategy", self.use_sync_strategy)
 
-    def determine_should_sync(
-        self, src_file: FileStats | None, dest_file: FileStats | None
-    ) -> bool:
+    def determine_should_sync(self, src_file: FileStats | None, dest_file: FileStats | None) -> bool:
         """Determine if file should sync.
 
         This function takes two ``FileStat`` objects (one from the source and
@@ -196,9 +192,7 @@ class NeverSync(BaseSync):
 class SizeAndLastModifiedSync(BaseSync):
     """Sync based on size and last modified date."""
 
-    def determine_should_sync(
-        self, src_file: FileStats | None, dest_file: FileStats | None
-    ) -> bool:
+    def determine_should_sync(self, src_file: FileStats | None, dest_file: FileStats | None) -> bool:
         """Determine if file should sync."""
         same_size = self.compare_size(src_file, dest_file)
         same_last_modified_time = self.compare_time(src_file, dest_file)

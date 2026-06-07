@@ -165,7 +165,7 @@ class ShutdownThreadRequest:
 class BaseResultSubscriber(OnDoneFilteredSubscriber):
     """Base result subscriber."""
 
-    TRANSFER_TYPE: ClassVar = None
+    TRANSFER_TYPE: ClassVar[str | None] = None
 
     def __init__(self, result_queue: queue.Queue[Any], transfer_type: str | None = None) -> None:
         """Send result notifications during transfer process.
@@ -185,7 +185,7 @@ class BaseResultSubscriber(OnDoneFilteredSubscriber):
     def on_queued(self, future: TransferFuture, **_: Any) -> None:
         """On queue."""
         self._add_to_result_kwargs_cache(future)
-        result_kwargs = self._result_kwargs_cache[future.meta.transfer_id]  # type: ignore
+        result_kwargs = self._result_kwargs_cache[future.meta.transfer_id]
         queued_result = QueuedResult(**result_kwargs)
         self._result_queue.put(queued_result)
 
@@ -194,9 +194,7 @@ class BaseResultSubscriber(OnDoneFilteredSubscriber):
         result_kwargs: dict[str, Any] = self._result_kwargs_cache.get(
             cast("str", future.meta.transfer_id), cast("dict[str, Any]", {})
         )
-        progress_result = ProgressResult(
-            bytes_transferred=bytes_transferred, timestamp=time.time(), **result_kwargs
-        )
+        progress_result = ProgressResult(bytes_transferred=bytes_transferred, timestamp=time.time(), **result_kwargs)
         self._result_queue.put(progress_result)
 
     def _on_success(self, future: TransferFuture) -> None:
@@ -228,13 +226,11 @@ class BaseResultSubscriber(OnDoneFilteredSubscriber):
 
     def _on_done_pop_from_result_kwargs_cache(self, future: TransferFuture) -> dict[str, Any]:
         """On done, pop from results cache."""
-        result_kwargs: dict[str, Any] = self._result_kwargs_cache.pop(
-            cast("str", future.meta.transfer_id)
-        )
+        result_kwargs: dict[str, Any] = self._result_kwargs_cache.pop(cast("str", future.meta.transfer_id))
         result_kwargs.pop("total_transfer_size")
         return result_kwargs
 
-    def _get_src_dest(self, future: TransferFuture) -> tuple[str, str]:
+    def _get_src_dest(self, future: TransferFuture) -> tuple[str, str | None]:
         """Get source destination."""
         raise NotImplementedError("_get_src_dest()")
 
@@ -242,12 +238,12 @@ class BaseResultSubscriber(OnDoneFilteredSubscriber):
 class UploadResultSubscriber(BaseResultSubscriber):
     """Upload result subscriber."""
 
-    TRANSFER_TYPE: ClassVar[Literal["upload"]] = "upload"  # type: ignore[assignment]
+    TRANSFER_TYPE: ClassVar[Literal["upload"]] = "upload"
 
     def _get_src_dest(self, future: TransferFuture) -> tuple[str, str]:
-        call_args = future.meta.call_args
-        src = self._get_src(call_args.fileobj)  # type: ignore[attr-defined]
-        dest = "s3://" + call_args.bucket + "/" + call_args.key  # type: ignore[attr-defined]
+        call_args: Any = future.meta.call_args
+        src = self._get_src(call_args.fileobj)
+        dest = "s3://" + call_args.bucket + "/" + call_args.key
         return src, dest
 
     def _get_src(self, fileobj: AnyPath) -> str:
@@ -264,12 +260,12 @@ class UploadStreamResultSubscriber(UploadResultSubscriber):
 class DownloadResultSubscriber(BaseResultSubscriber):
     """Download result subscriber."""
 
-    TRANSFER_TYPE: ClassVar[Literal["download"]] = "download"  # type: ignore[assignment]
+    TRANSFER_TYPE: ClassVar[Literal["download"]] = "download"
 
     def _get_src_dest(self, future: TransferFuture) -> tuple[str, str]:
-        call_args = future.meta.call_args
-        src = "s3://" + call_args.bucket + "/" + call_args.key  # type: ignore[attr-defined]
-        dest = self._get_dest(call_args.fileobj)  # type: ignore[attr-defined]
+        call_args: Any = future.meta.call_args
+        src = "s3://" + call_args.bucket + "/" + call_args.key
+        dest = self._get_dest(call_args.fileobj)
         return src, dest
 
     def _get_dest(self, fileobj: AnyPath) -> str:
@@ -286,24 +282,24 @@ class DownloadStreamResultSubscriber(DownloadResultSubscriber):
 class CopyResultSubscriber(BaseResultSubscriber):
     """Copy result subscriber."""
 
-    TRANSFER_TYPE: ClassVar[Literal["copy"]] = "copy"  # type: ignore[assignment]
+    TRANSFER_TYPE: ClassVar[Literal["copy"]] = "copy"
 
     def _get_src_dest(self, future: TransferFuture) -> tuple[str, str]:
-        call_args = future.meta.call_args
-        copy_source = call_args.copy_source  # type: ignore[attr-defined]
+        call_args: Any = future.meta.call_args
+        copy_source = call_args.copy_source
         src = "s3://" + copy_source["Bucket"] + "/" + copy_source["Key"]
-        dest = "s3://" + call_args.bucket + "/" + call_args.key  # type: ignore[attr-defined]
+        dest = "s3://" + call_args.bucket + "/" + call_args.key
         return src, dest
 
 
 class DeleteResultSubscriber(BaseResultSubscriber):
     """Delete result subscriber."""
 
-    TRANSFER_TYPE: ClassVar[Literal["delete"]] = "delete"  # type: ignore[assignment]
+    TRANSFER_TYPE: ClassVar[Literal["delete"]] = "delete"
 
-    def _get_src_dest(self, future: TransferFuture) -> tuple[str, None]:  # type: ignore
-        call_args = future.meta.call_args
-        src = "s3://" + call_args.bucket + "/" + call_args.key  # type: ignore[attr-defined]
+    def _get_src_dest(self, future: TransferFuture) -> tuple[str, None]:
+        call_args: Any = future.meta.call_args
+        src = "s3://" + call_args.bucket + "/" + call_args.key
         return src, None
 
 
@@ -330,13 +326,13 @@ class ResultRecorder(BaseResultHandler):
         self.expected_files_transferred = 0
         self.final_expected_files_transferred = None
 
-        self.start_time = None
-        self.bytes_transfer_speed = 0
+        self.start_time: float | None = None
+        self.bytes_transfer_speed: int | float = 0
 
         self._ongoing_progress = defaultdict(int)
         self._ongoing_total_sizes: dict[str, int] = {}
 
-        self._result_handler_map: _ResultHandlerMappingTypedDict = {
+        self._result_handler_map: dict[str, Callable[..., None]] = {
             "CtrlCResult": self._record_error_result,
             "ErrorResult": self._record_error_result,
             "FailureResult": self._record_failure_result,
@@ -353,7 +349,7 @@ class ResultRecorder(BaseResultHandler):
 
     def __call__(self, result: AnyResultType | PrintTask) -> None:
         """Record the result of an individual Result object."""
-        self._result_handler_map.get(type(result).__name__, self._record_noop)(result=result)  # type: ignore[operator]
+        self._result_handler_map.get(type(result).__name__, self._record_noop)(result=result)
 
     @staticmethod
     def _get_ongoing_dict_key(result: AnyResultType | object) -> str:
@@ -403,10 +399,8 @@ class ResultRecorder(BaseResultHandler):
         # than the timestamp of when the result processor actually
         # processes that initial queued result. So this will avoid
         # negative progress being displayed or zero division occurring.
-        if result.timestamp > self.start_time:  # type: ignore[operator]
-            self.bytes_transfer_speed = self.bytes_transferred / (  # type: ignore[assignment]
-                result.timestamp - self.start_time  # type: ignore[operator]
-            )
+        if self.start_time is not None and result.timestamp > self.start_time:
+            self.bytes_transfer_speed = self.bytes_transferred / (result.timestamp - self.start_time)
 
     def _update_ongoing_transfer_size_if_unknown(self, result: ProgressResult) -> None:
         """Handle transfer size unknown but shown in progress result."""
@@ -416,7 +410,7 @@ class ResultRecorder(BaseResultHandler):
             # If the total size is no longer None that means we just learned
             # of the size so let's update the appropriate places with this
             # knowledge
-            if result.total_transfer_size is not None:  # pyright: ignore[reportUnnecessaryComparison]
+            if result.total_transfer_size is not None:  # pyright: ignore[reportUnnecessaryComparison]  # type: ignore[unreachable]
                 self._ongoing_total_sizes[ongoing_key] = total_transfer_size
                 # Figure out how many bytes have been unaccounted for as
                 # the recorder has been keeping track of how many bytes
@@ -461,12 +455,9 @@ class ResultPrinter(BaseResultHandler):
     _ESTIMATED_EXPECTED_TOTAL: ClassVar[str] = "~{expected_total}"
     _STILL_CALCULATING_TOTALS: ClassVar[str] = " (calculating...)"
     BYTE_PROGRESS_FORMAT: ClassVar[str] = (
-        "Completed {bytes_completed}/{expected_bytes_completed} "
-        "({transfer_speed}) with " + _FILES_REMAINING
+        "Completed {bytes_completed}/{expected_bytes_completed} ({transfer_speed}) with " + _FILES_REMAINING
     )
-    FILE_PROGRESS_FORMAT: ClassVar[str] = (
-        "Completed {files_completed} file(s) with " + _FILES_REMAINING
-    )
+    FILE_PROGRESS_FORMAT: ClassVar[str] = "Completed {files_completed} file(s) with " + _FILES_REMAINING
     SUCCESS_FORMAT: ClassVar[str] = "{transfer_type}: {transfer_location}"
     DRY_RUN_FORMAT: ClassVar[str] = "(dryrun) " + SUCCESS_FORMAT
     FAILURE_FORMAT: ClassVar[str] = "{transfer_type} failed: {transfer_location} {exception}"
@@ -502,7 +493,7 @@ class ResultPrinter(BaseResultHandler):
         if self._error_file is None:
             self._error_file = sys.stderr
         self._progress_length = 0
-        self._result_handler_map: _ResultHandlerMappingTypedDict = {
+        self._result_handler_map: dict[str, Callable[..., None]] = {
             "CtrlCResult": self._print_ctrl_c,
             "DryRunResult": self._print_dry_run,
             "ErrorResult": self._print_error,
@@ -515,7 +506,7 @@ class ResultPrinter(BaseResultHandler):
 
     def __call__(self, result: AnyResultType | PrintTask) -> None:
         """Print the progress of the ongoing transfer based on a result."""
-        self._result_handler_map.get(type(result).__name__, self._print_noop)(result=result)  # type: ignore[operator]
+        self._result_handler_map.get(type(result).__name__, self._print_noop)(result=result)
 
     def _print_noop(self, **_: Any) -> None:
         """If result does not have a handler, then do nothing with it."""
@@ -574,25 +565,19 @@ class ResultPrinter(BaseResultHandler):
     def _print_progress(self, **_: Any) -> None:
         # Get all of the statistics in the correct form.
         remaining_files = self._get_expected_total(
-            str(
-                self._result_recorder.expected_files_transferred
-                - self._result_recorder.files_transferred
-            )
+            str(self._result_recorder.expected_files_transferred - self._result_recorder.files_transferred)
         )
 
         # Create the display statement.
         if self._result_recorder.expected_bytes_transferred > 0:
             bytes_completed = human_readable_size(
-                self._result_recorder.bytes_transferred
-                + self._result_recorder.bytes_failed_to_transfer
+                self._result_recorder.bytes_transferred + self._result_recorder.bytes_failed_to_transfer
             )
             expected_bytes_completed = self._get_expected_total(
                 human_readable_size(self._result_recorder.expected_bytes_transferred)
             )
 
-            transfer_speed = (
-                human_readable_size(self._result_recorder.bytes_transfer_speed) or "0 Bytes"
-            ) + "/s"
+            transfer_speed = (human_readable_size(self._result_recorder.bytes_transfer_speed) or "0 Bytes") + "/s"
             progress_statement = self.BYTE_PROGRESS_FORMAT.format(
                 bytes_completed=bytes_completed,
                 expected_bytes_completed=expected_bytes_completed,
@@ -692,10 +677,7 @@ class ResultProcessor(threading.Thread):
             try:
                 result = self._result_queue.get(True)
                 if isinstance(result, ShutdownThreadRequest):
-                    LOGGER.debug(
-                        "Shutdown request received in result processing "
-                        "thread, shutting down result thread."
-                    )
+                    LOGGER.debug("Shutdown request received in result processing thread, shutting down result thread.")
                     break
                 if self._result_handlers_enabled:
                     self._process_result(result)

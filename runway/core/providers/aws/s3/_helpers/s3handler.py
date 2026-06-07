@@ -90,9 +90,7 @@ class S3TransferHandlerFactory:
 
     MAX_IN_MEMORY_CHUNKS: ClassVar[int] = 6
 
-    def __init__(
-        self, config_params: ParametersDataModel, runtime_config: TransferConfigDict
-    ) -> None:
+    def __init__(self, config_params: ParametersDataModel, runtime_config: TransferConfigDict) -> None:
         """Instantiate class.
 
         Args:
@@ -127,9 +125,7 @@ class S3TransferHandlerFactory:
         result_recorder = ResultRecorder()
         result_processor_handlers: list[Any] = [result_recorder]
         self._add_result_printer(result_recorder, result_processor_handlers)
-        result_processor = ResultProcessor(
-            result_queue=result_queue, result_handlers=result_processor_handlers
-        )
+        result_processor = ResultProcessor(result_queue=result_queue, result_handlers=result_processor_handlers)
         command_result_recorder = CommandResultRecorder(
             result_queue=result_queue,
             result_recorder=result_recorder,
@@ -293,7 +289,7 @@ class BaseTransferRequestSubmitter:
         extra_args: dict[Any, Any] = {}
         if self.REQUEST_MAPPER_METHOD:
             # TODO (kyle): revisit in future releases of pyright - not seeing second arg
-            self.REQUEST_MAPPER_METHOD(extra_args, self._config_params.dict())  # type: ignore
+            self.REQUEST_MAPPER_METHOD(extra_args, self._config_params.dict())
         subscribers: list[BaseSubscriber] = []
         self._add_additional_subscribers(subscribers, fileinfo)
         # The result subscriber class should always be the last registered
@@ -307,7 +303,7 @@ class BaseTransferRequestSubmitter:
 
         if not self._config_params.dryrun:
             return self._submit_transfer_request(fileinfo, extra_args, subscribers)
-        return self._submit_dryrun(fileinfo)  # type: ignore[func-returns-value]
+        return self._submit_dryrun(fileinfo)
 
     def _submit_dryrun(self, fileinfo: FileInfo) -> None:
         """Submit dryrun."""
@@ -317,9 +313,7 @@ class BaseTransferRequestSubmitter:
         src, dest = self._format_src_dest(fileinfo)
         self._result_queue.put(DryRunResult(transfer_type=transfer_type, src=src, dest=dest))
 
-    def _add_additional_subscribers(
-        self, subscribers: list[BaseSubscriber], fileinfo: FileInfo
-    ) -> None:
+    def _add_additional_subscribers(self, subscribers: list[BaseSubscriber], fileinfo: FileInfo) -> None:
         """Add additional subscribers."""
 
     def _submit_transfer_request(
@@ -377,9 +371,7 @@ class BaseTransferRequestSubmitter:
         # need to take that into account when checking for a parent prefix.
         parent_prefix = ".." + os.path.sep
         escapes_cwd = (
-            os.path.normpath(fileinfo.compare_key).startswith(parent_prefix)
-            if fileinfo.compare_key
-            else False
+            os.path.normpath(fileinfo.compare_key).startswith(parent_prefix) if fileinfo.compare_key else False
         )
         if escapes_cwd:
             warning = create_warning(fileinfo.compare_key, "File references a parent directory.")
@@ -427,9 +419,7 @@ class UploadRequestSubmitter(BaseTransferRequestSubmitter):
         """
         return fileinfo.operation_name == "upload"
 
-    def _add_additional_subscribers(
-        self, subscribers: list[BaseSubscriber], fileinfo: FileInfo
-    ) -> None:
+    def _add_additional_subscribers(self, subscribers: list[BaseSubscriber], fileinfo: FileInfo) -> None:
         """Add additional subscribers."""
         subscribers.append(ProvideSizeSubscriber(fileinfo.size))
         if self._should_inject_content_type():
@@ -467,10 +457,7 @@ class UploadRequestSubmitter(BaseTransferRequestSubmitter):
         """Warn if too large."""
         if fileinfo.size and fileinfo.size > MAX_UPLOAD_SIZE:
             file_path = relative_path(fileinfo.src)
-            warning_message = (
-                f"File {file_path} exceeds s3 upload limit of "
-                f"{human_readable_size(MAX_UPLOAD_SIZE)}."
-            )
+            warning_message = f"File {file_path} exceeds s3 upload limit of {human_readable_size(MAX_UPLOAD_SIZE)}."
             warning = create_warning(file_path, warning_message, skip_file=False)
             self._result_queue.put(warning)
 
@@ -503,17 +490,13 @@ class DownloadRequestSubmitter(BaseTransferRequestSubmitter):
         """
         return fileinfo.operation_name == "download"
 
-    def _add_additional_subscribers(
-        self, subscribers: list[BaseSubscriber], fileinfo: FileInfo
-    ) -> None:
+    def _add_additional_subscribers(self, subscribers: list[BaseSubscriber], fileinfo: FileInfo) -> None:
         """Add additional subscribers."""
         subscribers.append(ProvideSizeSubscriber(fileinfo.size))
         subscribers.append(DirectoryCreatorSubscriber())
-        subscribers.append(
-            ProvideLastModifiedTimeSubscriber(fileinfo.last_update, self._result_queue)
-        )
+        subscribers.append(ProvideLastModifiedTimeSubscriber(fileinfo.last_update, self._result_queue))
         if self._config_params.is_move:
-            subscribers.append(DeleteSourceObjectSubscriber(fileinfo.source_client))  # type: ignore
+            subscribers.append(DeleteSourceObjectSubscriber(fileinfo.source_client))
 
     def _submit_transfer_request(
         self,
@@ -569,17 +552,13 @@ class CopyRequestSubmitter(BaseTransferRequestSubmitter):
         """
         return fileinfo.operation_name == "copy"
 
-    def _add_additional_subscribers(
-        self, subscribers: list[BaseSubscriber], fileinfo: FileInfo
-    ) -> None:
+    def _add_additional_subscribers(self, subscribers: list[BaseSubscriber], fileinfo: FileInfo) -> None:
         """Add additional subscribers."""
         subscribers.append(ProvideSizeSubscriber(fileinfo.size))
         if self._should_inject_content_type():
             subscribers.append(ProvideCopyContentTypeSubscriber())
         if self._config_params.is_move:
-            subscribers.append(
-                DeleteCopySourceObjectSubscriber(fileinfo.source_client)  # type: ignore
-            )
+            subscribers.append(DeleteCopySourceObjectSubscriber(fileinfo.source_client))
 
     def _submit_transfer_request(
         self,
@@ -641,7 +620,7 @@ class UploadStreamRequestSubmitter(UploadRequestSubmitter):
             subscribers.append(ProvideSizeSubscriber(int(expected_size)))
 
     @staticmethod
-    def _get_filein(fileinfo: FileInfo) -> NonSeekableStream:  # type: ignore  # noqa: ARG004
+    def _get_filein(fileinfo: FileInfo) -> NonSeekableStream:
         """Get file in."""
         if sys.stdin is None:
             raise StdinMissingError
@@ -671,13 +650,11 @@ class DownloadStreamRequestSubmitter(DownloadRequestSubmitter):
         """
         return bool(fileinfo.operation_name == "download" and self._config_params.is_stream)
 
-    def _add_additional_subscribers(
-        self, subscribers: list[BaseSubscriber], fileinfo: FileInfo
-    ) -> None:
+    def _add_additional_subscribers(self, subscribers: list[BaseSubscriber], fileinfo: FileInfo) -> None:
         """Add additional subscribers."""
 
     @staticmethod
-    def _get_fileout(fileinfo: FileInfo) -> StdoutBytesWriter:  # type: ignore  # noqa: ARG004
+    def _get_fileout(fileinfo: FileInfo) -> StdoutBytesWriter:
         """Get file out."""
         return StdoutBytesWriter()
 
@@ -716,9 +693,7 @@ class DeleteRequestSubmitter(BaseTransferRequestSubmitter):
     ) -> TransferFuture:
         """Submit transfer request."""
         bucket, key = find_bucket_key(str(fileinfo.src))
-        return self._transfer_manager.delete(
-            bucket=bucket, key=key, extra_args=extra_args, subscribers=subscribers
-        )
+        return self._transfer_manager.delete(bucket=bucket, key=key, extra_args=extra_args, subscribers=subscribers)
 
     def _format_src_dest(self, fileinfo: FileInfo) -> tuple[str | None, str | None]:
         """Return formatted versions of a fileinfos source and destination."""
@@ -745,7 +720,7 @@ class LocalDeleteRequestSubmitter(BaseTransferRequestSubmitter):
         """
         return fileinfo.operation_name == "delete" and fileinfo.src_type == "local"
 
-    def _submit_transfer_request(  # type: ignore
+    def _submit_transfer_request(
         self,
         fileinfo: FileInfo,
         extra_args: dict[str, Any],  # noqa: ARG002

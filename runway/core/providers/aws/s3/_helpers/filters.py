@@ -71,9 +71,7 @@ class Filter:
         self.dest_patterns = self._full_path_patterns(patterns, dest_rootdir)
 
     @staticmethod
-    def _full_path_patterns(
-        patterns: Iterable[FilterPattern], rootdir: str | None
-    ) -> list[FilterPattern]:
+    def _full_path_patterns(patterns: Iterable[FilterPattern], rootdir: str | None) -> list[FilterPattern]:
         """Prefix each pattern with the root directory.
 
         Args:
@@ -160,7 +158,7 @@ class Filter:
             return Filter([], None, None)
         filter_patterns: set[FilterPattern] = set()
         for filter_type in cls.FILTER_TYPES:
-            for pat in parameters[filter_type]:  # type: ignore[index]
+            for pat in parameters[filter_type]:
                 filter_patterns.add(FilterPattern(type=filter_type, pattern=pat))
         return Filter(
             filter_patterns,

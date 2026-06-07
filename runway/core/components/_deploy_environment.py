@@ -65,9 +65,7 @@ class DeployEnvironment(DelCachedPropMixin):
     @property
     def aws_credentials(self) -> EnvVarsAwsCredentialsTypeDef:
         """Get AWS credentials from environment variables."""
-        return EnvVarsAwsCredentialsTypeDef(
-            **{name: self.vars[name] for name in AWS_ENV_VARS if self.vars.get(name)}  # type: ignore[call-arg]
-        )
+        return EnvVarsAwsCredentialsTypeDef(**{name: self.vars[name] for name in AWS_ENV_VARS if self.vars.get(name)})  # type: ignore[call-arg]
 
     @property
     def aws_profile(self) -> str | None:
@@ -93,10 +91,7 @@ class DeployEnvironment(DelCachedPropMixin):
     def branch_name(self) -> str | None:
         """Git branch name."""
         if isinstance(git, type):
-            LOGGER.debug(  # type: ignore[unreachable]
-                "failed to import git; ensure git is your path and "
-                "executable to read the branch name"
-            )
+            LOGGER.debug("failed to import git; ensure git is your path and executable to read the branch name")  # type: ignore[unreachable]
             return None
         try:
             LOGGER.debug("getting git branch name...")
@@ -166,10 +161,7 @@ class DeployEnvironment(DelCachedPropMixin):
         if self._ignore_git_branch != value:
             self._ignore_git_branch = value
             self._del_cached_property("name")
-            LOGGER.debug(
-                "value of ignore_git_branch has changed; "
-                "cleared cached name so it can be determined again"
-            )
+            LOGGER.debug("value of ignore_git_branch has changed; cleared cached name so it can be determined again")
 
     @property
     def max_concurrent_cfngin_stacks(self) -> int:
@@ -336,9 +328,7 @@ class DeployEnvironment(DelCachedPropMixin):
                 return "common"
         if not self.ci:
             LOGGER.warning('Found unexpected branch name "%s"', self.branch_name)
-            result = click.prompt(
-                "Deploy environment name", default=self.branch_name, type=click.STRING
-            )
+            result = click.prompt("Deploy environment name", default=self.branch_name, type=click.STRING)
             if result != self.branch_name:
                 self.name_derived_from = "explicit"
             return result

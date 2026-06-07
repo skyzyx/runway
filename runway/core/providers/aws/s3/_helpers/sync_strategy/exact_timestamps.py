@@ -23,7 +23,7 @@ LOGGER = logging.getLogger(__name__.replace("._", "."))
 class ExactTimestampsSync(SizeAndLastModifiedSync):
     """Exact time stamp."""
 
-    NAME: ClassVar[Literal["exact_timestamps"]] = "exact_timestamps"  # type: ignore[assignment]
+    NAME: ClassVar[Literal["exact_timestamps"]] = "exact_timestamps"
 
     def compare_time(self, src_file: FileStats | None, dest_file: FileStats | None) -> bool:
         """Compare modified time of two FileStats objects.

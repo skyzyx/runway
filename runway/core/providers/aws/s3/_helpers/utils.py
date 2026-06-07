@@ -87,7 +87,7 @@ class BaseProvideContentTypeSubscriber(BaseSubscriber):
         """On queued."""
         guessed_type = guess_content_type(self._get_filename(future))
         if guessed_type is not None:
-            future.meta.call_args.extra_args["ContentType"] = guessed_type  # type: ignore[attr-defined]
+            future.meta.call_args.extra_args["ContentType"] = guessed_type
 
     def _get_filename(self, future: TransferFuture) -> str:
         raise NotImplementedError("_get_filename()")
@@ -97,7 +97,7 @@ def _date_parser(date_string: datetime | str) -> datetime:
     """Parse date string into a datetime object."""
     if isinstance(date_string, datetime):
         return date_string
-    return parse(date_string).astimezone(tzlocal())  # type: ignore[union-attr]
+    return parse(date_string).astimezone(tzlocal())
 
 
 class BucketLister:
@@ -141,7 +141,7 @@ class BucketLister:
             kwargs.update(extra_args)
 
         paginator = self._client.get_paginator("list_objects_v2")
-        pages = paginator.paginate(**kwargs)  # pyright: ignore[reportArgumentType]  # type: ignore[arg-type]
+        pages = paginator.paginate(**kwargs)  # pyright: ignore[reportArgumentType]
         # NOTE (@ITProKyle): for some reason, pyright is not seeing `PageIterator` as a generic
         for page in cast("Iterator[ListObjectsV2OutputTypeDef]", pages):
             contents = page.get("Contents", [])
@@ -193,7 +193,7 @@ class DeleteSourceFileSubscriber(DeleteSourceSubscriber):
     """A subscriber which deletes a file."""
 
     def _delete_source(self, future: TransferFuture) -> None:
-        Path(future.meta.call_args.fileobj).unlink()  # type: ignore[attr-defined]
+        Path(future.meta.call_args.fileobj).unlink()
 
 
 class DeleteSourceObjectSubscriber(DeleteSourceSubscriber):
@@ -206,22 +206,22 @@ class DeleteSourceObjectSubscriber(DeleteSourceSubscriber):
     @staticmethod
     def _get_bucket(call_args: CallArgs) -> str:
         """Get bucket."""
-        return call_args.bucket  # type: ignore[attr-defined]
+        return call_args.bucket
 
     @staticmethod
     def _get_key(call_args: CallArgs) -> str:
         """Get key."""
-        return call_args.key  # type: ignore[attr-defined]
+        return call_args.key
 
     def _delete_source(self, future: TransferFuture) -> None:
         """Delete source."""
         call_args = future.meta.call_args
         delete_object_kwargs: DeleteObjectRequestTypeDef = {
-            "Bucket": self._get_bucket(call_args),  # type: ignore[arg-type]
-            "Key": self._get_key(call_args),  # type: ignore[arg-type]
+            "Bucket": self._get_bucket(call_args),
+            "Key": self._get_key(call_args),
         }
-        if call_args.extra_args.get("RequestPayer"):  # type: ignore[attr-defined]
-            delete_object_kwargs["RequestPayer"] = call_args.extra_args["RequestPayer"]  # type: ignore[attr-defined]
+        if call_args.extra_args.get("RequestPayer"):
+            delete_object_kwargs["RequestPayer"] = call_args.extra_args["RequestPayer"]
         self._client.delete_object(**delete_object_kwargs)
 
 
@@ -230,11 +230,11 @@ class DeleteCopySourceObjectSubscriber(DeleteSourceObjectSubscriber):
 
     @staticmethod
     def _get_bucket(call_args: CallArgs) -> str:
-        return call_args.copy_source["Bucket"]  # type: ignore[attr-defined]
+        return call_args.copy_source["Bucket"]
 
     @staticmethod
     def _get_key(call_args: CallArgs) -> str:
-        return call_args.copy_source["Key"]  # type: ignore[attr-defined]
+        return call_args.copy_source["Key"]
 
 
 class CreateDirectoryError(Exception):
@@ -246,14 +246,12 @@ class DirectoryCreatorSubscriber(BaseSubscriber):
 
     def on_queued(self, future: TransferFuture, **_: Any) -> None:
         """On queued."""
-        dirname = Path(future.meta.call_args.fileobj).parent  # type: ignore[attr-defined]
+        dirname = Path(future.meta.call_args.fileobj).parent
         try:
             dirname.mkdir(exist_ok=True, parents=True)
         except OSError as exc:
             if exc.errno != errno.EEXIST:
-                raise CreateDirectoryError(
-                    f"Could not create directory {dirname.name}: {exc}"
-                ) from exc
+                raise CreateDirectoryError(f"Could not create directory {dirname.name}: {exc}") from exc
 
 
 class NonSeekableStream:
@@ -308,7 +306,7 @@ class ProvideCopyContentTypeSubscriber(BaseProvideContentTypeSubscriber):
     """Provide copy content type subscriber."""
 
     def _get_filename(self, future: TransferFuture) -> str:
-        return future.meta.call_args.copy_source["Key"]  # type: ignore[attr-defined]
+        return future.meta.call_args.copy_source["Key"]
 
 
 class ProvideLastModifiedTimeSubscriber(OnDoneFilteredSubscriber):
@@ -320,15 +318,14 @@ class ProvideLastModifiedTimeSubscriber(OnDoneFilteredSubscriber):
         self._result_queue = result_queue
 
     def _on_success(self, future: TransferFuture, **_: Any) -> None:
-        filename = future.meta.call_args.fileobj  # type: ignore[attr-defined]
+        filename = future.meta.call_args.fileobj
         try:
             last_update_tuple = self._last_modified_time.timetuple()
             mod_timestamp = time.mktime(last_update_tuple)
             set_file_utime(filename, int(mod_timestamp))
         except Exception as exc:  # noqa: BLE001
             warning_message = (
-                f"Successfully Downloaded {filename} but was unable to update the "
-                f"last modified time. {exc}"
+                f"Successfully Downloaded {filename} but was unable to update the last modified time. {exc}"
             )
             self._result_queue.put(create_warning(filename, warning_message))
 
@@ -349,7 +346,7 @@ class ProvideUploadContentTypeSubscriber(BaseProvideContentTypeSubscriber):
     """Provider upload content type subscriber."""
 
     def _get_filename(self, future: TransferFuture) -> str:
-        return str(future.meta.call_args.fileobj)  # type: ignore[attr-defined]
+        return str(future.meta.call_args.fileobj)
 
 
 class RequestParamsMapper:
@@ -374,9 +371,7 @@ class RequestParamsMapper:
     """
 
     @classmethod
-    def map_copy_object_params(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def map_copy_object_params(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Map config params to CopyObject request params.
 
         Args:
@@ -396,9 +391,7 @@ class RequestParamsMapper:
         cls._set_request_payer_param(request_params, config_params)
 
     @classmethod
-    def map_create_multipart_upload_params(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def map_create_multipart_upload_params(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Map config params to CreateMultipartUpload request params.
 
         Args:
@@ -416,9 +409,7 @@ class RequestParamsMapper:
         cls._set_request_payer_param(request_params, config_params)
 
     @classmethod
-    def map_delete_object_params(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def map_delete_object_params(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Map config params to DeleteObject request params.
 
         Args:
@@ -432,9 +423,7 @@ class RequestParamsMapper:
         cls._set_request_payer_param(request_params, config_params)
 
     @classmethod
-    def map_get_object_params(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def map_get_object_params(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Map config params to GetObject request params.
 
         Args:
@@ -449,9 +438,7 @@ class RequestParamsMapper:
         cls._set_request_payer_param(request_params, config_params)
 
     @classmethod
-    def map_head_object_params(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def map_head_object_params(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Map config params to HeadObject request params.
 
         Args:
@@ -466,9 +453,7 @@ class RequestParamsMapper:
         cls._set_request_payer_param(request_params, config_params)
 
     @classmethod
-    def map_list_objects_v2_params(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def map_list_objects_v2_params(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Map config params to DeleteObjectV2 request params.
 
         Args:
@@ -482,9 +467,7 @@ class RequestParamsMapper:
         cls._set_request_payer_param(request_params, config_params)
 
     @classmethod
-    def map_put_object_params(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def map_put_object_params(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Map config params to PutObject request params.
 
         Args:
@@ -502,9 +485,7 @@ class RequestParamsMapper:
         cls._set_request_payer_param(request_params, config_params)
 
     @classmethod
-    def map_upload_part_params(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def map_upload_part_params(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Map config params to UploadPart request params.
 
         Args:
@@ -519,9 +500,7 @@ class RequestParamsMapper:
         cls._set_request_payer_param(request_params, config_params)
 
     @classmethod
-    def map_upload_part_copy_params(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def map_upload_part_copy_params(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Map config params to UploadPartCopy request params.
 
         Args:
@@ -555,9 +534,7 @@ class RequestParamsMapper:
         raise ValueError("permission must be one of: read|readacl|writeacl|full")
 
     @classmethod
-    def _set_general_object_params(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def _set_general_object_params(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Set general object params.
 
         Parameters set in this method should be applicable to the following
@@ -583,9 +560,7 @@ class RequestParamsMapper:
         cls._set_grant_params(request_params, config_params)
 
     @classmethod
-    def _set_grant_params(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def _set_grant_params(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Set grant params."""
         if config_params.get("grants"):
             for grant in config_params["grants"]:
@@ -596,25 +571,19 @@ class RequestParamsMapper:
                 request_params[cls._permission_to_param(permission)] = grantee
 
     @classmethod
-    def _set_metadata_directive_param(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def _set_metadata_directive_param(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Set metadata directive param."""
         if config_params.get("metadata_directive"):
             request_params["MetadataDirective"] = config_params["metadata_directive"]
 
     @classmethod
-    def _set_metadata_params(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def _set_metadata_params(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Get metadata params."""
         if config_params.get("metadata"):
             request_params["Metadata"] = config_params["metadata"]
 
     @classmethod
-    def _set_request_payer_param(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def _set_request_payer_param(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Set request payer param."""
         if config_params.get("request_payer"):
             request_params["RequestPayer"] = config_params["request_payer"]
@@ -636,18 +605,14 @@ class RequestParamsMapper:
             request_params["CopySourceSSECustomerKey"] = config_params["sse_c_copy_source_key"]
 
     @classmethod
-    def _set_sse_c_request_params(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def _set_sse_c_request_params(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Set SSE-C request params."""
         if config_params.get("sse_c"):
             request_params["SSECustomerAlgorithm"] = config_params["sse_c"]
             request_params["SSECustomerKey"] = config_params["sse_c_key"]
 
     @classmethod
-    def _set_sse_request_params(
-        cls, request_params: dict[Any, Any], config_params: dict[Any, Any]
-    ) -> None:
+    def _set_sse_request_params(cls, request_params: dict[Any, Any], config_params: dict[Any, Any]) -> None:
         """Set SSE request params."""
         if config_params.get("sse"):
             request_params["ServerSideEncryption"] = config_params["sse"]
@@ -713,9 +678,7 @@ def find_bucket_key(s3_path: str) -> tuple[str, str]:
     return bucket, s3_key
 
 
-def find_dest_path_comp_key(
-    files: FormatPathResult, src_path: AnyPath | None = None
-) -> tuple[str, str]:
+def find_dest_path_comp_key(files: FormatPathResult, src_path: AnyPath | None = None) -> tuple[str, str]:
     """Determine destination path and compare key.
 
     Args:
@@ -734,9 +697,7 @@ def find_dest_path_comp_key(
 
     sep_table = {"s3": "/", "local": os.sep}
 
-    rel_path = (
-        src_path[len(src["path"]) :] if files["dir_op"] else src_path.split(sep_table[src_type])[-1]
-    )
+    rel_path = src_path[len(src["path"]) :] if files["dir_op"] else src_path.split(sep_table[src_type])[-1]
     compare_key = rel_path.replace(sep_table[src_type], "/")
     if files["use_src_name"]:
         dest_path = dest["path"]

@@ -189,7 +189,7 @@ class FileGenerator:
                 "last_update": extra_information.get("LastModified", EPOCH_TIME),
                 "operation_name": self.operation_name,
                 "response_data": None,
-                "size": extra_information.get("Size", 0),  # type: ignore[typeddict-item]
+                "size": extra_information.get("Size", 0),
                 "src": src_path,
                 "src_type": files["src"]["type"],
             }
@@ -200,9 +200,7 @@ class FileGenerator:
                 )
             yield FileStats(**file_stat_kwargs)
 
-    def list_files(
-        self, path: AnyPath, dir_op: bool
-    ) -> Generator[tuple[Path, _LastModifiedAndSize], None, None]:
+    def list_files(self, path: AnyPath, dir_op: bool) -> Generator[tuple[Path, _LastModifiedAndSize], None, None]:
         """Yield the appropriate local file or local files under a directory.
 
         For directories a depth first search is implemented in order to
@@ -268,9 +266,7 @@ class FileGenerator:
             return path, {"Size": size, "LastModified": last_update}
         return None
 
-    def _validate_update_time(
-        self, update_time: datetime.datetime | None, path: Path
-    ) -> datetime.datetime:
+    def _validate_update_time(self, update_time: datetime.datetime | None, path: Path) -> datetime.datetime:
         """Handle missing last modified time."""
         if update_time is None:
             warning = create_warning(
@@ -376,7 +372,7 @@ class FileGenerator:
             # no need to run HeadObject on the S3 object as none of the
             # information gained from HeadObject is required to delete the
             # object.
-            return s3_path, {"Size": None, "LastModified": None}  # type: ignore
+            return s3_path, {"Size": None, "LastModified": None}
         bucket, key = find_bucket_key(s3_path)
         try:
             params: dict[str, Any] = {"Bucket": bucket, "Key": key}
@@ -393,7 +389,7 @@ class FileGenerator:
             response = exc.response.copy()
             response["Error"]["Message"] = f'Key "{key}" does not exist'
             raise ClientError(response, "HeadObject") from None
-        response["Size"] = int(response.pop("ContentLength"))  # type: ignore
-        last_update = parse(response["LastModified"])  # type: ignore
-        response["LastModified"] = last_update.astimezone(tzlocal())  # type: ignore[union-attr]
+        response["Size"] = int(response.pop("ContentLength"))
+        last_update = parse(response["LastModified"])
+        response["LastModified"] = last_update.astimezone(tzlocal())
         return s3_path, response

@@ -50,7 +50,7 @@ class BaseConfig(Generic[_ModelTypeVar]):
             path: Path to the config file.
 
         """
-        self._data = data.model_copy()  # type: ignore[assignment]
+        self._data: _ModelTypeVar = data.model_copy()  # type: ignore[assignment]
         self.file_path = path.resolve() if path else Path.cwd()
 
     def dump(
@@ -80,17 +80,17 @@ class BaseConfig(Generic[_ModelTypeVar]):
             include: Fields to include in the returned dictionary.
 
         """
-        return yaml.dump(
+        return yaml.dump(  # type: ignore[return-value]
             self._data.model_dump(
                 by_alias=by_alias,
-                exclude=exclude,  # type: ignore
+                exclude=exclude,  # type: ignore[arg-type]
                 exclude_defaults=exclude_defaults,
                 exclude_none=exclude_none,
                 exclude_unset=exclude_unset,
-                include=include,  # type: ignore
+                include=include,  # type: ignore[arg-type]
             ),
             default_flow_style=False,
-        )
+        )  # type: ignore[return-value]
 
     @classmethod
     def find_config_file(cls, path: Path) -> Path | None:
@@ -128,9 +128,7 @@ class CfnginConfig(BaseConfig[CfnginConfigDefinitionModel]):
 
     # Matches filenames that start with "bitbucket-pipelines", "buildspec",
     # "docker-compose", or "runway" and end with ".yml" or ".yaml"
-    EXCLUDE_REGEX: ClassVar[str] = (
-        r"(?x)^(bitbucket-pipelines|buildspec|docker-compose|runway)(\..*)?\.(yml|yaml)"
-    )
+    EXCLUDE_REGEX: ClassVar[str] = r"(?x)^(bitbucket-pipelines|buildspec|docker-compose|runway)(\..*)?\.(yml|yaml)"
     """Regex for file names to exclude when looking for config files."""
 
     EXCLUDE_LIST: ClassVar[list[str]] = []
@@ -250,9 +248,7 @@ class CfnginConfig(BaseConfig[CfnginConfigDefinitionModel]):
                 register_lookup_handler(key, handler)
 
     @classmethod
-    def find_config_file(  # type: ignore
-        cls, path: Path | None = None, *, exclude: list[str] | None = None
-    ) -> list[Path]:
+    def find_config_file(cls, path: Path | None = None, *, exclude: list[str] | None = None) -> list[Path]:  # type: ignore[override]
         """Find a config file in the provided path.
 
         Args:
@@ -330,9 +326,7 @@ class CfnginConfig(BaseConfig[CfnginConfigDefinitionModel]):
         raise ValueError("must provide path or file_path")
 
     @classmethod
-    def parse_obj(
-        cls, obj: Any, *, path: Path | None = None, work_dir: Path | None = None
-    ) -> CfnginConfig:
+    def parse_obj(cls, obj: Any, *, path: Path | None = None, work_dir: Path | None = None) -> CfnginConfig:
         """Parse a python object.
 
         Args:
@@ -392,12 +386,8 @@ class CfnginConfig(BaseConfig[CfnginConfigDefinitionModel]):
         """
         config: dict[str, Any] = yaml.safe_load(raw_data) or {}
         processor = SourceProcessor(
-            sources=CfnginPackageSourcesDefinitionModel.model_validate(
-                config.get("package_sources", {})
-            ),
-            cache_dir=Path(
-                config.get("cfngin_cache_dir", (work_dir or Path().cwd() / ".runway") / "cache")
-            ),
+            sources=CfnginPackageSourcesDefinitionModel.model_validate(config.get("package_sources", {})),
+            cache_dir=Path(config.get("cfngin_cache_dir", (work_dir or Path().cwd() / ".runway") / "cache")),
         )
         processor.get_package_sources()
         if processor.configs_to_merge:
@@ -409,9 +399,7 @@ class CfnginConfig(BaseConfig[CfnginConfigDefinitionModel]):
         return raw_data
 
     @staticmethod
-    def resolve_raw_data(
-        raw_data: str, *, parameters: MutableMapping[str, Any] | None = None
-    ) -> str:
+    def resolve_raw_data(raw_data: str, *, parameters: MutableMapping[str, Any] | None = None) -> str:
         """Resolve raw data.
 
         Args:

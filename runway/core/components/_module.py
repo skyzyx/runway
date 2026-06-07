@@ -48,9 +48,9 @@ class Module:
         self,
         context: RunwayContext,
         definition: RunwayModuleDefinition,
-        deployment: RunwayDeploymentDefinition = None,  # type: ignore[assignment]
-        future: RunwayFutureDefinitionModel = None,  # type: ignore[assignment]
-        variables: RunwayVariablesDefinition = None,  # type: ignore[assignment]
+        deployment: RunwayDeploymentDefinition | None = None,  # type: ignore[assignment]
+        future: RunwayFutureDefinitionModel | None = None,  # type: ignore[assignment]
+        variables: RunwayVariablesDefinition | None = None,  # type: ignore[assignment]
     ) -> None:
         """Instantiate class.
 
@@ -234,9 +234,7 @@ class Module:
         with change_dir(self.path.module_root):
             # dynamically load the particular module's class, 'get' the method
             # associated with the command, and call the method.
-            inst = self.type.module_class(
-                self.ctx, module_root=self.path.module_root, **self.payload
-            )
+            inst = self.type.module_class(self.ctx, module_root=self.path.module_root, **self.payload)
             if hasattr(inst, action):
                 inst[action]()
             else:
@@ -279,9 +277,7 @@ class Module:
         if env_vars:
             resolved_env_vars = flatten_path_lists(env_vars, str(self.ctx.env.root_dir))
             if resolved_env_vars:
-                self.logger.verbose(
-                    "environment variable overrides are being applied to this module"
-                )
+                self.logger.verbose("environment variable overrides are being applied to this module")
                 self.logger.debug("environment variable overrides: %s", resolved_env_vars)
                 self.ctx.env.vars = merge_dicts(self.ctx.env.vars, resolved_env_vars)
 
@@ -292,7 +288,7 @@ class Module:
         context: RunwayContext,
         modules: list[RunwayModuleDefinition],
         variables: RunwayVariablesDefinition,
-        deployment: RunwayDeploymentDefinition = None,  # type: ignore[assignment]
+        deployment: RunwayDeploymentDefinition | None = None,  # type: ignore[assignment]
         future: RunwayFutureDefinitionModel | None = None,
     ) -> None:
         """Run a list of modules.
@@ -368,7 +364,7 @@ def validate_environment(
     if isinstance(env_def, (int, str)):
         logger.debug('checking if "%s" in %s', env_def, accepted_values)
         result = env_def in accepted_values
-    elif isinstance(env_def, list):  # type: ignore
+    elif isinstance(env_def, list):
         logger.debug("checking if any(%s in %s)", env_def, accepted_values)
         result = any(val in env_def for val in accepted_values)
     else:

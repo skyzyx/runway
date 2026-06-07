@@ -61,13 +61,13 @@ class RunwayModuleDefinition(ConfigComponentDefinition[RunwayModuleDefinitionMod
             TypeError: The provided value does not match the required types.
 
         """
-        if not isinstance(modules, list):  # type: ignore
+        if not isinstance(modules, list):
             raise TypeError(f"expected list[RunwayModuleDefinition]; got {type(modules)}")
         sanitized: list[RunwayModuleDefinitionModel] = []
         for i, mod in enumerate(modules):
             if isinstance(mod, RunwayModuleDefinition):
                 sanitized.append(RunwayModuleDefinitionModel.model_validate(mod.data))
-            elif isinstance(mod, RunwayModuleDefinitionModel):  # type: ignore
+            elif isinstance(mod, RunwayModuleDefinitionModel):
                 sanitized.append(mod)
             else:
                 raise TypeError(
@@ -102,9 +102,7 @@ class RunwayModuleDefinition(ConfigComponentDefinition[RunwayModuleDefinitionMod
                 as a variable if it contains a lookup.
 
         """
-        self._vars[var_name] = Variable(
-            name=f"{self.name}.{var_name}", value=var_value, variable_type="runway"
-        )
+        self._vars[var_name] = Variable(name=f"{self.name}.{var_name}", value=var_value, variable_type="runway")
 
     @classmethod
     def parse_obj(cls: type[Self], obj: object) -> Self:  # type: ignore[misc, valid-type]

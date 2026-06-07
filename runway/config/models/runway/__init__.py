@@ -97,8 +97,7 @@ class RunwayDeploymentDefinitionModel(ConfigProperty):
     account_alias: Annotated[
         str | None,
         Field(
-            description="Used to verify the currently assumed role or credentials. "
-            "(supports lookups)",
+            description="Used to verify the currently assumed role or credentials. (supports lookups)",
             examples=["example-alias", "${var alias.${env DEPLOY_ENVIRONMENT}}"],
         ),
     ] = None
@@ -108,8 +107,7 @@ class RunwayDeploymentDefinitionModel(ConfigProperty):
         str | None,
         LaxStr,
         Field(
-            description="Used to verify the currently assumed role or credentials. "
-            "(supports lookups)",
+            description="Used to verify the currently assumed role or credentials. (supports lookups)",
             examples=["123456789012", "${var id.${env DEPLOY_ENVIRONMENT}}"],
         ),
     ] = None
@@ -177,8 +175,7 @@ class RunwayDeploymentDefinitionModel(ConfigProperty):
     module_options: Annotated[
         dict[str, Any] | str,
         Field(
-            description="Options that are passed directly to the modules within this deployment. "
-            "(supports lookups)",
+            description="Options that are passed directly to the modules within this deployment. (supports lookups)",
             examples=[
                 "${var sampleapp.options.${env DEPLOY_ENVIRONMENT}}",
                 {"some_option": "value"},
@@ -190,8 +187,7 @@ class RunwayDeploymentDefinitionModel(ConfigProperty):
     name: Annotated[
         str,
         Field(
-            description="The name of the deployment to be displayed in logs and the "
-            "interactive selection menu.",
+            description="The name of the deployment to be displayed in logs and the interactive selection menu.",
         ),
     ] = "unnamed_deployment"
     """The name of the deployment to be displayed in logs and the interactive selection menu."""
@@ -258,9 +254,7 @@ class RunwayDeploymentDefinitionModel(ConfigProperty):
         raw_regions: str | list[str] = values.get("regions", [])
         parallel_regions = values.get("parallel_regions", [])
         if all(isinstance(i, str) for i in [raw_regions, parallel_regions]):
-            raise ValueError(
-                "unable to validate parallel_regions/regions - both are defined as strings"
-            )
+            raise ValueError("unable to validate parallel_regions/regions - both are defined as strings")
         if any(isinstance(i, str) for i in [raw_regions, parallel_regions]):
             return values  # one is a lookup so skip the remainder of the checks
         regions = (
@@ -294,9 +288,7 @@ class RunwayVersionField(SpecifierSet):
     """Extends packaging.specifiers.SpecifierSet for use with pydantic."""
 
     @classmethod
-    def __get_pydantic_core_schema__(
-        cls, source_type: Any, handler: GetCoreSchemaHandler
-    ) -> CoreSchema:
+    def __get_pydantic_core_schema__(cls, source_type: Any, handler: GetCoreSchemaHandler) -> CoreSchema:
         """Yield one of more validators with will be called to validate the input.
 
         Each validator will receive, as input, the value returned from the previous validator.
@@ -379,8 +371,7 @@ class RunwayConfigDefinitionModel(ConfigProperty):
     ignore_git_branch: Annotated[
         bool,
         Field(
-            description="Optionally exclude the git branch name when determining the "
-            "current deploy environment.",
+            description="Optionally exclude the git branch name when determining the current deploy environment.",
         ),
     ] = False
     """Optionally exclude the git branch name when determining the current deploy environment."""
@@ -388,8 +379,7 @@ class RunwayConfigDefinitionModel(ConfigProperty):
     runway_version: Annotated[
         RunwayVersionField | None,
         Field(
-            description="Define the versions of Runway that can be used with this "
-            "configuration file.",
+            description="Define the versions of Runway that can be used with this configuration file.",
             examples=['"<2.0.0"', '"==1.14.0"', '">=1.14.0,<2.0.0"'],
         ),
     ] = None
@@ -422,7 +412,5 @@ class RunwayConfigDefinitionModel(ConfigProperty):
     ) -> Self:
         """Parse a file."""
         return cls.model_validate(
-            yaml.safe_load(
-                Path(path).read_text(encoding=locale.getpreferredencoding(do_setlocale=False))
-            )
+            yaml.safe_load(Path(path).read_text(encoding=locale.getpreferredencoding(do_setlocale=False)))
         )

@@ -220,9 +220,9 @@ class ActionArchitecture:
             components = command_dict[instruction]
             for index, comp in enumerate(components):
                 if len(files) > len(components):
-                    file_list.append(comp.call(*files))  # type: ignore
+                    file_list.append(comp.call(*files))
                 else:
-                    file_list.append(comp.call(files[index]))  # type: ignore
+                    file_list.append(comp.call(files[index]))
             files = file_list
         # This is kinda quirky, but each call through the instructions
         # will replaces the files attr with the return value of the
@@ -235,11 +235,11 @@ class ActionArchitecture:
         # that > 0 failed tasks will give a 1 RC and > 0 warned
         # tasks will give a 2 RC.  Otherwise a RC of zero is returned.
         return_code: int = 0
-        if files[0].num_tasks_failed > 0:  # type: ignore
+        if files[0].num_tasks_failed > 0:
             return_code = 1
-        elif files[0].num_tasks_warned > 0:  # type: ignore
+        elif files[0].num_tasks_warned > 0:
             return_code = 2
-        return return_code  # type: ignore[return-value]
+        return return_code
 
     @staticmethod
     def _get_file_generator_request_parameters_skeleton() -> dict[str, dict[str, Any]]:

@@ -107,9 +107,7 @@ class FileInfo:
                 return False
         return True
 
-    def _is_glacier_object(
-        self, response_data: HeadObjectOutputTypeDef | ObjectTypeDef | None
-    ) -> bool:
+    def _is_glacier_object(self, response_data: HeadObjectOutputTypeDef | ObjectTypeDef | None) -> bool:
         """Determine if a file info object is glacier compatible."""
         glacier_storage_classes = ["GLACIER", "DEEP_ARCHIVE"]
         return bool(
@@ -122,4 +120,4 @@ class FileInfo:
     def _is_restored(response_data: HeadObjectOutputTypeDef | ObjectTypeDef) -> bool:
         """Return True is this is a glacier object that has been restored back to S3."""
         # 'Restore' looks like: 'ongoing-request="false", expiry-date="..."'
-        return 'ongoing-request="false"' in response_data.get("Restore", "")  # type: ignore[operator]
+        return 'ongoing-request="false"' in response_data.get("Restore", "")

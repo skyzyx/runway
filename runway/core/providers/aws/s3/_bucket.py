@@ -74,7 +74,7 @@ class Bucket(DelCachedPropMixin):
         """
         try:
             return BaseResponse(
-                **self.client.head_bucket(Bucket=self.name) or {}  # pyright: ignore[reportCallIssue]  # type: ignore[arg-type, call-arg, unreachable]
+                **self.client.head_bucket(Bucket=self.name) or {}  # pyright: ignore[reportCallIssue]
             )
         except ClientError as err:
             LOGGER.debug(
@@ -115,9 +115,7 @@ class Bucket(DelCachedPropMixin):
         kwargs["Bucket"] = self.name
         if self.client.meta.region_name != "us-east-1":
             kwargs.setdefault("CreateBucketConfiguration", {})
-            kwargs["CreateBucketConfiguration"].update(
-                {"LocationConstraint": self.client.meta.region_name}
-            )
+            kwargs["CreateBucketConfiguration"].update({"LocationConstraint": self.client.meta.region_name})
         LOGGER.debug("creating bucket: %s", json.dumps(kwargs))
         self._del_cached_property("head")
         return self.client.create_bucket(**kwargs)

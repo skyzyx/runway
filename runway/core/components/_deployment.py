@@ -156,9 +156,7 @@ class Deployment:
             ", ".join(self.regions),
         )
         if self.use_async:
-            self.logger.notice(
-                "processing of regions will be done in parallel during deploy/destroy"
-            )
+            self.logger.notice("processing of regions will be done in parallel during deploy/destroy")
         return self.__sync("plan")
 
     def run(self, action: RunwayActionTypeDef, region: str) -> None:
@@ -202,8 +200,7 @@ class Deployment:
         if self.definition.account_id:
             if self.definition.account_id != account.id:
                 self.logger.error(
-                    'current AWS account "%s" does not match '
-                    'required account "%s" in Runway config',
+                    'current AWS account "%s" does not match required account "%s" in Runway config',
                     account.id,
                     self.definition.account_id,
                 )
@@ -215,8 +212,7 @@ class Deployment:
         if self.definition.account_alias:
             if self.definition.account_alias not in account.aliases:
                 self.logger.error(
-                    'current AWS account aliases "%s" do not match '
-                    'required account alias "%s" in Runway config.',
+                    'current AWS account aliases "%s" do not match required account alias "%s" in Runway config.',
                     ",".join(account.aliases),
                     self.definition.account_alias,
                 )
@@ -229,9 +225,7 @@ class Deployment:
     def __merge_env_vars(self) -> None:
         """Merge defined env_vars into context.env_vars."""
         if self.env_vars_config:
-            self.logger.verbose(
-                "environment variable overrides are being applied to this deployment"
-            )
+            self.logger.verbose("environment variable overrides are being applied to this deployment")
             self.logger.debug("environment variable overrides: %s", self.env_vars_config)
             self.ctx.env.vars = merge_dicts(self.ctx.env.vars, self.env_vars_config)
 

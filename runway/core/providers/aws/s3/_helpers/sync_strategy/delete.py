@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__.replace("._", "."))
 class DeleteSync(BaseSync):
     """Delete file."""
 
-    NAME: ClassVar[Literal["delete"]] = "delete"  # type: ignore[assignment]
+    NAME: ClassVar[Literal["delete"]] = "delete"
 
     def determine_should_sync(
         self,
@@ -35,8 +35,7 @@ class DeleteSync(BaseSync):
         if dest_file:
             dest_file.operation_name = "delete"
         LOGGER.debug(
-            "syncing: (None) -> %s (remove), file does not "
-            "exist at source (%s) and delete mode enabled",
+            "syncing: (None) -> %s (remove), file does not exist at source (%s) and delete mode enabled",
             dest_file.src if dest_file else None,
             dest_file.dest if dest_file else None,
         )
