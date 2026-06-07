@@ -110,7 +110,7 @@ class LambdaFunction(Blueprint):
                 )
             ],
         )
-        self.add_output(role.title, role.ref())  # type: ignore[arg-type]
+        self.add_output(role.title, role.ref())
         return role
 
     @cached_property
@@ -141,7 +141,7 @@ class LambdaFunction(Blueprint):
             FunctionName=self.context.get_fqn(self.app_name),
             **{k: v for k, v in optional_kwargs.items() if v},
         )
-        self.add_output(func.title, func.ref())  # type: ignore[arg-type]
+        self.add_output(func.title, func.ref())
         self.add_output(f"{func.title}Arn", func.get_att("Arn"))
         self.add_output("Runtime", self.runtime)
         for attr in awslambda.Code.props:

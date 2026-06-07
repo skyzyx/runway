@@ -46,9 +46,7 @@ class TestStaticSite:
         assert isinstance(obj.options, StaticSiteOptions)
         assert obj.options == StaticSiteOptions.parse_obj({"build_output": "./dist"})
         assert isinstance(obj.parameters, RunwayStaticSiteModuleParametersDataModel)
-        assert obj.parameters == RunwayStaticSiteModuleParametersDataModel.model_validate(
-            {"namespace": "test"}
-        )
+        assert obj.parameters == RunwayStaticSiteModuleParametersDataModel.model_validate({"namespace": "test"})
         assert obj.path == tmp_path
 
     @pytest.mark.skipif(platform.system() == "Windows", reason="POSIX path required")
@@ -67,10 +65,7 @@ class TestStaticSite:
             name="test",
             parameters={"namespace": "test"},
         )
-        assert (
-            obj._create_cleanup_yaml(tmp_path).read_text()
-            == (expected_yaml / "cleanup.yaml").read_text()
-        )
+        assert obj._create_cleanup_yaml(tmp_path).read_text() == (expected_yaml / "cleanup.yaml").read_text()
 
     @pytest.mark.parametrize(
         "parameters, test_file_number",
@@ -80,8 +75,7 @@ class TestStaticSite:
                 {
                     "cloudformation_service_role": "aws:arn:iam:123456789012:role/name",
                     "staticsite_auth_at_edge": True,
-                    "staticsite_user_pool_arn": "arn:aws:cognito-idp:<region>:<account-id>"
-                    ":userpool/<pool>",
+                    "staticsite_user_pool_arn": "arn:aws:cognito-idp:<region>:<account-id>:userpool/<pool>",
                 },
                 "02",
             ),
@@ -122,8 +116,7 @@ class TestStaticSite:
                     "cloudformation_service_role": "aws:arn:iam:123456789012:role/name",
                     "staticsite_auth_at_edge": True,
                     "staticsite_role_boundary_arn": "aws:arn:iam:123456789012:policy/name",
-                    "staticsite_user_pool_arn": "arn:aws:cognito-idp:<region>:<account-id>"
-                    ":userpool/<pool>",
+                    "staticsite_user_pool_arn": "arn:aws:cognito-idp:<region>:<account-id>:userpool/<pool>",
                 },
                 "02",
             ),
@@ -150,39 +143,29 @@ class TestStaticSite:
             (expected_yaml / f"staticsite.{test_file_number}.yaml").read_text()
         ).safe_substitute(module_dir=tmp_path)
 
-    def test_deploy(
-        self, mocker: MockerFixture, runway_context: RunwayContext, tmp_path: Path
-    ) -> None:
+    def test_deploy(self, mocker: MockerFixture, runway_context: RunwayContext, tmp_path: Path) -> None:
         """Test deploy."""
-        mock_setup_website_module = mocker.patch.object(
-            StaticSite, "_setup_website_module", return_value=None
-        )
+        mock_setup_website_module = mocker.patch.object(StaticSite, "_setup_website_module", return_value=None)
         obj = StaticSite(
             runway_context,
             module_root=tmp_path,
             parameters={"namespace": "test", "staticsite_auth_at_edge": True},
         )
-        assert not obj.deploy()  # type: ignore[func-returns-value]
+        assert not obj.deploy()
         mock_setup_website_module.assert_called_once_with(command="deploy")
 
-    def test_destroy(
-        self, mocker: MockerFixture, runway_context: RunwayContext, tmp_path: Path
-    ) -> None:
+    def test_destroy(self, mocker: MockerFixture, runway_context: RunwayContext, tmp_path: Path) -> None:
         """Test destroy."""
-        mock_setup_website_module = mocker.patch.object(
-            StaticSite, "_setup_website_module", return_value=None
-        )
+        mock_setup_website_module = mocker.patch.object(StaticSite, "_setup_website_module", return_value=None)
         obj = StaticSite(
             runway_context,
             module_root=tmp_path,
             parameters={"namespace": "test", "staticsite_auth_at_edge": True},
         )
-        assert not obj.destroy()  # type: ignore[func-returns-value]
+        assert not obj.destroy()
         mock_setup_website_module.assert_called_once_with(command="destroy")
 
-    def test_ensure_auth_at_edge_requirements_exit(
-        self, runway_context: RunwayContext, tmp_path: Path
-    ) -> None:
+    def test_ensure_auth_at_edge_requirements_exit(self, runway_context: RunwayContext, tmp_path: Path) -> None:
         """Test _ensure_auth_at_edge_requirements."""
         with pytest.raises(SystemExit):
             StaticSite(
@@ -191,9 +174,7 @@ class TestStaticSite:
                 parameters={"namespace": "test", "staticsite_auth_at_edge": True},
             )._ensure_auth_at_edge_requirements()
 
-    def test_ensure_cloudfront_with_auth_at_edge_exit(
-        self, runway_context: RunwayContext, tmp_path: Path
-    ) -> None:
+    def test_ensure_cloudfront_with_auth_at_edge_exit(self, runway_context: RunwayContext, tmp_path: Path) -> None:
         """Test _ensure_cloudfront_with_auth_at_edge."""
         with pytest.raises(SystemExit):
             StaticSite(
@@ -206,9 +187,7 @@ class TestStaticSite:
                 },
             )
 
-    def test_ensure_correct_region_with_auth_at_edge_exit(
-        self, runway_context: RunwayContext, tmp_path: Path
-    ) -> None:
+    def test_ensure_correct_region_with_auth_at_edge_exit(self, runway_context: RunwayContext, tmp_path: Path) -> None:
         """Test _ensure_correct_region_with_auth_at_edge."""
         runway_context.env.aws_region = "us-west-2"
         with pytest.raises(SystemExit):
@@ -218,9 +197,7 @@ class TestStaticSite:
                 parameters={"namespace": "test", "staticsite_auth_at_edge": True},
             )
 
-    def test_ensure_valid_environment_config_exit(
-        self, runway_context: RunwayContext, tmp_path: Path
-    ) -> None:
+    def test_ensure_valid_environment_config_exit(self, runway_context: RunwayContext, tmp_path: Path) -> None:
         """Test _ensure_valid_environment_config."""
         with pytest.raises(SystemExit):
             StaticSite(runway_context, module_root=tmp_path, parameters={"namespace": ""})
@@ -252,28 +229,22 @@ class TestStaticSite:
         assert result["redirect_path_sign_out"] == site_stack_variables["RedirectPathSignOut"]
         assert result["supported_identity_providers"] == obj.parameters.supported_identity_providers
 
-    def test_init(
-        self, caplog: pytest.LogCaptureFixture, runway_context: RunwayContext, tmp_path: Path
-    ) -> None:
+    def test_init(self, caplog: pytest.LogCaptureFixture, runway_context: RunwayContext, tmp_path: Path) -> None:
         """Test init."""
         caplog.set_level(logging.WARNING, logger=MODULE)
         obj = StaticSite(runway_context, module_root=tmp_path, parameters={"namespace": "test"})
-        assert not obj.init()  # type: ignore[func-returns-value]
+        assert not obj.init()
         assert f"init not currently supported for {StaticSite.__name__}" in caplog.messages
 
-    def test_plan(
-        self, mocker: MockerFixture, runway_context: RunwayContext, tmp_path: Path
-    ) -> None:
+    def test_plan(self, mocker: MockerFixture, runway_context: RunwayContext, tmp_path: Path) -> None:
         """Test plan."""
-        mock_setup_website_module = mocker.patch.object(
-            StaticSite, "_setup_website_module", return_value=None
-        )
+        mock_setup_website_module = mocker.patch.object(StaticSite, "_setup_website_module", return_value=None)
         obj = StaticSite(
             runway_context,
             module_root=tmp_path,
             parameters={"namespace": "test", "staticsite_auth_at_edge": True},
         )
-        assert not obj.plan()  # type: ignore[func-returns-value]
+        assert not obj.plan()
         mock_setup_website_module.assert_called_once_with(command="plan")
 
     @pytest.mark.parametrize("provided, expected", [("foo", "foo"), ("foo.bar", "foo-bar")])

@@ -78,9 +78,7 @@ class TestTerraform:
         assert obj.parameters == parameters
         assert obj.required_workspace == runway_context.env.name
 
-    def test___init___options_workspace(
-        self, runway_context: MockRunwayContext, tmp_path: Path
-    ) -> None:
+    def test___init___options_workspace(self, runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test __init__ with workspace option."""
         options = {"terraform_workspace": "default"}
         obj = Terraform(runway_context, module_root=tmp_path, options=options)
@@ -100,9 +98,7 @@ class TestTerraform:
             "terraform_write_auto_tfvars": True,
         }
         parameters = {"key": "val"}
-        obj = Terraform(
-            runway_context, module_root=tmp_path, options=options, parameters=parameters
-        )
+        obj = Terraform(runway_context, module_root=tmp_path, options=options, parameters=parameters)
         assert obj.auto_tfvars.is_file()
         assert json.loads(obj.auto_tfvars.read_text()) == parameters
         assert "unable to parse current version" not in "\n".join(caplog.messages)
@@ -111,12 +107,12 @@ class TestTerraform:
         obj.auto_tfvars.unlink()
         del obj.auto_tfvars
         obj.options.write_auto_tfvars = False
-        assert not obj.auto_tfvars.exists()  # type: ignore
+        assert not obj.auto_tfvars.exists()
 
         del obj.auto_tfvars
         obj.options.write_auto_tfvars = True
         obj.parameters = {}
-        assert not obj.auto_tfvars.exists()  # type: ignore
+        assert not obj.auto_tfvars.exists()
 
     def test_auto_tfvars_unsupported_version(
         self,
@@ -130,14 +126,11 @@ class TestTerraform:
         mocker.patch.object(Terraform, "version", Version("0.9.0"))
         options = {"terraform_write_auto_tfvars": True}
         parameters = {"key": "val"}
-        obj = Terraform(
-            runway_context, module_root=tmp_path, options=options, parameters=parameters
-        )
+        obj = Terraform(runway_context, module_root=tmp_path, options=options, parameters=parameters)
         assert obj.auto_tfvars.is_file()
         assert json.loads(obj.auto_tfvars.read_text()) == parameters
         assert (
-            "Terraform version does not support the use of "
-            "*.auto.tfvars; some variables may be missing"
+            "Terraform version does not support the use of *.auto.tfvars; some variables may be missing"
         ) in "\n".join(caplog.messages)
 
     def test_cleanup_dot_terraform(
@@ -171,9 +164,7 @@ class TestTerraform:
         assert not dot_tf_tfstate.exists()
         assert "removing some of its contents" in "\n".join(caplog.messages)
 
-    def test_current_workspace(
-        self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path
-    ) -> None:
+    def test_current_workspace(self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test current_workspace."""
         mock_terraform_workspace_show = mocker.patch.object(
             Terraform, "terraform_workspace_show", return_value="default"
@@ -243,27 +234,27 @@ class TestTerraform:
 
         obj = Terraform(runway_context, module_root=tmp_path)
         assert not obj[action]()
-        obj.handle_backend.assert_called_once_with()  # type: ignore[attr-defined]
-        obj.cleanup_dot_terraform.assert_not_called()  # type: ignore[attr-defined]
-        obj.handle_parameters.assert_not_called()  # type: ignore[attr-defined]
-        obj.auto_tfvars.exists.assert_called_once_with()  # type: ignore[attr-defined]
-        obj.auto_tfvars.unlink.assert_called_once_with()  # type: ignore[attr-defined]
+        obj.handle_backend.assert_called_once_with()
+        obj.cleanup_dot_terraform.assert_not_called()
+        obj.handle_parameters.assert_not_called()
+        obj.auto_tfvars.exists.assert_called_once_with()
+        obj.auto_tfvars.unlink.assert_called_once_with()
         caplog.clear()
 
         # module is run; workspace matches
-        obj.auto_tfvars.exists.return_value = False  # type: ignore[attr-defined]
+        obj.auto_tfvars.exists.return_value = False
         mocker.patch.object(obj, "skip", False)
         assert not obj[action]()
-        obj.cleanup_dot_terraform.assert_called_once_with()  # type: ignore[attr-defined]
-        obj.handle_parameters.assert_called_once_with()  # type: ignore[attr-defined]
-        obj.terraform_init.assert_called_once_with()  # type: ignore[attr-defined]
-        obj.terraform_workspace_list.assert_not_called()  # type: ignore[attr-defined]
-        obj.terraform_workspace_select.assert_not_called()  # type: ignore[attr-defined]
-        obj.terraform_workspace_new.assert_not_called()  # type: ignore[attr-defined]
-        obj.terraform_get.assert_called_once_with()  # type: ignore[attr-defined]
+        obj.cleanup_dot_terraform.assert_called_once_with()
+        obj.handle_parameters.assert_called_once_with()
+        obj.terraform_init.assert_called_once_with()
+        obj.terraform_workspace_list.assert_not_called()
+        obj.terraform_workspace_select.assert_not_called()
+        obj.terraform_workspace_new.assert_not_called()
+        obj.terraform_get.assert_called_once_with()
         obj["terraform_" + command].assert_called_once_with()
-        assert obj.auto_tfvars.exists.call_count == 2  # type: ignore[attr-defined]
-        assert obj.auto_tfvars.unlink.call_count == 1  # type: ignore[attr-defined]
+        assert obj.auto_tfvars.exists.call_count == 2
+        assert obj.auto_tfvars.unlink.call_count == 1
         logs = "\n".join(caplog.messages)
         assert "init (in progress)" in logs
         assert "init (complete)" in logs
@@ -275,16 +266,16 @@ class TestTerraform:
         # module is run; switch to workspace
         mocker.patch.object(Terraform, "current_workspace", "default")
         assert not obj[action]()
-        obj.terraform_workspace_list.assert_called_once_with()  # type: ignore[attr-defined]
-        obj.terraform_workspace_select.assert_called_once_with("test")  # type: ignore[attr-defined]
-        obj.terraform_workspace_new.assert_not_called()  # type: ignore[attr-defined]
+        obj.terraform_workspace_list.assert_called_once_with()
+        obj.terraform_workspace_select.assert_called_once_with("test")
+        obj.terraform_workspace_new.assert_not_called()
         logs = "\n".join(caplog.messages)
         assert "re-running init after workspace change..." in logs
 
         # module is run; create workspace
         mocker.patch.object(Terraform, "terraform_workspace_list", MagicMock(return_value=""))
         assert not obj[action]()
-        obj.terraform_workspace_new.assert_called_once_with("test")  # type: ignore[attr-defined]
+        obj.terraform_workspace_new.assert_called_once_with("test")
 
     @pytest.mark.parametrize(
         "command, args_list, expected",
@@ -341,11 +332,9 @@ class TestTerraform:
             "get_full_configuration",
             mock_get_full_configuration,
         )
-        assert not obj.handle_backend()  # type: ignore[func-returns-value]
+        assert not obj.handle_backend()
         mock_get_full_configuration.assert_not_called()
-        assert 'backed "unsupported" does not require special handling' in "\n".join(
-            caplog.messages
-        )
+        assert 'backed "unsupported" does not require special handling' in "\n".join(caplog.messages)
 
     def test_handle_backend_no_type(
         self,
@@ -358,7 +347,7 @@ class TestTerraform:
         caplog.set_level(LogLevels.INFO, logger=MODULE)
         obj = Terraform(runway_context, module_root=tmp_path)
         mocker.patch.object(obj, "tfenv", MagicMock(backend={"type": None}))
-        assert not obj.handle_backend()  # type: ignore[func-returns-value]
+        assert not obj.handle_backend()
         assert "unable to determine backend for module" in "\n".join(caplog.messages)
 
     def test_handle_backend_remote_name(
@@ -382,7 +371,7 @@ class TestTerraform:
             mock_get_full_configuration,
         )
 
-        assert not obj.handle_backend()  # type: ignore[func-returns-value]
+        assert not obj.handle_backend()
         mock_get_full_configuration.assert_called_once_with()
         assert "TF_WORKSPACE" not in obj.ctx.env.vars
         assert obj.required_workspace == "default"
@@ -409,12 +398,10 @@ class TestTerraform:
             mock_get_full_configuration,
         )
 
-        assert not obj.handle_backend()  # type: ignore[func-returns-value]
+        assert not obj.handle_backend()
         mock_get_full_configuration.assert_called_once_with()
         assert obj.ctx.env.vars["TF_WORKSPACE"] == obj.ctx.env.name
-        assert 'set environment variable "TF_WORKSPACE" to avoid prompt' in "\n".join(
-            caplog.messages
-        )
+        assert 'set environment variable "TF_WORKSPACE" to avoid prompt' in "\n".join(caplog.messages)
 
     def test_handle_backend_remote_undetermined(
         self,
@@ -440,27 +427,23 @@ class TestTerraform:
             mock_get_full_configuration,
         )
 
-        assert not obj.handle_backend()  # type: ignore[func-returns-value]
+        assert not obj.handle_backend()
         mock_get_full_configuration.assert_called_once_with()
         assert '"workspaces" not defined in backend config' in "\n".join(caplog.messages)
 
-    def test_handle_parameters(
-        self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path
-    ) -> None:
+    def test_handle_parameters(self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test handle_parameters."""
         mock_update_envvars = mocker.patch(
             f"{MODULE}.update_env_vars_with_tf_var_values",
             return_value={"result": "success"},
         )
         obj = Terraform(runway_context.copy(), module_root=tmp_path)
-        mocker.patch.object(
-            obj, "auto_tfvars", MagicMock(exists=MagicMock(side_effect=[True, False]))
-        )
+        mocker.patch.object(obj, "auto_tfvars", MagicMock(exists=MagicMock(side_effect=[True, False])))
 
-        assert not obj.handle_parameters()  # type: ignore[func-returns-value]
+        assert not obj.handle_parameters()
         mock_update_envvars.assert_not_called()
 
-        assert not obj.handle_parameters()  # type: ignore[func-returns-value]
+        assert not obj.handle_parameters()
         mock_update_envvars.assert_called_once_with(runway_context.env.vars, {})
         assert obj.ctx.env.vars == {"result": "success"}
 
@@ -485,12 +468,10 @@ class TestTerraform:
         """Test skip."""
         mocker.patch.object(Terraform, "env_file", env)
         obj = Terraform(runway_context, module_root=tmp_path)
-        obj.parameters = param  # type: ignore
+        obj.parameters = param
         assert obj.skip == expected
 
-    def test_tfenv(
-        self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path
-    ) -> None:
+    def test_tfenv(self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test tfenv."""
         mock_tfenv = mocker.patch(f"{MODULE}.TFEnvManager", return_value="tfenv")
         obj = Terraform(runway_context, module_root=tmp_path)
@@ -498,9 +479,7 @@ class TestTerraform:
         assert obj.tfenv == "tfenv"
         mock_tfenv.assert_called_once_with(tmp_path)
 
-    def test_tf_bin_file(
-        self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path
-    ) -> None:
+    def test_tf_bin_file(self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test tf_bin version in file."""
         mock_tfenv = MagicMock(version_file=True)
         mock_tfenv.install.return_value = "success"
@@ -509,13 +488,9 @@ class TestTerraform:
         assert obj.tf_bin == "success"
         mock_tfenv.install.assert_called_once_with(None)
 
-    def test_tf_bin_global(
-        self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path
-    ) -> None:
+    def test_tf_bin_global(self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test tf_bin from global install."""
-        mocker.patch.object(
-            Terraform, "tfenv", MagicMock(install=MagicMock(side_effect=ValueError))
-        )
+        mocker.patch.object(Terraform, "tfenv", MagicMock(install=MagicMock(side_effect=ValueError)))
         mock_which = mocker.patch(f"{MODULE}.which", return_value=True)
         obj = Terraform(runway_context, module_root=tmp_path)
         assert obj.tf_bin == "terraform"
@@ -531,21 +506,15 @@ class TestTerraform:
         """Test tf_bin missing."""
         caplog.set_level(LogLevels.ERROR, logger=MODULE)
         mock_which = mocker.patch(f"{MODULE}.which", return_value=False)
-        mocker.patch.object(
-            Terraform, "tfenv", MagicMock(install=MagicMock(side_effect=ValueError))
-        )
+        mocker.patch.object(Terraform, "tfenv", MagicMock(install=MagicMock(side_effect=ValueError)))
         obj = Terraform(runway_context, module_root=tmp_path)
         with pytest.raises(SystemExit) as excinfo:
             assert obj.tf_bin
         assert excinfo.value.code == 1
         mock_which.assert_called_once_with("terraform")
-        assert "terraform not available and a version to install not specified" in "\n".join(
-            caplog.messages
-        )
+        assert "terraform not available and a version to install not specified" in "\n".join(caplog.messages)
 
-    def test_tf_bin_options(
-        self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path
-    ) -> None:
+    def test_tf_bin_options(self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test tf_bin version in options."""
         mock_tfenv = MagicMock()
         mock_tfenv.install.return_value = "success"
@@ -555,9 +524,7 @@ class TestTerraform:
         assert obj.tf_bin == "success"
         mock_tfenv.install.assert_called_once_with("0.12.0")
 
-    def test_terraform_apply(
-        self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path
-    ) -> None:
+    def test_terraform_apply(self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test terraform_apply."""
         mock_gen_command = mocker.patch.object(Terraform, "gen_command")
         mock_run_command = mocker.patch(f"{MODULE}.run_module_command")
@@ -568,15 +535,13 @@ class TestTerraform:
         mocker.patch.object(obj.ctx.env, "ci", True)
 
         expected_arg_list = ["env_file", "arg", "-auto-approve=true"]
-        assert not obj.terraform_apply()  # type: ignore[func-returns-value]
+        assert not obj.terraform_apply()
         mock_gen_command.assert_called_once_with("apply", expected_arg_list)
-        mock_run_command.assert_called_once_with(
-            ["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger
-        )
+        mock_run_command.assert_called_once_with(["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger)
 
         mocker.patch.object(obj.ctx.env, "ci", False)
         expected_arg_list[2] = "-auto-approve=false"
-        assert not obj.terraform_apply()  # type: ignore[func-returns-value]
+        assert not obj.terraform_apply()
         mock_gen_command.assert_called_with("apply", expected_arg_list)
         assert mock_run_command.call_count == 2
 
@@ -600,20 +565,16 @@ class TestTerraform:
         version: Version,
     ) -> None:
         """Test terraform_destroy."""
-        mock_gen_command = mocker.patch.object(
-            Terraform, "gen_command", return_value=["mock_gen_command"]
-        )
+        mock_gen_command = mocker.patch.object(Terraform, "gen_command", return_value=["mock_gen_command"])
         mocker.patch.object(Terraform, "version", version)
         mock_run_command = mocker.patch(f"{MODULE}.run_module_command", return_value=None)
         obj = Terraform(runway_context, module_root=tmp_path)
         mocker.patch.object(obj, "env_file", ["env_file"])
 
         expected_options.append("env_file")
-        assert not obj.terraform_destroy()  # type: ignore[func-returns-value]
+        assert not obj.terraform_destroy()
         mock_gen_command.assert_called_once_with(expected_subcmd, expected_options)
-        mock_run_command.assert_called_once_with(
-            ["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger
-        )
+        mock_run_command.assert_called_once_with(["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger)
 
     def test_terraform_get(
         self,
@@ -622,25 +583,17 @@ class TestTerraform:
         tmp_path: Path,
     ) -> None:
         """Test terraform_get."""
-        mock_gen_command = mocker.patch.object(
-            Terraform, "gen_command", return_value=["mock_gen_command"]
-        )
+        mock_gen_command = mocker.patch.object(Terraform, "gen_command", return_value=["mock_gen_command"])
         mock_run_command = mocker.patch(f"{MODULE}.run_module_command")
         obj = Terraform(runway_context, module_root=tmp_path)
 
-        assert not obj.terraform_get()  # type: ignore[func-returns-value]
+        assert not obj.terraform_get()
         mock_gen_command.assert_called_once_with("get", ["-update=true"])
-        mock_run_command.assert_called_once_with(
-            ["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger
-        )
+        mock_run_command.assert_called_once_with(["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger)
 
-    def test_terraform_init(
-        self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path
-    ) -> None:
+    def test_terraform_init(self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test terraform_init."""
-        mock_gen_command = mocker.patch.object(
-            Terraform, "gen_command", return_value=["mock_gen_command"]
-        )
+        mock_gen_command = mocker.patch.object(Terraform, "gen_command", return_value=["mock_gen_command"])
         mock_run_command = mocker.patch(f"{MODULE}.run_module_command")
         options: dict[str, dict[str, Any] | str] = {
             "args": {"init": ["init_arg"]},
@@ -656,7 +609,7 @@ class TestTerraform:
             "region=us-east-1",
             "init_arg",
         ]
-        assert not obj.terraform_init()  # type: ignore[func-returns-value]
+        assert not obj.terraform_init()
         mock_gen_command.assert_called_once_with("init", expected_arg_list)
         mock_run_command.assert_called_once_with(
             ["mock_gen_command"],
@@ -667,34 +620,26 @@ class TestTerraform:
 
         mock_run_command.side_effect = subprocess.CalledProcessError(1, "")
         with pytest.raises(SystemExit) as excinfo:
-            assert obj.terraform_init()  # type: ignore[func-returns-value]
+            assert obj.terraform_init()
         assert excinfo.value.code == 1
 
-    def test_terraform_plan(
-        self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path
-    ) -> None:
+    def test_terraform_plan(self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test terraform_plan."""
-        mock_gen_command = mocker.patch.object(
-            Terraform, "gen_command", return_value=["mock_gen_command"]
-        )
+        mock_gen_command = mocker.patch.object(Terraform, "gen_command", return_value=["mock_gen_command"])
         mock_run_command = mocker.patch(f"{MODULE}.run_module_command")
         options = {"args": {"plan": ["plan_arg"]}}
         obj = Terraform(runway_context, module_root=tmp_path, options=options)
         mocker.patch.object(obj, "env_file", ["env_file"])
 
-        assert not obj.terraform_plan()  # type: ignore[func-returns-value]
+        assert not obj.terraform_plan()
         mock_gen_command.assert_called_once_with("plan", ["env_file", "plan_arg"])
-        mock_run_command.assert_called_once_with(
-            ["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger
-        )
+        mock_run_command.assert_called_once_with(["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger)
 
     def test_terraform_workspace_list(
         self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path
     ) -> None:
         """Test terraform_workspace_list."""
-        mock_gen_command = mocker.patch.object(
-            Terraform, "gen_command", return_value=["mock_gen_command"]
-        )
+        mock_gen_command = mocker.patch.object(Terraform, "gen_command", return_value=["mock_gen_command"])
         mock_subprocess = mocker.patch(f"{MODULE}.subprocess")
         check_output_result = MagicMock()
         check_output_result.decode.return_value = "decoded"
@@ -703,34 +648,26 @@ class TestTerraform:
         obj = Terraform(runway_context, module_root=tmp_path)
         assert obj.terraform_workspace_list() == "decoded"
         mock_gen_command.assert_called_once_with(["workspace", "list"])
-        mock_subprocess.check_output.assert_called_once_with(
-            ["mock_gen_command"], env=obj.ctx.env.vars
-        )
+        mock_subprocess.check_output.assert_called_once_with(["mock_gen_command"], env=obj.ctx.env.vars)
         check_output_result.decode.assert_called_once_with()
 
     def test_terraform_workspace_new(
         self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path
     ) -> None:
         """Test terraform_workspace_new."""
-        mock_gen_command = mocker.patch.object(
-            Terraform, "gen_command", return_value=["mock_gen_command"]
-        )
+        mock_gen_command = mocker.patch.object(Terraform, "gen_command", return_value=["mock_gen_command"])
         mock_run_command = mocker.patch(f"{MODULE}.run_module_command")
         obj = Terraform(runway_context, module_root=tmp_path)
 
-        assert not obj.terraform_workspace_new("name")  # type: ignore[func-returns-value]
+        assert not obj.terraform_workspace_new("name")
         mock_gen_command.assert_called_once_with(["workspace", "new"], ["name"])
-        mock_run_command.assert_called_once_with(
-            ["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger
-        )
+        mock_run_command.assert_called_once_with(["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger)
 
     def test_terraform_workspace_select(
         self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path
     ) -> None:
         """Test terraform_workspace_new."""
-        mock_gen_command = mocker.patch.object(
-            Terraform, "gen_command", return_value=["mock_gen_command"]
-        )
+        mock_gen_command = mocker.patch.object(Terraform, "gen_command", return_value=["mock_gen_command"])
         mock_run_command = mocker.patch(f"{MODULE}.run_module_command")
         mocker.patch.object(
             Terraform,
@@ -740,11 +677,9 @@ class TestTerraform:
         obj = Terraform(runway_context, module_root=tmp_path)
 
         assert obj.current_workspace == "first-val"  # load cached value
-        assert not obj.terraform_workspace_select("name")  # type: ignore[func-returns-value]
+        assert not obj.terraform_workspace_select("name")
         mock_gen_command.assert_called_once_with(["workspace", "select"], ["name"])
-        mock_run_command.assert_called_once_with(
-            ["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger
-        )
+        mock_run_command.assert_called_once_with(["mock_gen_command"], env_vars=obj.ctx.env.vars, logger=obj.logger)
         # cache was cleared and a new value was obtained
         assert obj.current_workspace == "second-val"
 
@@ -752,9 +687,7 @@ class TestTerraform:
         self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path
     ) -> None:
         """Test terraform_workspace_show."""
-        mock_gen_command = mocker.patch.object(
-            Terraform, "gen_command", return_value=["mock_gen_command"]
-        )
+        mock_gen_command = mocker.patch.object(Terraform, "gen_command", return_value=["mock_gen_command"])
         mock_subprocess = mocker.patch(f"{MODULE}.subprocess")
         check_output_result = MagicMock(
             strip=MagicMock(return_value=MagicMock(decode=MagicMock(return_value="decoded")))
@@ -764,15 +697,11 @@ class TestTerraform:
         obj = Terraform(runway_context, module_root=tmp_path)
         assert obj.terraform_workspace_show() == "decoded"
         mock_gen_command.assert_called_once_with(["workspace", "show"])
-        mock_subprocess.check_output.assert_called_once_with(
-            ["mock_gen_command"], env=obj.ctx.env.vars
-        )
+        mock_subprocess.check_output.assert_called_once_with(["mock_gen_command"], env=obj.ctx.env.vars)
         check_output_result.strip.assert_called_once_with()
         check_output_result.strip.return_value.decode.assert_called_once_with()
 
-    def test_version(
-        self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path
-    ) -> None:
+    def test_version(self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test version."""
         version = Version("0.15.5")
         tfenv = Mock(current_version="0.15.5", version=version)
@@ -824,9 +753,7 @@ class TestTerraform:
 class TestTerraformOptions:
     """Test runway.module.terraform.TerraformOptions."""
 
-    def test_backend_config(
-        self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path
-    ) -> None:
+    def test_backend_config(self, mocker: MockerFixture, runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test backend_config."""
         backend_config = {"bucket": "test"}
         mocker.patch.object(TerraformBackendConfig, "parse_obj", return_value="success")
@@ -909,13 +836,9 @@ class TestTerraformOptions:
             ),
         ],
     )
-    def test_parse_obj(
-        self, config: dict[str, Any], runway_context: MockRunwayContext, tmp_path: Path
-    ) -> None:
+    def test_parse_obj(self, config: dict[str, Any], runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test parse_obj."""
-        obj = TerraformOptions.parse_obj(
-            deploy_environment=runway_context.env, obj=config, path=tmp_path
-        )
+        obj = TerraformOptions.parse_obj(deploy_environment=runway_context.env, obj=config, path=tmp_path)
 
         if isinstance(config.get("args"), list):
             assert obj.args.apply == config["args"]
@@ -931,20 +854,16 @@ class TestTerraformOptions:
 class TestTerraformBackendConfig:
     """Test runway.module.terraform.TerraformBackendConfig."""
 
-    def test_get_full_configuration(
-        self, runway_context: MockRunwayContext, tmp_path: Path
-    ) -> None:
+    def test_get_full_configuration(self, runway_context: MockRunwayContext, tmp_path: Path) -> None:
         """Test get_full_configuration."""
         config_file = tmp_path / "backend.hcl"
         config_file.write_text('dynamodb_table = "test-table"')
-        backend = TerraformBackendConfig.parse_obj(
-            deploy_environment=runway_context.env, obj={"bucket": "test-bucket"}
-        )
+        backend = TerraformBackendConfig.parse_obj(deploy_environment=runway_context.env, obj={"bucket": "test-bucket"})
         assert backend.get_full_configuration() == {
             "bucket": "test-bucket",
             "region": "us-east-1",
         }
-        backend.config_file = config_file  # type: ignore
+        backend.config_file = config_file
         assert backend.get_full_configuration() == {
             "bucket": "test-bucket",
             "dynamodb_table": "test-table",
@@ -1002,9 +921,7 @@ class TestTerraformBackendConfig:
         caplog.set_level(LogLevels.VERBOSE, logger=MODULE)
         config_file = tmp_path / "backend.hcl"
         config_file.touch()
-        obj = TerraformBackendConfig.parse_obj(
-            deploy_environment=runway_context.env, obj={}, path=tmp_path
-        )
+        obj = TerraformBackendConfig.parse_obj(deploy_environment=runway_context.env, obj={}, path=tmp_path)
         assert obj.init_args == [f"-backend-config={config_file.name}"]
         assert "using backend config file: backend.hcl" in caplog.messages
 
@@ -1037,9 +954,7 @@ class TestTerraformBackendConfig:
             ),
         ],
     )
-    def test_get_backend_file(
-        self, tmp_path: Path, filename: list[str] | str, expected: str | None
-    ) -> None:
+    def test_get_backend_file(self, tmp_path: Path, filename: list[str] | str, expected: str | None) -> None:
         """Test get_backend_file."""
         if isinstance(filename, list):
             for name in filename:
@@ -1084,13 +999,9 @@ class TestTerraformBackendConfig:
             assert env_region == "us-east-1"
             return "success"
 
-        mocker.patch.object(
-            TerraformBackendConfig, "get_backend_file", assert_get_backend_file_args
-        )
+        mocker.patch.object(TerraformBackendConfig, "get_backend_file", assert_get_backend_file_args)
 
-        result = TerraformBackendConfig.parse_obj(
-            deploy_environment=runway_context.env, obj=config, path=tmp_path
-        )
+        result = TerraformBackendConfig.parse_obj(deploy_environment=runway_context.env, obj=config, path=tmp_path)
 
         assert result.bucket == "foo"
         assert result.dynamodb_table == "bar"

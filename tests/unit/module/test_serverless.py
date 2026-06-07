@@ -62,7 +62,7 @@ class TestServerless:
         """Test _deploy_package."""
         caplog.set_level(logging.INFO, logger=MODULE)
         sls_deploy = mocker.patch.object(Serverless, "sls_deploy")
-        assert not Serverless(runway_context, module_root=tmp_path)._deploy_package()  # type: ignore[func-returns-value]
+        assert not Serverless(runway_context, module_root=tmp_path)._deploy_package()
         tempfile_temporary_directory.assert_not_called()
         sls_deploy.assert_called_once_with()
         assert f"{tmp_path.name}:deploy (in progress)" in caplog.messages
@@ -88,7 +88,7 @@ class TestServerless:
             module_root=tmp_path,
             options={"promotezip": {"bucketname": "test-bucket"}},
         )
-        assert not obj._deploy_package()  # type: ignore[func-returns-value]
+        assert not obj._deploy_package()
         tempfile_temporary_directory.assert_called_once_with(dir=runway_context.work_dir)
         sls_print.assert_called_once()
         artifact_class.assert_called_once_with(
@@ -138,7 +138,7 @@ class TestServerless:
         deploy_package = mocker.patch.object(Serverless, "_deploy_package")
         extend_serverless_yml = mocker.patch.object(Serverless, "extend_serverless_yml")
         mocker.patch.object(Serverless, "skip", skip)
-        assert not Serverless(runway_context, module_root=tmp_path).deploy()  # type: ignore[func-returns-value]
+        assert not Serverless(runway_context, module_root=tmp_path).deploy()
         if skip:
             deploy_package.assert_not_called()
             extend_serverless_yml.assert_not_called()
@@ -158,7 +158,7 @@ class TestServerless:
         deploy_package = mocker.patch.object(Serverless, "_deploy_package")
         extend_serverless_yml = mocker.patch.object(Serverless, "extend_serverless_yml")
         mocker.patch.object(Serverless, "skip", skip)
-        assert not Serverless(  # type: ignore[func-returns-value]
+        assert not Serverless(
             runway_context,
             module_root=tmp_path,
             options={"extend_serverless_yml": {"config": {"foo": "bar"}}},
@@ -182,7 +182,7 @@ class TestServerless:
         sls_remove = mocker.patch.object(Serverless, "sls_remove")
         extend_serverless_yml = mocker.patch.object(Serverless, "extend_serverless_yml")
         mocker.patch.object(Serverless, "skip", skip)
-        assert not Serverless(runway_context, module_root=tmp_path).destroy()  # type: ignore[func-returns-value]
+        assert not Serverless(runway_context, module_root=tmp_path).destroy()
         if skip:
             sls_remove.assert_not_called()
             extend_serverless_yml.assert_not_called()
@@ -202,7 +202,7 @@ class TestServerless:
         sls_remove = mocker.patch.object(Serverless, "sls_remove")
         extend_serverless_yml = mocker.patch.object(Serverless, "extend_serverless_yml")
         mocker.patch.object(Serverless, "skip", skip)
-        assert not Serverless(  # type: ignore[func-returns-value]
+        assert not Serverless(
             runway_context,
             module_root=tmp_path,
             options={"extend_serverless_yml": {"config": {"foo": "bar"}}},
@@ -288,21 +288,21 @@ class TestServerless:
         options = {"extend_serverless_yml": {"new-key": "val"}}
         obj = Serverless(runway_context, module_root=tmp_path, options=options)
 
-        assert not obj.extend_serverless_yml(mock_func)  # type: ignore[func-returns-value]
-        obj.npm_install.assert_called_once()  # type: ignore[attr-defined]
-        obj.sls_print.assert_called_once()  # type: ignore[attr-defined]
+        assert not obj.extend_serverless_yml(mock_func)
+        obj.npm_install.assert_called_once()
+        obj.sls_print.assert_called_once()
         mock_merge.assert_called_once_with("original", options["extend_serverless_yml"])
         mock_func.assert_called_once_with(skip_install=True)
-        obj.options.update_args.assert_called_once_with("config", ANY)  # type: ignore[attr-defined]
+        obj.options.update_args.assert_called_once_with("config", ANY)
 
-        tmp_file = obj.options.update_args.call_args[0][1]  # type: ignore[attr-defined]
+        tmp_file = obj.options.update_args.call_args[0][1]
         # 'no way to check the prefix since it will be a uuid'
         assert tmp_file.endswith(".tmp.serverless.yml")
         assert not (tmp_path / tmp_file).exists(), 'should always be deleted after calling "func"'
 
         caplog.clear()
         mocker.patch("pathlib.Path.unlink", MagicMock(side_effect=OSError("test OSError")))
-        assert not obj.extend_serverless_yml(mock_func)  # type: ignore[func-returns-value]
+        assert not obj.extend_serverless_yml(mock_func)
         assert (
             f"{tmp_path.name}:encountered an error when trying to delete the "
             "temporary Serverless config" in caplog.messages
@@ -317,13 +317,9 @@ class TestServerless:
         tmp_path: Path,
     ) -> None:
         """Test gen_cmd."""
-        mock_cmd = mocker.patch(
-            "runway.module.serverless.generate_node_command", return_value=["success"]
-        )
+        mock_cmd = mocker.patch("runway.module.serverless.generate_node_command", return_value=["success"])
         mocker.patch.object(runway_context, "no_color", False)
-        obj = Serverless(
-            runway_context, module_root=tmp_path, options={"args": ["--config", "test"]}
-        )
+        obj = Serverless(runway_context, module_root=tmp_path, options={"args": ["--config", "test"]})
         expected_opts = [
             command,
             "--region",
@@ -336,9 +332,7 @@ class TestServerless:
         ]
 
         assert obj.gen_cmd(command, args_list=["--extra-arg"]) == ["success"]
-        mock_cmd.assert_called_once_with(
-            command="sls", command_opts=expected_opts, logger=obj.logger, path=tmp_path
-        )
+        mock_cmd.assert_called_once_with(command="sls", command_opts=expected_opts, logger=obj.logger, path=tmp_path)
         mock_cmd.reset_mock()
 
         obj.ctx.env.vars["CI"] = "1"
@@ -362,11 +356,8 @@ class TestServerless:
         """Test init."""
         caplog.set_level(logging.WARNING, logger=MODULE)
         obj = Serverless(runway_context, module_root=tmp_path)
-        assert not obj.init()  # type: ignore[func-returns-value]
-        assert (
-            f"{tmp_path.name}:init not currently supported for {Serverless.__name__}"
-            in caplog.messages
-        )
+        assert not obj.init()
+        assert f"{tmp_path.name}:init not currently supported for {Serverless.__name__}" in caplog.messages
 
     def test_plan(
         self,
@@ -377,7 +368,7 @@ class TestServerless:
         """Test plan."""
         caplog.set_level(logging.INFO, logger="runway")
         obj = Serverless(runway_context, module_root=tmp_path)
-        assert not obj.plan()  # type: ignore[func-returns-value]
+        assert not obj.plan()
         assert [f"{tmp_path.name}:plan not currently supported for Serverless"] == caplog.messages
 
     def test_skip(
@@ -410,18 +401,16 @@ class TestServerless:
 
         obj.explicitly_enabled = True
         assert not obj.skip
-        obj.explicitly_enabled = False  # type: ignore[unreachable]
+        obj.explicitly_enabled = False
 
-        obj.parameters = True  # type: ignore
+        obj.parameters = True
         assert not obj.skip
-        obj.parameters = False  # type: ignore
+        obj.parameters = False
 
-        obj.env_file = True  # type: ignore
+        obj.env_file = True
         assert not obj.skip
 
-    @pytest.mark.parametrize(
-        "package, skip_install", [(None, False), (None, True), ("foobar", False)]
-    )
+    @pytest.mark.parametrize("package, skip_install", [(None, False), (None, True), ("foobar", False)])
     def test_sls_deploy(
         self,
         mocker: MockerFixture,
@@ -435,7 +424,7 @@ class TestServerless:
         npm_install = mocker.patch.object(Serverless, "npm_install")
         run_module_command = mocker.patch(f"{MODULE}.run_module_command")
         obj = Serverless(runway_context, module_root=tmp_path)
-        assert not obj.sls_deploy(package=package, skip_install=skip_install)  # type: ignore[func-returns-value]
+        assert not obj.sls_deploy(package=package, skip_install=skip_install)
         if skip_install:
             npm_install.assert_not_called()
         else:
@@ -465,10 +454,7 @@ class TestServerless:
         npm_install = mocker.patch.object(Serverless, "npm_install")
         run_module_command = mocker.patch(f"{MODULE}.run_module_command")
         obj = Serverless(runway_context, module_root=tmp_path)
-        assert (
-            obj.sls_package(output_path=output_path, skip_install=skip_install)  # type: ignore
-            == output_path
-        )
+        assert obj.sls_package(output_path=output_path, skip_install=skip_install) == output_path
         if skip_install:
             npm_install.assert_not_called()
         else:
@@ -481,9 +467,7 @@ class TestServerless:
             cmd_list=gen_cmd.return_value, env_vars=obj.ctx.env.vars, logger=obj.logger
         )
 
-    @pytest.mark.parametrize(
-        "item_path, skip_install", [(None, False), (None, True), ("foo.bar", False)]
-    )
+    @pytest.mark.parametrize("item_path, skip_install", [(None, False), (None, True), ("foo.bar", False)])
     def test_sls_print(
         self,
         item_path: str | None,
@@ -499,9 +483,7 @@ class TestServerless:
         npm_install = mocker.patch.object(Serverless, "npm_install", MagicMock())
         mocker.patch("subprocess.check_output", mock_check_output)
         assert (
-            Serverless(runway_context, module_root=tmp_path).sls_print(
-                item_path=item_path, skip_install=skip_install
-            )
+            Serverless(runway_context, module_root=tmp_path).sls_print(item_path=item_path, skip_install=skip_install)
             == expected_dict
         )
         if skip_install:
@@ -509,9 +491,7 @@ class TestServerless:
         else:
             npm_install.assert_called_once_with()
         if item_path:
-            gen_cmd.assert_called_once_with(
-                "print", args_list=["--format", "yaml", "--path", item_path]
-            )
+            gen_cmd.assert_called_once_with("print", args_list=["--format", "yaml", "--path", item_path])
         else:
             gen_cmd.assert_called_once_with("print", args_list=["--format", "yaml"])
         mock_check_output.assert_called_once_with(
@@ -531,9 +511,7 @@ class TestServerless:
         fake_process.register_subprocess("remove", stdout="success")
         gen_cmd = mocker.patch.object(Serverless, "gen_cmd", MagicMock(return_value=["remove"]))
         npm_install = mocker.patch.object(Serverless, "npm_install", MagicMock())
-        assert not Serverless(runway_context, module_root=tmp_path).sls_remove(  # type: ignore[func-returns-value]
-            skip_install=skip_install
-        )
+        assert not Serverless(runway_context, module_root=tmp_path).sls_remove(skip_install=skip_install)
         if skip_install:
             npm_install.assert_not_called()
         else:
@@ -564,7 +542,7 @@ class TestServerless:
         )
         mocker.patch.object(Serverless, "gen_cmd", MagicMock(return_value=["remove"]))
         mocker.patch.object(Serverless, "npm_install", MagicMock())
-        assert not Serverless(runway_context, module_root=tmp_path).sls_remove()  # type: ignore[func-returns-value]
+        assert not Serverless(runway_context, module_root=tmp_path).sls_remove()
 
     def test_sls_remove_raise_system_exit(
         self,
@@ -591,7 +569,7 @@ class TestServerless:
         mocker.patch.object(Serverless, "gen_cmd", MagicMock(return_value=["remove"]))
         mocker.patch.object(Serverless, "npm_install", MagicMock())
         with pytest.raises(SystemExit):
-            assert not Serverless(runway_context, module_root=tmp_path).sls_remove()  # type: ignore[func-returns-value]
+            assert not Serverless(runway_context, module_root=tmp_path).sls_remove()
 
 
 class TestServerlessArtifact:
@@ -640,9 +618,7 @@ class TestServerlessArtifact:
             package_path=tmp_path / "package",
             path=tmp_path,
         ).source_hash == {service_name: get_hash_of_files.return_value}
-        get_hash_of_files.assert_called_once_with(
-            tmp_path, [{"path": "src/func0"}, {"path": "src/func1"}]
-        )
+        get_hash_of_files.assert_called_once_with(tmp_path, [{"path": "src/func0"}, {"path": "src/func1"}])
 
     @pytest.mark.parametrize(
         "service",
@@ -656,9 +632,7 @@ class TestServerlessArtifact:
         tmp_path: Path,
     ) -> None:
         """Test source_hash."""
-        get_hash_of_files = mocker.patch(
-            f"{MODULE}.get_hash_of_files", Mock(side_effect=["hash0", "hash1"])
-        )
+        get_hash_of_files = mocker.patch(f"{MODULE}.get_hash_of_files", Mock(side_effect=["hash0", "hash1"]))
         assert ServerlessArtifact(
             runway_context,
             {
@@ -690,7 +664,7 @@ class TestServerlessArtifact:
         upload = mocker.patch(f"{MODULE}.upload")
         mocker.patch.object(runway_context, "get_session", return_value=session)
         mocker.patch.object(ServerlessArtifact, "source_hash", {"service": "hash"})
-        assert not ServerlessArtifact(  # type: ignore[func-returns-value]
+        assert not ServerlessArtifact(
             runway_context,
             {},
             package_path=package_path,
@@ -723,7 +697,7 @@ class TestServerlessArtifact:
         mocker.patch.object(ServerlessArtifact, "source_hash", {"service": "hash"})
         package_path.mkdir()
         (package_path / "service.zip").touch()
-        assert not ServerlessArtifact(  # type: ignore[func-returns-value]
+        assert not ServerlessArtifact(
             runway_context,
             {},
             package_path=package_path,
@@ -754,7 +728,7 @@ class TestServerlessArtifact:
         upload = mocker.patch(f"{MODULE}.upload")
         mocker.patch.object(runway_context, "get_session", return_value=session)
         mocker.patch.object(ServerlessArtifact, "source_hash", {"service": "hash"})
-        assert not ServerlessArtifact(  # type: ignore[func-returns-value]
+        assert not ServerlessArtifact(
             runway_context,
             {},
             package_path=package_path,
@@ -833,16 +807,12 @@ class TestServerlessOptions:
         obj = ServerlessOptions.parse_obj(config)
 
         assert obj.args == config.get("args", [])
-        assert obj.extend_serverless_yml == config.get(
-            "extend_serverless_yml", cast("dict[str, Any]", {})
-        )
+        assert obj.extend_serverless_yml == config.get("extend_serverless_yml", cast("dict[str, Any]", {}))
         if config.get("promotezip"):
             assert obj.promotezip
         else:
             assert not obj.promotezip
-        assert obj.promotezip.bucketname == config.get(
-            "promotezip", cast("dict[str, Any]", {})
-        ).get("bucketname")
+        assert obj.promotezip.bucketname == config.get("promotezip", cast("dict[str, Any]", {})).get("bucketname")
         assert obj.skip_npm_ci == config.get("skip_npm_ci", False)
 
     def test_parse_invalid_promotezip(self) -> None:

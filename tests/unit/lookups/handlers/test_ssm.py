@@ -48,9 +48,7 @@ def get_parameter_request(name: str, decrypt: bool = True) -> dict[str, bool | s
 class TestSsmLookup:
     """Test runway.lookups.handlers.ssm.SsmLookup."""
 
-    def test_handle_basic(
-        self, cfngin_context: MockCfnginContext, runway_context: MockRunwayContext
-    ) -> None:
+    def test_handle_basic(self, cfngin_context: MockCfnginContext, runway_context: MockRunwayContext) -> None:
         """Test resolution of a basic lookup."""
         name = "/test/param"
         value = "test value"
@@ -171,7 +169,7 @@ class TestSsmLookup:
             for test in tests:
                 var = Variable(
                     f"test_var.{parser}",
-                    test["lookup"].format(name=name, parser=parser),  # type: ignore
+                    test["lookup"].format(name=name, parser=parser),
                     variable_type="runway",
                 )
                 if parser == "json":
@@ -183,7 +181,7 @@ class TestSsmLookup:
 
                 stubber.add_response(
                     "get_parameter",
-                    get_parameter_response(name, dumped_value),  # type: ignore[arg-type]
+                    get_parameter_response(name, dumped_value),
                     get_parameter_request(name),
                 )
 

@@ -74,9 +74,7 @@ def test_get_available_tf_versions(mocker: MockerFixture) -> None:
 
 def test_get_latest_tf_version(mocker: MockerFixture) -> None:
     """Test runway.env_mgr.tfenv.get_latest_tf_version."""
-    mock_get_available_tf_versions = mocker.patch(
-        f"{MODULE}.get_available_tf_versions", return_value=["latest"]
-    )
+    mock_get_available_tf_versions = mocker.patch(f"{MODULE}.get_available_tf_versions", return_value=["latest"])
     assert get_latest_tf_version() == "latest"
     mock_get_available_tf_versions.assert_called_once_with(False)
     assert get_latest_tf_version(include_prerelease=True) == "latest"
@@ -90,9 +88,7 @@ def test_get_latest_tf_version(mocker: MockerFixture) -> None:
         (hcl2, {"terraform": [{"backend": [{"s3": {"bucket": "name"}}]}]}),
     ],
 )
-def test_load_terraform_module(
-    parser: ModuleType, expected: dict[str, Any], tmp_path: Path
-) -> None:
+def test_load_terraform_module(parser: ModuleType, expected: dict[str, Any], tmp_path: Path) -> None:
     """Test runway.env_mgr.tfenv.load_terraform_module."""
     tf_file = tmp_path / "module.tf"
     tf_file.write_text(HCL_BACKEND_S3)
@@ -233,9 +229,7 @@ class TestTFEnvManager:
         tfenv = TFEnvManager(tmp_path)
         (tfenv.versions_dir / "0.15.2").mkdir()
         assert tfenv.install() == str(tfenv.bin)
-        mock_download.assert_called_once_with(
-            str(version), tfenv.versions_dir, tfenv.command_suffix
-        )
+        mock_download.assert_called_once_with(str(version), tfenv.versions_dir, tfenv.command_suffix)
 
     def test_install_already_installed(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test install."""
@@ -257,9 +251,7 @@ class TestTFEnvManager:
         mock_set_version = mocker.patch.object(TFEnvManager, "set_version", return_value=None)
         tfenv = TFEnvManager(tmp_path)
         assert tfenv.install(str(version))
-        mock_download.assert_called_once_with(
-            str(version), tfenv.versions_dir, tfenv.command_suffix
-        )
+        mock_download.assert_called_once_with(str(version), tfenv.versions_dir, tfenv.command_suffix)
         mock_set_version.assert_called_once_with(str(version))
 
     def test_install_version_undefined(self, mocker: MockerFixture, tmp_path: Path) -> None:
@@ -300,9 +292,7 @@ class TestTFEnvManager:
         """Test parse_version_string."""
         with pytest.raises(
             ValueError,
-            match=re.escape(
-                f"provided version doesn't conform to regex: {TFEnvManager.VERSION_REGEX}"
-            ),
+            match=re.escape(f"provided version doesn't conform to regex: {TFEnvManager.VERSION_REGEX}"),
         ):
             TFEnvManager.parse_version_string("0.15")
 
@@ -314,7 +304,7 @@ class TestTFEnvManager:
         tfenv = TFEnvManager(tmp_path)
         (tfenv.versions_dir / str(version)).mkdir()
         assert not tfenv.current_version
-        assert not tfenv.set_version(str(version))  # type: ignore[func-returns-value]
+        assert not tfenv.set_version(str(version))
         assert tfenv.version == version
         assert tfenv.current_version == str(version)
 
@@ -323,13 +313,13 @@ class TestTFEnvManager:
         version = mocker.patch.object(TFEnvManager, "version")
         tfenv = TFEnvManager(tmp_path)
         tfenv.current_version = "0.15.5"
-        assert not tfenv.set_version("0.15.5")  # type: ignore[func-returns-value]
+        assert not tfenv.set_version("0.15.5")
         assert tfenv.current_version == "0.15.5"
         assert tfenv.version == version
 
     @pytest.mark.parametrize(
         "response, expected",
-        [  # type: ignore
+        [
             ([{}], {}),
             ([hcl2.loads(HCL_BACKEND_S3)], {"backend": {"s3": {"bucket": "name"}}}),
             (
@@ -391,18 +381,14 @@ class TestTFEnvManager:
     ) -> None:
         """Test terraform_block."""
         caplog.set_level(LogLevels.VERBOSE, logger=MODULE)
-        mock_load_terraform_module = mocker.patch(
-            f"{MODULE}.load_terraform_module", side_effect=response
-        )
+        mock_load_terraform_module = mocker.patch(f"{MODULE}.load_terraform_module", side_effect=response)
         tfenv = TFEnvManager(tmp_path)
 
         assert tfenv.terraform_block == expected
 
         if not isinstance(response[0], dict):
             assert "failed to parse as HCL2; trying HCL" in "\n".join(caplog.messages)
-            mock_load_terraform_module.assert_has_calls(
-                [call(hcl2, tmp_path), call(hcl, tmp_path)]  # type: ignore
-            )
+            mock_load_terraform_module.assert_has_calls([call(hcl2, tmp_path), call(hcl, tmp_path)])
         else:
             mock_load_terraform_module.assert_called_once_with(hcl2, tmp_path)
 
@@ -410,12 +396,8 @@ class TestTFEnvManager:
         """Test version."""
         version = Version("0.15.5")
         mocker.patch.object(TFEnvManager, "versions_dir", tmp_path)
-        mock_get_available_tf_versions = mocker.patch(
-            f"{MODULE}.get_available_tf_versions", return_value=[]
-        )
-        mock_get_version_from_file = mocker.patch.object(
-            TFEnvManager, "get_version_from_file", return_value=None
-        )
+        mock_get_available_tf_versions = mocker.patch(f"{MODULE}.get_available_tf_versions", return_value=[])
+        mock_get_version_from_file = mocker.patch.object(TFEnvManager, "get_version_from_file", return_value=None)
         tfenv = TFEnvManager(tmp_path)
         (tfenv.versions_dir / str(version)).mkdir()
         tfenv.current_version = str(version)
@@ -431,9 +413,7 @@ class TestTFEnvManager:
         mock_get_available_tf_versions = mocker.patch(
             f"{MODULE}.get_available_tf_versions", return_value=["0.15.5", "0.15.4"]
         )
-        mock_get_version_from_file = mocker.patch.object(
-            TFEnvManager, "get_version_from_file", return_value="latest"
-        )
+        mock_get_version_from_file = mocker.patch.object(TFEnvManager, "get_version_from_file", return_value="latest")
         tfenv = TFEnvManager(tmp_path)
         assert tfenv.version == version
         assert tfenv.current_version == str(version)
@@ -465,9 +445,7 @@ class TestTFEnvManager:
             f"{MODULE}.get_available_tf_versions",
             return_value=["0.15.5", "0.15.4", "0.14.3", "0.14.2", "0.13.8"],
         )
-        mock_get_min_required = mocker.patch.object(
-            TFEnvManager, "get_min_required", return_value="0.14.3"
-        )
+        mock_get_min_required = mocker.patch.object(TFEnvManager, "get_min_required", return_value="0.14.3")
         mock_get_version_from_file = mocker.patch.object(
             TFEnvManager, "get_version_from_file", return_value="min-required"
         )
@@ -492,9 +470,7 @@ class TestTFEnvManager:
 
     def test_version_undefined(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test version not specified."""
-        mock_get_version_from_file = mocker.patch.object(
-            TFEnvManager, "get_version_from_file", return_value=None
-        )
+        mock_get_version_from_file = mocker.patch.object(TFEnvManager, "get_version_from_file", return_value=None)
         tfenv = TFEnvManager(tmp_path)
         assert tfenv.version is None
         assert tfenv.current_version is None

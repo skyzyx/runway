@@ -61,12 +61,8 @@ def test_format_npm_command_for_logging_windows(
     assert format_npm_command_for_logging(command) == expected
 
 
-@pytest.mark.parametrize(
-    "command, opts", [("test", []), ("test", ["arg1"]), ("test", ["arg1", "arg2"])]
-)
-def test_generate_node_command(
-    command: str, mocker: MockerFixture, opts: list[str], tmp_path: Path
-) -> None:
+@pytest.mark.parametrize("command, opts", [("test", []), ("test", ["arg1"]), ("test", ["arg1", "arg2"])])
+def test_generate_node_command(command: str, mocker: MockerFixture, opts: list[str], tmp_path: Path) -> None:
     """Test generate_node_command."""
     mock_which = mocker.patch(f"{MODULE}.which", return_value=False)
     assert generate_node_command(command, opts, tmp_path) == [
@@ -112,10 +108,10 @@ def test_generate_node_command_npx_package(mocker: MockerFixture, tmp_path: Path
 def test_run_module_command_called_process_error(fake_process: FakeProcess) -> None:
     """Test run_module_command raise CalledProcessError."""
     cmd = ["test"]
-    fake_process.register_subprocess(cmd, returncode=1)  # type: ignore
+    fake_process.register_subprocess(cmd, returncode=1)
     with pytest.raises(CalledProcessError):
         run_module_command(cmd, {}, exit_on_error=False)
-    assert fake_process.call_count(cmd) == 1  # type: ignore
+    assert fake_process.call_count(cmd) == 1
 
 
 def test_run_module_command_exit_on_error_system_exit(
@@ -123,26 +119,26 @@ def test_run_module_command_exit_on_error_system_exit(
 ) -> None:
     """Test run_module_command raise SystemExit."""
     cmd = ["test"]
-    fake_process.register_subprocess(cmd, returncode=1)  # type: ignore
+    fake_process.register_subprocess(cmd, returncode=1)
     with pytest.raises(SystemExit):
         run_module_command(cmd, {})
-    assert fake_process.call_count(cmd) == 1  # type: ignore
+    assert fake_process.call_count(cmd) == 1
 
 
 def test_run_module_command_exit_on_error(fake_process: FakeProcess) -> None:
     """Test run_module_command exit_on_error no error."""
     cmd = ["test"]
-    fake_process.register_subprocess(cmd, returncode=0)  # type: ignore
-    assert not run_module_command(cmd, {})  # type: ignore[func-returns-value]
-    assert fake_process.call_count(cmd) == 1  # type: ignore
+    fake_process.register_subprocess(cmd, returncode=0)
+    assert not run_module_command(cmd, {})
+    assert fake_process.call_count(cmd) == 1
 
 
 def test_run_module_command(fake_process: FakeProcess) -> None:
     """Test run_module_command."""
     cmd = ["test"]
-    fake_process.register_subprocess(cmd, returncode=0)  # type: ignore
-    assert not run_module_command(cmd, {}, exit_on_error=False)  # type: ignore[func-returns-value]
-    assert fake_process.call_count(cmd) == 1  # type: ignore
+    fake_process.register_subprocess(cmd, returncode=0)
+    assert not run_module_command(cmd, {}, exit_on_error=False)
+    assert fake_process.call_count(cmd) == 1
 
 
 @pytest.mark.parametrize(

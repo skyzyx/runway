@@ -28,7 +28,7 @@ class TestRunwayStaticSiteCustomErrorResponseDataModel:
     def test_init_extra(self) -> None:
         """Test init extra."""
         with pytest.raises(ValidationError):
-            RunwayStaticSiteCustomErrorResponseDataModel(invalid="val")  # type: ignore
+            RunwayStaticSiteCustomErrorResponseDataModel(invalid="val")
 
     def test_init(self) -> None:
         """Test init."""
@@ -38,7 +38,7 @@ class TestRunwayStaticSiteCustomErrorResponseDataModel:
             "ResponseCode": 404,
             "ResponsePagePath": "./errors/404.html",
         }
-        obj = RunwayStaticSiteCustomErrorResponseDataModel(**data)  # type: ignore[arg-type]
+        obj = RunwayStaticSiteCustomErrorResponseDataModel(**data)
         assert obj.ErrorCachingMinTTL == data["ErrorCachingMinTTL"]
         assert obj.ErrorCode == data["ErrorCode"]
         assert obj.ResponseCode == data["ResponseCode"]
@@ -51,7 +51,7 @@ class TestRunwayStaticSiteLambdaFunctionAssociationDataModel:
     def test_init_extra(self) -> None:
         """Test init extra."""
         with pytest.raises(ValidationError):
-            RunwayStaticSiteLambdaFunctionAssociationDataModel(invalid="val")  # type: ignore
+            RunwayStaticSiteLambdaFunctionAssociationDataModel(invalid="val")
 
     @pytest.mark.parametrize(
         "data",
@@ -84,9 +84,9 @@ class TestRunwayStaticSiteModuleParametersDataModel:
         """Test _convert_comma_delimited_list."""
         obj = RunwayStaticSiteModuleParametersDataModel(
             namespace="test",
-            staticsite_additional_redirect_domains="redirect0,redirect1",  # type: ignore
-            staticsite_aliases="test-alias",  # type: ignore
-            staticsite_supported_identity_providers="id0, id1",  # type: ignore
+            staticsite_additional_redirect_domains="redirect0,redirect1",
+            staticsite_aliases="test-alias",
+            staticsite_supported_identity_providers="id0, id1",
         )
         assert obj.additional_redirect_domains == ["redirect0", "redirect1"]
         assert obj.aliases == ["test-alias"]
@@ -146,7 +146,7 @@ class TestRunwayStaticSiteModuleParametersDataModel:
         """Test init extra."""
         obj = RunwayStaticSiteModuleParametersDataModel(
             namespace="test",
-            invalid="val",  # type: ignore
+            invalid="val",
         )
         assert "invalid" not in obj.dict()
 
@@ -189,7 +189,7 @@ class TestRunwayStaticSiteModuleParametersDataModel:
             "staticsite_user_pool_arn": "arn:aws:cognito:::pool/test",
             "staticsite_web_acl": "arn:aws::::acl/test",
         }
-        obj = RunwayStaticSiteModuleParametersDataModel(**data)  # type: ignore
+        obj = RunwayStaticSiteModuleParametersDataModel(**data)
         assert obj.acmcert_arn == data["staticsite_acmcert_arn"]
         assert obj.additional_redirect_domains == data["staticsite_additional_redirect_domains"]
         assert obj.aliases == data["staticsite_aliases"]
@@ -197,22 +197,12 @@ class TestRunwayStaticSiteModuleParametersDataModel:
         assert obj.cf_disable is data["staticsite_cf_disable"]
         assert obj.cookie_settings == data["staticsite_cookie_settings"]
         assert obj.create_user_pool is data["staticsite_create_user_pool"]
-        assert len(obj.custom_error_responses) == len(
-            data["staticsite_custom_error_responses"]  # type: ignore
-        )
-        assert (
-            obj.custom_error_responses[0].dict(exclude_none=True)
-            == data["staticsite_custom_error_responses"][0]  # type: ignore
-        )
+        assert len(obj.custom_error_responses) == len(data["staticsite_custom_error_responses"])
+        assert obj.custom_error_responses[0].dict(exclude_none=True) == data["staticsite_custom_error_responses"][0]
         assert obj.enable_cf_logging is data["staticsite_enable_cf_logging"]
         assert obj.http_headers == data["staticsite_http_headers"]
-        assert len(obj.lambda_function_associations) == len(
-            data["staticsite_lambda_function_associations"]  # type: ignore
-        )
-        assert (
-            obj.lambda_function_associations[0].dict()
-            == data["staticsite_lambda_function_associations"][0]  # type: ignore
-        )
+        assert len(obj.lambda_function_associations) == len(data["staticsite_lambda_function_associations"])
+        assert obj.lambda_function_associations[0].dict() == data["staticsite_lambda_function_associations"][0]
         assert obj.namespace == data["namespace"]
         assert obj.non_spa is data["staticsite_non_spa"]
         assert obj.oauth_scopes == data["staticsite_oauth_scopes"]

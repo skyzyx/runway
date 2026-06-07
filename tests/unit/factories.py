@@ -87,9 +87,7 @@ class MockBoto3Session:
         except AttributeError:
             raise ValueError(f"client not registered for {key}") from None
 
-    def register_client(
-        self, service_name: str, *, region: str | None = None
-    ) -> tuple[Any, Stubber]:
+    def register_client(self, service_name: str, *, region: str | None = None) -> tuple[Any, Stubber]:
         """Register a client for the boto3 session.
 
         Args:
@@ -100,7 +98,7 @@ class MockBoto3Session:
         key = f"{service_name}.{region or self.region_name}"
         client = cast(
             "BaseClient",
-            boto3.client(  # type: ignore[call-overload]
+            boto3.client(
                 service_name,  # pyright: ignore[reportCallIssue, reportArgumentType]
                 region_name=region or self.region_name,
             ),
@@ -114,7 +112,7 @@ class MockBoto3Session:
         kwargs.setdefault("region_name", self.region_name)
         resource = cast(
             "ServiceResource",
-            boto3.resource(  # type: ignore[call-overload]
+            boto3.resource(
                 service_name,  # pyright: ignore[reportCallIssue, reportArgumentType]
                 **kwargs,
             ),
@@ -449,9 +447,7 @@ class MockRunwayContext(RunwayContext):
 class YamlLoader:
     """Load YAML files from a directory."""
 
-    def __init__(
-        self, root: Path, load_class: type | None = None, load_type: str = "default"
-    ) -> None:
+    def __init__(self, root: Path, load_class: type | None = None, load_type: str = "default") -> None:
         """Instantiate class.
 
         Args:
@@ -518,4 +514,4 @@ class YamlLoaderDeployment(YamlLoader):
             file_name: Name of the file to load.
 
         """
-        return self.load_class.parse_obj(self.get(file_name))  # type: ignore
+        return self.load_class.parse_obj(self.get(file_name))

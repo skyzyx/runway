@@ -15,15 +15,14 @@ PACKAGE_DIR = Path(__file__).parent
 def handler(event: dict[str, Any], context: object) -> LambdaResponse:  # noqa: ARG001
     """Lambda Function entrypoint."""
     try:
-        import lxml  # type: ignore  # noqa: PLC0415
-        import xmlsec  # type: ignore  # noqa: PLC0415
+        import lxml
+        import xmlsec
 
         return {
             "code": 200,
             "data": {
                 "dir_contents": [
-                    str(path.relative_to(PACKAGE_DIR))
-                    for path in sorted(PACKAGE_DIR.rglob("*"), reverse=True)
+                    str(path.relative_to(PACKAGE_DIR)) for path in sorted(PACKAGE_DIR.rglob("*"), reverse=True)
                 ],
                 "lxml": [i[0] for i in inspect.getmembers(lxml)],
                 "xmlsec": [i[0] for i in inspect.getmembers(xmlsec)],
@@ -36,8 +35,7 @@ def handler(event: dict[str, Any], context: object) -> LambdaResponse:  # noqa: 
             "code": 500,
             "data": {
                 "dir_contents": [
-                    str(path.relative_to(PACKAGE_DIR))
-                    for path in sorted(PACKAGE_DIR.rglob("*"), reverse=True)
+                    str(path.relative_to(PACKAGE_DIR)) for path in sorted(PACKAGE_DIR.rglob("*"), reverse=True)
                 ]
             },
             "error": {"message": str(exc), "reason": type(exc).__name__},

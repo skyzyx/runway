@@ -38,12 +38,10 @@ class TestCloudDevelopmentKit:
     ) -> None:
         """Test cdk_bootstrap."""
         caplog.set_level(logging.INFO, logger=MODULE)
-        mock_gen_cmd = mocker.patch.object(
-            CloudDevelopmentKit, "gen_cmd", return_value=["bootstrap"]
-        )
+        mock_gen_cmd = mocker.patch.object(CloudDevelopmentKit, "gen_cmd", return_value=["bootstrap"])
         mock_run_module_command = mocker.patch(f"{MODULE}.run_module_command")
         obj = CloudDevelopmentKit(runway_context, module_root=tmp_path)
-        assert not obj.cdk_bootstrap()  # type: ignore[func-returns-value]
+        assert not obj.cdk_bootstrap()
         mock_gen_cmd.assert_called_once_with("bootstrap", include_context=True)
         mock_run_module_command.assert_called_once_with(
             cmd_list=mock_gen_cmd.return_value,
@@ -78,7 +76,7 @@ class TestCloudDevelopmentKit:
         mock_gen_cmd = mocker.patch.object(CloudDevelopmentKit, "gen_cmd", return_value=["deploy"])
         mock_run_module_command = mocker.patch(f"{MODULE}.run_module_command")
         obj = CloudDevelopmentKit(runway_context, module_root=tmp_path)
-        assert not obj.cdk_deploy()  # type: ignore[func-returns-value]
+        assert not obj.cdk_deploy()
         mock_gen_cmd.assert_called_once_with("deploy", ['"*"'], include_context=True)
         mock_run_module_command.assert_called_once_with(
             cmd_list=mock_gen_cmd.return_value,
@@ -113,7 +111,7 @@ class TestCloudDevelopmentKit:
         mock_gen_cmd = mocker.patch.object(CloudDevelopmentKit, "gen_cmd", return_value=["destroy"])
         mock_run_module_command = mocker.patch(f"{MODULE}.run_module_command")
         obj = CloudDevelopmentKit(runway_context, module_root=tmp_path)
-        assert not obj.cdk_destroy()  # type: ignore[func-returns-value]
+        assert not obj.cdk_destroy()
         mock_gen_cmd.assert_called_once_with("destroy", ['"*"'], include_context=True)
         mock_run_module_command.assert_called_once_with(
             cmd_list=mock_gen_cmd.return_value,
@@ -148,7 +146,7 @@ class TestCloudDevelopmentKit:
         mock_gen_cmd = mocker.patch.object(CloudDevelopmentKit, "gen_cmd", return_value=["diff"])
         mock_run_module_command = mocker.patch(f"{MODULE}.run_module_command")
         obj = CloudDevelopmentKit(runway_context, module_root=tmp_path)
-        assert not obj.cdk_diff()  # type: ignore[func-returns-value]
+        assert not obj.cdk_diff()
         mock_gen_cmd.assert_called_once_with("diff", args_list=None, include_context=True)
         mock_run_module_command.assert_called_once_with(
             cmd_list=mock_gen_cmd.return_value,
@@ -159,7 +157,7 @@ class TestCloudDevelopmentKit:
         logs = "\n".join(caplog.messages)
         assert "plan (in progress)" in logs
         assert "plan (complete)" in logs
-        assert not obj.cdk_diff("stack_name")  # type: ignore[func-returns-value]
+        assert not obj.cdk_diff("stack_name")
         mock_gen_cmd.assert_called_with("diff", args_list=["stack_name"], include_context=True)
 
     @pytest.mark.parametrize("return_code", [1, 2])
@@ -189,9 +187,7 @@ class TestCloudDevelopmentKit:
     ) -> None:
         """Test cdk_list."""
         mock_gen_cmd = mocker.patch.object(CloudDevelopmentKit, "gen_cmd", return_value=["list"])
-        fake_process.register_subprocess(
-            mock_gen_cmd.return_value, returncode=0, stdout="Stack0\nStack1"
-        )
+        fake_process.register_subprocess(mock_gen_cmd.return_value, returncode=0, stdout="Stack0\nStack1")
         obj = CloudDevelopmentKit(runway_context, module_root=tmp_path)
         assert obj.cdk_list() == ["Stack0", "Stack1"]
         mock_gen_cmd.assert_called_once_with("list", include_context=True)
@@ -278,9 +274,7 @@ class TestCloudDevelopmentKit:
     ) -> None:
         """Test cli_args_context."""
         assert (
-            CloudDevelopmentKit(
-                runway_context, module_root=tmp_path, parameters=parameters
-            ).cli_args_context
+            CloudDevelopmentKit(runway_context, module_root=tmp_path, parameters=parameters).cli_args_context
             == expected
         )
 
@@ -298,7 +292,7 @@ class TestCloudDevelopmentKit:
         cdk_deploy = mocker.patch.object(CloudDevelopmentKit, "cdk_deploy")
         npm_install = mocker.patch.object(CloudDevelopmentKit, "npm_install")
         run_build_steps = mocker.patch.object(CloudDevelopmentKit, "run_build_steps")
-        assert not CloudDevelopmentKit(runway_context, module_root=tmp_path).deploy()  # type: ignore[func-returns-value]
+        assert not CloudDevelopmentKit(runway_context, module_root=tmp_path).deploy()
         if skip:
             cdk_bootstrap.assert_not_called()
             cdk_deploy.assert_not_called()
@@ -324,7 +318,7 @@ class TestCloudDevelopmentKit:
         cdk_destroy = mocker.patch.object(CloudDevelopmentKit, "cdk_destroy")
         npm_install = mocker.patch.object(CloudDevelopmentKit, "npm_install")
         run_build_steps = mocker.patch.object(CloudDevelopmentKit, "run_build_steps")
-        assert not CloudDevelopmentKit(runway_context, module_root=tmp_path).destroy()  # type: ignore[func-returns-value]
+        assert not CloudDevelopmentKit(runway_context, module_root=tmp_path).destroy()
         cdk_bootstrap.assert_not_called()
         if skip:
             cdk_destroy.assert_not_called()
@@ -393,15 +387,10 @@ class TestCloudDevelopmentKit:
         """Test gen_cmd."""
         mocker.patch.object(CloudDevelopmentKit, "cli_args", ["cli_args"])
         mocker.patch.object(CloudDevelopmentKit, "cli_args_context", ["cli_args_context"])
-        generate_node_command = mocker.patch(
-            f"{MODULE}.generate_node_command", return_value=["success"]
-        )
+        generate_node_command = mocker.patch(f"{MODULE}.generate_node_command", return_value=["success"])
         runway_context.env.ci = env_ci
         obj = CloudDevelopmentKit(runway_context, module_root=tmp_path)
-        assert (
-            obj.gen_cmd(command, args_list, include_context=include_context)
-            == generate_node_command.return_value
-        )
+        assert obj.gen_cmd(command, args_list, include_context=include_context) == generate_node_command.return_value
         generate_node_command.assert_called_once_with(
             command="cdk",
             command_opts=expected,
@@ -423,7 +412,7 @@ class TestCloudDevelopmentKit:
         cdk_bootstrap = mocker.patch.object(CloudDevelopmentKit, "cdk_bootstrap")
         npm_install = mocker.patch.object(CloudDevelopmentKit, "npm_install")
         run_build_steps = mocker.patch.object(CloudDevelopmentKit, "run_build_steps")
-        assert not CloudDevelopmentKit(runway_context, module_root=tmp_path).init()  # type: ignore[func-returns-value]
+        assert not CloudDevelopmentKit(runway_context, module_root=tmp_path).init()
         if skip:
             cdk_bootstrap.assert_not_called()
             npm_install.assert_not_called()
@@ -444,13 +433,11 @@ class TestCloudDevelopmentKit:
         """Test plan."""
         mocker.patch.object(CloudDevelopmentKit, "skip", skip)
         cdk_bootstrap = mocker.patch.object(CloudDevelopmentKit, "cdk_bootstrap")
-        cdk_list = mocker.patch.object(
-            CloudDevelopmentKit, "cdk_list", return_value=["Stack0", "Stack1"]
-        )
+        cdk_list = mocker.patch.object(CloudDevelopmentKit, "cdk_list", return_value=["Stack0", "Stack1"])
         cdk_diff = mocker.patch.object(CloudDevelopmentKit, "cdk_diff")
         npm_install = mocker.patch.object(CloudDevelopmentKit, "npm_install")
         run_build_steps = mocker.patch.object(CloudDevelopmentKit, "run_build_steps")
-        assert not CloudDevelopmentKit(runway_context, module_root=tmp_path).plan()  # type: ignore[func-returns-value]
+        assert not CloudDevelopmentKit(runway_context, module_root=tmp_path).plan()
         cdk_bootstrap.assert_not_called()
         if skip:
             cdk_list.assert_not_called()
@@ -473,7 +460,7 @@ class TestCloudDevelopmentKit:
         """Test run_build_steps."""
         caplog.set_level(logging.INFO, logger=MODULE)
         obj = CloudDevelopmentKit(runway_context, module_root=tmp_path, options={"build_steps": []})
-        assert not obj.run_build_steps()  # type: ignore[func-returns-value]
+        assert not obj.run_build_steps()
         logs = "\n".join(caplog.messages)
         assert "build steps (in progress)" not in logs
         assert "build steps (complete)" not in logs
@@ -491,10 +478,8 @@ class TestCloudDevelopmentKit:
         caplog.set_level(logging.INFO, logger=MODULE)
         fix_windows_command_list = mocker.patch(f"{MODULE}.fix_windows_command_list")
         fake_process.register_subprocess(["test", "step"], returncode=0)
-        obj = CloudDevelopmentKit(
-            runway_context, module_root=tmp_path, options={"build_steps": ["test step"]}
-        )
-        assert not obj.run_build_steps()  # type: ignore[func-returns-value]
+        obj = CloudDevelopmentKit(runway_context, module_root=tmp_path, options={"build_steps": ["test step"]})
+        assert not obj.run_build_steps()
         fix_windows_command_list.assert_not_called()
         assert fake_process.call_count(["test", "step"]) == 1
         logs = "\n".join(caplog.messages)
@@ -554,14 +539,10 @@ class TestCloudDevelopmentKit:
     ) -> None:
         """Test run_build_steps."""
         caplog.set_level(logging.INFO, logger=MODULE)
-        fix_windows_command_list = mocker.patch(
-            f"{MODULE}.fix_windows_command_list", return_value=["test", "step"]
-        )
+        fix_windows_command_list = mocker.patch(f"{MODULE}.fix_windows_command_list", return_value=["test", "step"])
         fake_process.register_subprocess(["test", "step"], returncode=0)
-        obj = CloudDevelopmentKit(
-            runway_context, module_root=tmp_path, options={"build_steps": ["test step"]}
-        )
-        assert not obj.run_build_steps()  # type: ignore[func-returns-value]
+        obj = CloudDevelopmentKit(runway_context, module_root=tmp_path, options={"build_steps": ["test step"]})
+        assert not obj.run_build_steps()
         fix_windows_command_list.assert_called_once_with(["test", "step"])
         assert fake_process.call_count(["test", "step"]) == 1
         logs = "\n".join(caplog.messages)

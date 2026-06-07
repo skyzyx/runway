@@ -19,7 +19,7 @@ class TestLookupHandler:
     def test_abstract_handle(self) -> None:
         """Handle should not be implimented."""
         with pytest.raises(NotImplementedError):
-            LookupHandler.handle(None, None)  # type: ignore
+            LookupHandler.handle(None, None)
 
     def test_dependencies(self) -> None:
         """Test dependencies.
@@ -43,21 +43,14 @@ class TestLookupHandler:
         assert LookupHandler.format_results(test_dict, get="test_key") == test_dict["test_key"]
         assert LookupHandler.format_results(mute_map, get="test_key") == mute_map["test_key"]
         assert LookupHandler.format_results(mute_map, get="nested") == mute_map["nested"].data
-        assert (
-            LookupHandler.format_results(mute_map, get="nested.nested_key")
-            == mute_map["nested"]["nested_key"]
-        )
+        assert LookupHandler.format_results(mute_map, get="nested.nested_key") == mute_map["nested"]["nested_key"]
         assert LookupHandler.format_results(mute_map, get="nested.bool")
 
-        assert LookupHandler.format_results(mute_map, transform="str") == json.dumps(
-            json.dumps(test_dict, indent=0)
-        )
+        assert LookupHandler.format_results(mute_map, transform="str") == json.dumps(json.dumps(test_dict, indent=0))
         assert LookupHandler.format_results(mute_map, transform="str", indent=2) == json.dumps(
             json.dumps(test_dict, indent=2)
         )
-        assert (
-            LookupHandler.format_results(mute_map, get="nested.bool", transform="str") == '"True"'
-        )
+        assert LookupHandler.format_results(mute_map, get="nested.bool", transform="str") == '"True"'
 
         with pytest.raises(TypeError):
             LookupHandler.format_results(["something"], get="key")
@@ -80,7 +73,7 @@ class TestLookupHandler:
         if isinstance(expected, str):
             assert LookupHandler.format_results(value, transform="str") == expected
         else:  # value should be returned "as is"
-            assert LookupHandler.format_results(value, transform="str") == value  # type: ignore[unreachable]
+            assert LookupHandler.format_results(value, transform="str") == value
 
     def test_load_no_parser(self) -> None:
         """Test load with no parser."""
@@ -184,6 +177,4 @@ class TestLookupHandler:
 
     def test_transform_str_list_delimiter(self) -> None:
         """Test list to string with a specified delimiter."""
-        assert (
-            LookupHandler.transform(["val1", "val2"], to_type="str", delimiter="|") == "val1|val2"
-        )
+        assert LookupHandler.transform(["val1", "val2"], to_type="str", delimiter="|") == "val1|val2"

@@ -81,7 +81,7 @@ def patch_lookups(mocker: MockerFixture) -> None:
 def test_resolve_variables(cfngin_context: MockCfnginContext) -> None:
     """Test resolve_variables."""
     variable = MagicMock()
-    assert not resolve_variables([variable], cfngin_context)  # type: ignore[func-returns-value]
+    assert not resolve_variables([variable], cfngin_context)
     variable.resolve.assert_called_once_with(context=cfngin_context, provider=None)
 
 
@@ -91,9 +91,7 @@ class TestVariables:
     def test_dependencies(self, mocker: MockerFixture) -> None:
         """Test dependencies."""
         assert Variable("Param", "val").dependencies == set()
-        mocker.patch.object(
-            VariableValue, "parse_obj", return_value=MagicMock(dependencies={"test"})
-        )
+        mocker.patch.object(VariableValue, "parse_obj", return_value=MagicMock(dependencies={"test"}))
         assert Variable("Param", "val").dependencies == {"test"}
 
     def test_get(self) -> None:
@@ -172,13 +170,11 @@ class TestVariables:
         """Test nested lookups."""
         context = MagicMock()
         provider = MagicMock()
-        mock_handler = mocker.patch.object(
-            MockLookupHandler, "handle", side_effect=["resolved0", "resolved1"]
-        )
+        mock_handler = mocker.patch.object(MockLookupHandler, "handle", side_effect=["resolved0", "resolved1"])
         var = Variable("Param1", "${test ${test query0}.query1}")
         var.resolve(context, provider)
         mock_handler.assert_has_calls(
-            [  # type: ignore
+            [
                 call("query0", context=context, provider=provider, variables=None),
                 call(
                     "resolved0.query1",
@@ -213,7 +209,7 @@ class TestVariables:
         context = MagicMock()
         provider = MagicMock()
         obj = Variable("Param", "val")
-        lookup_error = FailedLookup("something", KeyError("cause"))  # type: ignore
+        lookup_error = FailedLookup("something", KeyError("cause"))
         mocker.patch.object(obj._value, "resolve", side_effect=lookup_error)
         with pytest.raises(FailedVariableLookup) as excinfo:
             obj.resolve(context, provider, kwarg="something")
@@ -230,10 +226,8 @@ class TestVariables:
         provider = MagicMock()
         obj = Variable("Param", "val")
         mock_resolve = mocker.patch.object(obj._value, "resolve")
-        assert not obj.resolve(context, provider, kwarg="something")  # type: ignore[func-returns-value]
-        mock_resolve.assert_called_once_with(
-            context, provider=provider, variables=None, kwarg="something"
-        )
+        assert not obj.resolve(context, provider, kwarg="something")
+        mock_resolve.assert_called_once_with(context, provider=provider, variables=None, kwarg="something")
 
     def test_simple_lookup(self) -> None:
         """Test simple lookup."""
@@ -309,7 +303,7 @@ class TestVariableValue:
 
     def test_resolve(self, cfngin_context: MockCfnginContext) -> None:
         """Test resolve."""
-        assert not VariableValue().resolve(context=cfngin_context)  # type: ignore[func-returns-value]
+        assert not VariableValue().resolve(context=cfngin_context)
 
     def test_simplified(self) -> None:
         """Test simplified."""
@@ -327,7 +321,7 @@ class TestVariableValueConcatenation:
 
     def test_delitem(self) -> None:
         """Test __delitem__."""
-        obj = VariableValueConcatenation(["val0", "val1"])  # type: ignore
+        obj = VariableValueConcatenation(["val0", "val1"])
         assert "val1" in obj._data
         del obj[1]
         assert "val1" not in obj._data
@@ -340,7 +334,7 @@ class TestVariableValueConcatenation:
 
     def test_getitem(self) -> None:
         """Test __getitem__."""
-        obj = VariableValueConcatenation(["val0", "val1"])  # type: ignore
+        obj = VariableValueConcatenation(["val0", "val1"])
         assert obj[1] == "val1"
         assert obj[:2] == ["val0", "val1"]
 
@@ -353,29 +347,24 @@ class TestVariableValueConcatenation:
 
     def test_iter(self) -> None:
         """Test __iter__."""
-        obj = VariableValueConcatenation(["val0", "val1"])  # type: ignore
-        assert list(iter(obj)) == ["val0", "val1"]  # type: ignore
+        obj = VariableValueConcatenation(["val0", "val1"])
+        assert list(iter(obj)) == ["val0", "val1"]
 
     def test_len(self) -> None:
         """Test __len__."""
-        obj = VariableValueConcatenation(["val0", "val1"])  # type: ignore
-        assert len(obj) == 2  # type: ignore
+        obj = VariableValueConcatenation(["val0", "val1"])
+        assert len(obj) == 2
 
     def test_repr(self) -> None:
         """Test __repr__."""
-        obj = VariableValueConcatenation(["val0", "val1"])  # type: ignore
-        assert repr(obj) == "Concatenation['val0', 'val1']"  # type: ignore
+        obj = VariableValueConcatenation(["val0", "val1"])
+        assert repr(obj) == "Concatenation['val0', 'val1']"
 
     def test_resolved(self) -> None:
         """Test resolved."""
         assert VariableValueConcatenation([MagicMock(resolved=True)]).resolved is True
         assert VariableValueConcatenation([MagicMock(resolved=False)]).resolved is False
-        assert (
-            VariableValueConcatenation(
-                [MagicMock(resolved=True), MagicMock(resolved=False)]
-            ).resolved
-            is False
-        )
+        assert VariableValueConcatenation([MagicMock(resolved=True), MagicMock(resolved=False)]).resolved is False
 
     def test_resolve(self, cfngin_context: MockCfnginContext, mocker: MockerFixture) -> None:
         """Test resolve."""
@@ -385,7 +374,7 @@ class TestVariableValueConcatenation:
         assert not obj.resolve(
             cfngin_context,
             provider=mock_provider,
-            variables={"var": "something"},  # type: ignore
+            variables={"var": "something"},
             kwarg="test",
         )
         mock_resolve.assert_called_once_with(
@@ -397,10 +386,10 @@ class TestVariableValueConcatenation:
 
     def test_setitem(self) -> None:
         """Test __setitem__."""
-        obj = VariableValueConcatenation(["test-val0", "test-val1"])  # type: ignore
-        obj[0] = "val0"  # type: ignore
+        obj = VariableValueConcatenation(["test-val0", "test-val1"])
+        obj[0] = "val0"
         assert obj[0] == "val0"
-        obj[:2] = ["val0", "val1"]  # type: ignore
+        obj[:2] = ["val0", "val1"]
         assert obj[1] == "val1"
 
     def test_simplified_concat(self) -> None:
@@ -409,9 +398,7 @@ class TestVariableValueConcatenation:
             VariableValueConcatenation(
                 [
                     VariableValueLiteral("foo"),
-                    VariableValueConcatenation(
-                        [VariableValueLiteral("bar"), VariableValueLiteral("foo")]
-                    ),
+                    VariableValueConcatenation([VariableValueLiteral("bar"), VariableValueLiteral("foo")]),
                 ]
             ).simplified.value
             == "foobarfoo"
@@ -419,10 +406,10 @@ class TestVariableValueConcatenation:
 
     def test_simplified_list(self) -> None:
         """Test simplified list."""
-        assert [
-            i.value
-            for i in VariableValueConcatenation([VariableValueList(["foo", "bar"])]).simplified
-        ] == ["foo", "bar"]
+        assert [i.value for i in VariableValueConcatenation([VariableValueList(["foo", "bar"])]).simplified] == [
+            "foo",
+            "bar",
+        ]
 
     def test_simplified_literal_bool(self) -> None:
         """Test simplified literal bool."""
@@ -441,9 +428,7 @@ class TestVariableValueConcatenation:
         """Test simplified literal str."""
         assert VariableValueConcatenation([VariableValueLiteral("foo")]).simplified.value == "foo"
         assert (
-            VariableValueConcatenation(
-                [VariableValueLiteral("foo"), VariableValueLiteral("bar")]
-            ).simplified.value
+            VariableValueConcatenation([VariableValueLiteral("foo"), VariableValueLiteral("bar")]).simplified.value
             == "foobar"
         )
 
@@ -451,15 +436,11 @@ class TestVariableValueConcatenation:
         "variable, expected",
         [
             (
-                VariableValueConcatenation(
-                    [VariableValueLiteral("foo"), VariableValueLiteral("bar")]
-                ),
+                VariableValueConcatenation([VariableValueLiteral("foo"), VariableValueLiteral("bar")]),
                 "foobar",
             ),
             (
-                VariableValueConcatenation(
-                    [VariableValueLiteral(13), VariableValueLiteral("/test")]
-                ),
+                VariableValueConcatenation([VariableValueLiteral(13), VariableValueLiteral("/test")]),
                 "13/test",
             ),
             (
@@ -476,7 +457,7 @@ class TestVariableValueConcatenation:
         """Test value multiple raises InvalidLookupConcatenationError."""
         with pytest.raises(InvalidLookupConcatenation):
             VariableValueConcatenation(  # noqa: B018
-                [VariableValueLiteral(True), VariableValueLiteral(VariableValueLiteral)]  # type: ignore
+                [VariableValueLiteral(True), VariableValueLiteral(VariableValueLiteral)]
             ).value
 
     def test_value_single(self) -> None:
@@ -510,9 +491,7 @@ class TestVariableValueDict:
 
     def test_init(self, mocker: MockerFixture) -> None:
         """Test __init__."""
-        mock_parse_obj = mocker.patch.object(
-            VariableValueDict, "parse_obj", return_value="parsed_val"
-        )
+        mock_parse_obj = mocker.patch.object(VariableValueDict, "parse_obj", return_value="parsed_val")
         obj = VariableValueDict({"key": "val"})
         assert obj._data == {"key": mock_parse_obj.return_value}
         mock_parse_obj.assert_called_once_with("val", variable_type="cfngin")
@@ -550,7 +529,7 @@ class TestVariableValueDict:
         assert not obj.resolve(
             cfngin_context,
             provider=mock_provider,
-            variables={"var": "something"},  # type: ignore
+            variables={"var": "something"},
             kwarg="test",
         )
         mock_literal.resolve.assert_called_once_with(
@@ -564,7 +543,7 @@ class TestVariableValueDict:
         """Test __setitem__."""
         mocker.patch.object(VariableValueDict, "parse_obj", return_value="parsed_val")
         obj = VariableValueDict({"key": "val"})
-        obj["key"] = "new"  # type: ignore
+        obj["key"] = "new"
         assert obj["key"] == "new"
 
     def test_simplified(self, mocker: MockerFixture) -> None:
@@ -607,9 +586,7 @@ class TestVariableValueList:
 
     def test_init(self, mocker: MockerFixture) -> None:
         """Test __init__."""
-        mock_parse_obj = mocker.patch.object(
-            VariableValueList, "parse_obj", return_value="parsed_val"
-        )
+        mock_parse_obj = mocker.patch.object(VariableValueList, "parse_obj", return_value="parsed_val")
         obj = VariableValueList(["val"])
         assert obj._data == ["parsed_val"]
         mock_parse_obj.assert_called_once_with("val", variable_type="cfngin")
@@ -653,7 +630,7 @@ class TestVariableValueList:
         assert not obj.resolve(
             cfngin_context,
             provider=mock_provider,
-            variables={"var": "something"},  # type: ignore
+            variables={"var": "something"},
             kwarg="test",
         )
         mock_literal.resolve.assert_called_once_with(
@@ -666,10 +643,10 @@ class TestVariableValueList:
     def test_setitem(self) -> None:
         """Test __setitem__."""
         obj = VariableValueList(["val0", "val1"])
-        obj[0] = "val0"  # type: ignore
+        obj[0] = "val0"
         assert obj[0] == "val0"
         assert obj[1] != "val1"
-        obj[:2] = ["val0", "val1"]  # type: ignore
+        obj[:2] = ["val0", "val1"]
         assert obj[1] == "val1"
 
     def test_simplified(self, mocker: MockerFixture) -> None:
@@ -693,31 +670,31 @@ class TestVariableValueLiteral:
     @pytest.mark.parametrize("value", [False, True, 13, "test"])
     def test_init(self, value: int | str) -> None:
         """Test __init__."""
-        obj = VariableValueLiteral(value)  # type: ignore
+        obj = VariableValueLiteral(value)
         assert obj._data == value
 
     @pytest.mark.parametrize("value", [False, True, 13, "test"])
     def test_iter(self, value: int | str) -> None:
         """Test __iter__."""
-        obj = VariableValueLiteral(value)  # type: ignore
-        assert list(iter(obj)) == [obj]  # type: ignore
+        obj = VariableValueLiteral(value)
+        assert list(iter(obj)) == [obj]
 
     @pytest.mark.parametrize("value", [False, True, 13, "test"])
     def test_repr(self, value: int | str) -> None:
         """Test __repr__."""
-        obj = VariableValueLiteral(value)  # type: ignore
-        assert repr(obj) == f"Literal[{value}]"  # type: ignore
+        obj = VariableValueLiteral(value)
+        assert repr(obj) == f"Literal[{value}]"
 
     @pytest.mark.parametrize("value", [False, True, 13, "test"])
     def test_resolved(self, value: int | str) -> None:
         """Test resolved."""
-        obj = VariableValueLiteral(value)  # type: ignore
+        obj = VariableValueLiteral(value)
         assert obj.resolved
 
     @pytest.mark.parametrize("value", [False, True, 13, "test"])
     def test_value(self, value: int | str) -> None:
         """Test value."""
-        obj = VariableValueLiteral(value)  # type: ignore
+        obj = VariableValueLiteral(value)
         assert obj.value == value
 
 
@@ -730,7 +707,7 @@ class TestVariableValueLookup:
         class FakeLookup:
             """Fake lookup."""
 
-        obj = VariableValueLookup(VariableValueLiteral("test"), "query", FakeLookup)  # type: ignore
+        obj = VariableValueLookup(VariableValueLiteral("test"), "query", FakeLookup)
         assert obj.dependencies == set()
 
     def test_dependencies(self, mocker: MockerFixture) -> None:
@@ -741,9 +718,7 @@ class TestVariableValueLookup:
 
     def test___init___convert_query(self) -> None:
         """Test __init__ convert query."""
-        obj = VariableValueLookup(
-            VariableValueLiteral("test"), "query", MockLookupHandler, "runway"
-        )
+        obj = VariableValueLookup(VariableValueLiteral("test"), "query", MockLookupHandler, "runway")
         assert isinstance(obj.lookup_query, VariableValueLiteral)
         assert obj.lookup_query.value == "query"
 
@@ -769,7 +744,7 @@ class TestVariableValueLookup:
             VariableValueLookup(
                 VariableValueLiteral("test"),
                 VariableValueLiteral("query"),
-                variable_type="invalid",  # type: ignore
+                variable_type="invalid",
             )
 
     def test___init___find_handler_unknown_lookup_type(self) -> None:
@@ -830,7 +805,7 @@ class TestVariableValueLookup:
         mock_resolve = mocker.patch.object(VariableValueLookup, "_resolve", return_value=None)
         mock_resolve_query = mocker.patch.object(VariableValueLiteral, "resolve")
         obj = VariableValueLookup(VariableValueLiteral("test"), VariableValueLiteral("query"))
-        assert not obj.resolve(**kwargs)  # type: ignore
+        assert not obj.resolve(**kwargs)
         mock_resolve_query.assert_called_once_with(**kwargs)
         mock_handle.assert_called_once_with("query", **kwargs)
         mock_resolve.assert_called_once_with("resolved")
@@ -852,7 +827,7 @@ class TestVariableValueLookup:
             assert obj.value
         obj._resolve("success")
         assert obj.resolved is True
-        assert obj.value == "success"  # type: ignore[unreachable]
+        assert obj.value == "success"
 
 
 class TestVariableValuePydanticModel:
@@ -878,9 +853,7 @@ class TestVariableValuePydanticModel:
 
     def test___init__(self, mocker: MockerFixture) -> None:
         """Test __init__."""
-        mock_parse_obj = mocker.patch.object(
-            VariableValuePydanticModel, "parse_obj", return_value="parsed_val"
-        )
+        mock_parse_obj = mocker.patch.object(VariableValuePydanticModel, "parse_obj", return_value="parsed_val")
         obj = VariableValuePydanticModel(self.ModelClass())
         assert obj._data == {"test": mock_parse_obj.return_value}
         assert obj._model_class == self.ModelClass
@@ -906,7 +879,7 @@ class TestVariableValuePydanticModel:
         """Test __setitem__."""
         mocker.patch.object(VariableValuePydanticModel, "parse_obj", return_value="parsed_val")
         obj = VariableValuePydanticModel(self.ModelClass())
-        obj["test"] = "new"  # type: ignore
+        obj["test"] = "new"
         assert obj["test"] == "new"
 
     def test_dependencies(self, mocker: MockerFixture) -> None:
@@ -925,7 +898,7 @@ class TestVariableValuePydanticModel:
         assert not obj.resolve(
             cfngin_context,
             provider=mock_provider,
-            variables={"var": "something"},  # type: ignore
+            variables={"var": "something"},
             kwarg="test",
         )
         mock_literal.resolve.assert_called_once_with(

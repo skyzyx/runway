@@ -102,9 +102,7 @@ class TestMutableMap:
         mute_map = MutableMap(**VALUE)
 
         assert mute_map.find("NOT_VALID", "default_val") == "default_val", "default should be used"
-        assert mute_map.find("str_val", "default_val") == VALUE["str_val"], (
-            "default should be ignored"
-        )
+        assert mute_map.find("str_val", "default_val") == VALUE["str_val"], "default should be ignored"
 
 
 TestParamsTypeDef: TypeAlias = "dict[str, str] | list[str] | str | None"
@@ -121,9 +119,7 @@ class TestSafeHaven:
         (["runway", "test"]),
     ]
 
-    def test_context_manager_magic(
-        self, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_context_manager_magic(self, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test init and the attributes it sets."""
         mock_reset_all = MagicMock()
         caplog.set_level(logging.DEBUG, "runway.SafeHaven")
@@ -161,16 +157,14 @@ class TestSafeHaven:
         if isinstance(provided, dict):
             expected_val.update(provided)
 
-        with SafeHaven(environ=provided) as obj:  # type: ignore
+        with SafeHaven(environ=provided) as obj:
             assert os.environ == expected_val
             os.environ.update({"SOMETHING_ELSE": "val"})
             obj.reset_os_environ()
         assert os.environ == orig_val
         assert caplog.messages == expected_logs
 
-    def test_reset_all(
-        self, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_reset_all(self, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test reset_all."""
         mock_method = MagicMock()
         caplog.set_level(logging.DEBUG, "runway.SafeHaven")
@@ -211,16 +205,14 @@ class TestSafeHaven:
             "leaving the safe haven...",
         ]
 
-        with SafeHaven(argv=provided) as obj:  # type: ignore
+        with SafeHaven(argv=provided) as obj:
             assert sys.argv == expected_val
             sys.argv.append("something-else")
             obj.reset_sys_argv()
         assert sys.argv == orig_val
         assert caplog.messages == expected_logs
 
-    def test_sys_modules(
-        self, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_sys_modules(self, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test sys.modules interactions."""
         caplog.set_level(1, "runway.SafeHaven")
         monkeypatch.setattr(SafeHaven, "reset_all", MagicMock())
@@ -273,7 +265,7 @@ class TestSafeHaven:
             "leaving the safe haven...",
         ]
 
-        with SafeHaven(sys_path=provided) as obj:  # type: ignore
+        with SafeHaven(sys_path=provided) as obj:
             assert sys.path == expected_val
             sys.path.append("something-else")
             obj.reset_sys_path()
@@ -301,7 +293,7 @@ def test_ensure_string(expected: str, provided: str) -> None:
     assert ensure_string(provided) == expected
 
 
-@pytest.mark.parametrize("provided", [None, True, [], {}, set()])  # type: ignore
+@pytest.mark.parametrize("provided", [None, True, [], {}, set()])
 def test_ensure_string_raise_type_error(provided: Any) -> None:
     """Test ensure_string."""
     with pytest.raises(TypeError) as excinfo:
@@ -335,7 +327,7 @@ def test_get_file_hash(alg: str, tmp_path: Path) -> None:
     test_file = tmp_path / "test.txt"
     test_file.write_bytes(contents)
 
-    assert get_file_hash(str(test_file), alg) == expected.hexdigest()  # type: ignore
+    assert get_file_hash(str(test_file), alg) == expected.hexdigest()
 
 
 def test_load_object_from_string() -> None:

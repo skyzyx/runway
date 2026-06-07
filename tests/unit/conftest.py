@@ -121,7 +121,7 @@ def yaml_fixtures(request: pytest.FixtureRequest, fixture_dir: Path) -> dict[str
     file_paths: list[str] = getattr(
         cast("Module", request.module),
         "YAML_FIXTURES",
-        [],  # type: ignore
+        [],
     )
     result: dict[str, Any] = {}
     for file_path in file_paths:
@@ -196,7 +196,7 @@ def runway_context(request: pytest.FixtureRequest, tmp_path: Path) -> MockRunway
         "AWS_SESSION_TOKEN": "test_session_token",
     }
     env_vars.update(getattr(cast("Module", request.module), "AWS_CREDENTIALS", creds))
-    env_vars.update(getattr(cast("Module", request.module), "ENV_VARS", {}))  # type: ignore
+    env_vars.update(getattr(cast("Module", request.module), "ENV_VARS", {}))
     return MockRunwayContext(
         command="test",
         deploy_environment=DeployEnvironment(environ=env_vars, explicit_name="test"),

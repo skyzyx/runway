@@ -33,9 +33,7 @@ class TestCliInterfaceMixin:
             self.cwd = cwd
 
     @pytest.mark.parametrize("env", [None, {"foo": "bar"}])
-    def test__run_command(
-        self, env: dict[str, str] | None, mocker: MockerFixture, tmp_path: Path
-    ) -> None:
+    def test__run_command(self, env: dict[str, str] | None, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test _run_command."""
         ctx_env = {"foo": "bar", "bar": "foo"}
         mock_subprocess = mocker.patch(f"{MODULE}.subprocess.check_output", return_value="success")
@@ -57,9 +55,7 @@ class TestCliInterfaceMixin:
         env = {"foo": "bar"}
         mock_list2cmdline = mocker.patch.object(self.Kls, "list2cmdline", return_value="success")
         mock_subprocess = mocker.patch(f"{MODULE}.subprocess.check_call", return_value=0)
-        assert not self.Kls(Mock(env=Mock(vars=env)), tmp_path)._run_command(  # type: ignore[func-returns-value]
-            ["foo", "bar"], suppress_output=False
-        )
+        assert not self.Kls(Mock(env=Mock(vars=env)), tmp_path)._run_command(["foo", "bar"], suppress_output=False)
         mock_list2cmdline.assert_called_once_with(["foo", "bar"])
         mock_subprocess.assert_called_once_with(
             mock_list2cmdline.return_value,
@@ -146,9 +142,7 @@ class TestCliInterfaceMixin:
         platform_windows: None,  # noqa: ARG002
     ) -> None:
         """Test list2cmdline on Windows systems."""
-        mock_list2cmdline = mocker.patch(
-            f"{MODULE}.subprocess.list2cmdline", return_value="success"
-        )
+        mock_list2cmdline = mocker.patch(f"{MODULE}.subprocess.list2cmdline", return_value="success")
         mock_join = mocker.patch(f"{MODULE}.shlex_join")
         assert self.Kls.list2cmdline("foo") == mock_list2cmdline.return_value
         mock_list2cmdline.assert_called_once_with("foo")
@@ -174,13 +168,13 @@ class TestDelCachedPropMixin:
         obj = self.Kls()
         # ensure suppression is working as expected
         assert obj.counter == 0
-        assert not obj._del_cached_property("test_prop")  # type: ignore[func-returns-value]
+        assert not obj._del_cached_property("test_prop")
         assert obj.test_prop == "foobar"
         assert obj.counter == 1
         # ensure value is cached and not being evaluated each call
         assert obj.test_prop == "foobar"
         assert obj.counter == 1
         # this would fail if the suppression was outside the loop
-        assert not obj._del_cached_property("invalid", "test_prop")  # type: ignore[func-returns-value]
+        assert not obj._del_cached_property("invalid", "test_prop")
         assert obj.test_prop == "foobar"
         assert obj.counter == 2

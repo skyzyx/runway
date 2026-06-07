@@ -42,7 +42,7 @@ def test_register_lookup_handler_function() -> None:
         """Fake lookup."""
 
     with pytest.raises(TypeError):
-        register_lookup_handler("test", fake_lookup)  # type: ignore
+        register_lookup_handler("test", fake_lookup)
 
 
 def test_register_lookup_handler_not_subclass() -> None:
@@ -52,7 +52,7 @@ def test_register_lookup_handler_not_subclass() -> None:
         """Fake lookup."""
 
     with pytest.raises(TypeError):
-        register_lookup_handler("test", FakeLookup)  # type: ignore
+        register_lookup_handler("test", FakeLookup)
 
 
 def test_register_lookup_handler_str(mocker: MockerFixture) -> None:

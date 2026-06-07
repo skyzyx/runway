@@ -69,7 +69,7 @@ class AwslambdaStackOutputs(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _convert_null_to_none(cls, values: dict[str, Any]) -> dict[str, Any]:  # type: ignore[operator]
+    def _convert_null_to_none(cls, values: dict[str, Any]) -> dict[str, Any]:
         """Convert ``null`` to ``NoneType``."""
 
         def _handle_null(v: Any) -> Any:
@@ -114,9 +114,7 @@ class AwslambdaTester:
         """AWS Lambda Function CloudFormation Stack data."""
         stacks = self.cfn_client.describe_stacks(StackName=self.stack_name)["Stacks"]
         if not stacks:
-            raise ValueError(
-                f"Stack {self.stack_name} not found in region {self._session.region_name}"
-            )
+            raise ValueError(f"Stack {self.stack_name} not found in region {self._session.region_name}")
         return stacks[0]
 
     def invoke(self, *, payload: str | None = None) -> LambdaResponse:
@@ -124,7 +122,7 @@ class AwslambdaTester:
         response = self.client.invoke(
             FunctionName=self.outputs.LambdaFunction,
             InvocationType="RequestResponse",
-            **{"Payload": payload} if payload else {},  # pyright: ignore[reportArgumentType]  # type: ignore[arg-type]
+            **{"Payload": payload} if payload else {},  # pyright: ignore[reportArgumentType]
         )
         if "Payload" in response:
             return json.load(response["Payload"])

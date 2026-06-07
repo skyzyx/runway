@@ -212,7 +212,7 @@ class TestCFNginContext:
     def test_lock_persistent_graph_no_graph(self, mocker: MockerFixture) -> None:
         """Test lock_persistent_graph no graph."""
         mocker.patch.object(CfnginContext, "persistent_graph", None)
-        assert CfnginContext().lock_persistent_graph("123") is None  # type: ignore[func-returns-value]
+        assert CfnginContext().lock_persistent_graph("123") is None
 
     def test_lock_persistent_graph_no_such_key(self, mocker: MockerFixture) -> None:
         """Test lock_persistent_graph NoSuchKey."""
@@ -249,13 +249,11 @@ class TestCFNginContext:
             },
         )
         with stubber:
-            assert not obj.lock_persistent_graph("123")  # type: ignore[func-returns-value]
+            assert not obj.lock_persistent_graph("123")
 
     def test_mappings(self) -> None:
         """Test mappings."""
-        config = CfnginConfig.parse_obj(
-            {"namespace": "test", "mappings": {"my_map": {"something": {"key": "val"}}}}
-        )
+        config = CfnginConfig.parse_obj({"namespace": "test", "mappings": {"my_map": {"something": {"key": "val"}}}})
         assert CfnginContext(config=config).mappings == config.mappings
 
     def test_namespace(self) -> None:
@@ -275,9 +273,7 @@ class TestCFNginContext:
 
     def test_persistent_graph_s3_not_verified(self, mocker: MockerFixture) -> None:
         """Test persistent_graph s3 not verified."""
-        mock_graph = mocker.patch(
-            f"{MODULE}.Graph", MagicMock(from_dict=MagicMock(return_value="success"))
-        )
+        mock_graph = mocker.patch(f"{MODULE}.Graph", MagicMock(from_dict=MagicMock(return_value="success")))
         mocker.patch.object(
             CfnginContext,
             "persistent_graph_location",
@@ -395,9 +391,7 @@ class TestCFNginContext:
     def test_persistent_graph_lock_code(self, mocker: MockerFixture) -> None:
         """Test persistent_graph_lock_code."""
         mocker.patch.object(CfnginContext, "persistent_graph_location", True)
-        mocker.patch.object(
-            CfnginContext, "persistent_graph_tags", {"cfngin_lock_code": "lock code"}
-        )
+        mocker.patch.object(CfnginContext, "persistent_graph_tags", {"cfngin_lock_code": "lock code"})
         assert CfnginContext().persistent_graph_lock_code == "lock code"
 
     def test_persistent_graph_locked_no_code(self, mocker: MockerFixture) -> None:
@@ -434,9 +428,7 @@ class TestCFNginContext:
         """Test persistent_graph_tags."""
         bucket = "test-bucket"
         key = "persistent_graphs/test/something.json"
-        mocker.patch.object(
-            CfnginContext, "persistent_graph_location", {"Bucket": bucket, "Key": key}
-        )
+        mocker.patch.object(CfnginContext, "persistent_graph_location", {"Bucket": bucket, "Key": key})
         obj = CfnginContext()
         stubber = Stubber(obj.s3_client)
 
@@ -463,7 +455,7 @@ class TestCFNginContext:
         stubber = Stubber(obj.s3_client)
         stubber.add_response("delete_object", {}, obj.persistent_graph_location)
         with stubber:
-            assert not obj.put_persistent_graph("123")  # type: ignore[func-returns-value]
+            assert not obj.put_persistent_graph("123")
 
     def test_put_persistent_graph_lock_code_mismatch(self, mocker: MockerFixture) -> None:
         """Test put_persistent_graph lock code mismatch."""
@@ -495,7 +487,7 @@ class TestCFNginContext:
     def test_put_persistent_graph_no_graph(self, mocker: MockerFixture) -> None:
         """Test put_persistent_graph n persistent_graph."""
         mocker.patch.object(CfnginContext, "persistent_graph", False)
-        assert not CfnginContext().put_persistent_graph("123")  # type: ignore[func-returns-value]
+        assert not CfnginContext().put_persistent_graph("123")
 
     def test_put_persistent_graph(self, mocker: MockerFixture) -> None:
         """Test put_persistent_graph."""
@@ -522,7 +514,7 @@ class TestCFNginContext:
             },
         )
         with stubber:
-            assert not obj.put_persistent_graph("123")  # type: ignore[func-returns-value]
+            assert not obj.put_persistent_graph("123")
 
     def test_s3_bucket_verified_no_bucket(self, mocker: MockerFixture) -> None:
         """Test s3_bucket_verified no bucket."""
@@ -549,9 +541,7 @@ class TestCFNginContext:
         """Test s3_client."""
         mock_client = MagicMock()
         mock_session = MagicMock(client=MagicMock(return_value=mock_client))
-        mock_get_session = mocker.patch.object(
-            CfnginContext, "get_session", return_value=mock_session
-        )
+        mock_get_session = mocker.patch.object(CfnginContext, "get_session", return_value=mock_session)
         assert CfnginContext(deploy_environment=self.env).s3_client == mock_client
         mock_get_session.assert_called_once_with(region=self.env.aws_region)
         mock_session.client.assert_called_once_with("s3")
@@ -605,9 +595,7 @@ class TestCFNginContext:
 
     def test_tags(self) -> None:
         """Test tags."""
-        obj = CfnginContext(
-            config=CfnginConfig.parse_obj({"namespace": "test", "tags": {"key": "val"}})
-        )
+        obj = CfnginContext(config=CfnginConfig.parse_obj({"namespace": "test", "tags": {"key": "val"}}))
         assert obj.tags == obj.config.tags
 
     def test_template_indent(self) -> None:
@@ -700,9 +688,7 @@ class TestCFNginContext:
             assert obj.unlock_persistent_graph("123")
 
     @pytest.mark.parametrize("graph_dict", cast("list[dict[str, list[str]]]", [{"stack0": []}, {}]))
-    def test_unlock_persistent_graph(
-        self, graph_dict: dict[str, list[str]], mocker: MockerFixture
-    ) -> None:
+    def test_unlock_persistent_graph(self, graph_dict: dict[str, list[str]], mocker: MockerFixture) -> None:
         """Test unlock_persistent_graph."""
         mocker.patch.object(
             CfnginContext,

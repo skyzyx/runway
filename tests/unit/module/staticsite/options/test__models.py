@@ -33,9 +33,7 @@ class TestRunwayStaticSiteExtraFileDataModel:
     )
     def test_autofill_content_type(self, expected: str | None, name: str) -> None:
         """Test _autofill_content_type."""
-        assert (
-            RunwayStaticSiteExtraFileDataModel(content="test", name=name).content_type == expected
-        )
+        assert RunwayStaticSiteExtraFileDataModel(content="test", name=name).content_type == expected
 
     def test_init_default(self) -> None:
         """Test init default."""
@@ -51,7 +49,7 @@ class TestRunwayStaticSiteExtraFileDataModel:
             RunwayStaticSiteExtraFileDataModel(
                 content="test-content",
                 name="test-name",
-                invalid="val",  # type: ignore
+                invalid="val",
             )
 
     def test_init_content_and_file(self, tmp_path: Path) -> None:
@@ -60,7 +58,7 @@ class TestRunwayStaticSiteExtraFileDataModel:
             RunwayStaticSiteExtraFileDataModel(
                 content="test-content",
                 file=tmp_path,
-                name="test-name",  # type: ignore
+                name="test-name",
             )
 
     def test_init_content(self) -> None:
@@ -113,7 +111,7 @@ class TestRunwayStaticSiteModuleOptionsDataModel:
 
     def test_init_extra(self) -> None:
         """Test init extra."""
-        obj = RunwayStaticSiteModuleOptionsDataModel(invalid="val")  # type: ignore
+        obj = RunwayStaticSiteModuleOptionsDataModel(invalid="val")
         assert "invalid" not in obj.model_dump()
 
     def test_init(self) -> None:
@@ -128,15 +126,9 @@ class TestRunwayStaticSiteModuleOptionsDataModel:
         obj = RunwayStaticSiteModuleOptionsDataModel.model_validate(data)
         assert obj.build_output == data["build_output"]
         assert obj.build_steps == data["build_steps"]
-        assert obj.extra_files == [
-            RunwayStaticSiteExtraFileDataModel(**data["extra_files"][0])  # type: ignore
-        ]
-        assert obj.pre_build_steps == [
-            RunwayStaticSitePreBuildStepDataModel(**data["pre_build_steps"][0])  # type: ignore
-        ]
-        assert obj.source_hashing == RunwayStaticSiteSourceHashingDataModel(
-            **data["source_hashing"]  # type: ignore
-        )
+        assert obj.extra_files == [RunwayStaticSiteExtraFileDataModel(**data["extra_files"][0])]
+        assert obj.pre_build_steps == [RunwayStaticSitePreBuildStepDataModel(**data["pre_build_steps"][0])]
+        assert obj.source_hashing == RunwayStaticSiteSourceHashingDataModel(**data["source_hashing"])
 
 
 class TestRunwayStaticSitePreBuildStepDataModel:
@@ -153,13 +145,13 @@ class TestRunwayStaticSitePreBuildStepDataModel:
         with pytest.raises(ValidationError):
             RunwayStaticSitePreBuildStepDataModel(
                 command="runway --help",
-                invalid="val",  # type: ignore
+                invalid="val",
             )
 
     def test_init_required(self, tmp_path: Path) -> None:
         """Test init required."""
         with pytest.raises(ValidationError):
-            RunwayStaticSitePreBuildStepDataModel(cwd=tmp_path)  # type: ignore
+            RunwayStaticSitePreBuildStepDataModel(cwd=tmp_path)
 
     def test_init(self, tmp_path: Path) -> None:
         """Test init."""
@@ -174,9 +166,7 @@ class TestRunwayStaticSiteSourceHashingDataModel:
     def test_init_default(self) -> None:
         """Test init default."""
         obj = RunwayStaticSiteSourceHashingDataModel()
-        assert obj.directories == [
-            RunwayStaticSiteSourceHashingDirectoryDataModel(path="./")  # type: ignore
-        ]
+        assert obj.directories == [RunwayStaticSiteSourceHashingDirectoryDataModel(path="./")]
         assert obj.enabled is True
         assert not obj.parameter
 
@@ -193,11 +183,7 @@ class TestRunwayStaticSiteSourceHashingDataModel:
             "parameter": "test",
         }
         obj = RunwayStaticSiteSourceHashingDataModel.model_validate(data)
-        assert obj.directories == [
-            RunwayStaticSiteSourceHashingDirectoryDataModel(
-                **data["directories"][0]  # type: ignore
-            )
-        ]
+        assert obj.directories == [RunwayStaticSiteSourceHashingDirectoryDataModel(**data["directories"][0])]
         assert obj.enabled is data["enabled"]
         assert obj.parameter == data["parameter"]
 
@@ -217,13 +203,13 @@ class TestRunwayStaticSiteSourceHashingDirectoryDataModel:
         with pytest.raises(ValidationError):
             RunwayStaticSiteSourceHashingDirectoryDataModel(
                 path=tmp_path,
-                invalid="val",  # type: ignore
+                invalid="val",
             )
 
     def test_init_required(self) -> None:
         """Test init required."""
         with pytest.raises(ValidationError):
-            RunwayStaticSiteSourceHashingDirectoryDataModel(  # type: ignore
+            RunwayStaticSiteSourceHashingDirectoryDataModel(
                 exclusions=["**/*.md"],
             )
 

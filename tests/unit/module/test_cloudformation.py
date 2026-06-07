@@ -39,36 +39,28 @@ class TestCloudFormation:
         """Test deploy."""
         mock_deploy = mocker.patch("runway.cfngin.cfngin.CFNgin.deploy")
         mock_init = mocker.patch("runway.cfngin.cfngin.CFNgin.init")
-        module = CloudFormation(
-            self.get_context(), module_root=tmp_path, parameters=self.generic_parameters
-        )
-        assert not module.deploy()  # type: ignore[func-returns-value]
+        module = CloudFormation(self.get_context(), module_root=tmp_path, parameters=self.generic_parameters)
+        assert not module.deploy()
         mock_init.assert_called_once()
         mock_deploy.assert_called_once()
 
     def test_destroy(self, tmp_path: Path, mocker: MockerFixture) -> None:
         """Test destroy."""
         mock_action = mocker.patch("runway.cfngin.cfngin.CFNgin.destroy")
-        module = CloudFormation(
-            self.get_context(), module_root=tmp_path, parameters=self.generic_parameters
-        )
-        assert not module.destroy()  # type: ignore[func-returns-value]
+        module = CloudFormation(self.get_context(), module_root=tmp_path, parameters=self.generic_parameters)
+        assert not module.destroy()
         mock_action.assert_called_once()
 
-    def test_init(
-        self, mocker: MockerFixture, runway_context: RunwayContext, tmp_path: Path
-    ) -> None:
+    def test_init(self, mocker: MockerFixture, runway_context: RunwayContext, tmp_path: Path) -> None:
         """Test init."""
         mock_action = mocker.patch("runway.cfngin.cfngin.CFNgin.init")
         obj = CloudFormation(runway_context, module_root=tmp_path)
-        assert not obj.init()  # type: ignore[func-returns-value]
+        assert not obj.init()
         mock_action.assert_called_once()
 
     def test_plan(self, tmp_path: Path, mocker: MockerFixture) -> None:
         """Test plan."""
         mock_action = mocker.patch("runway.cfngin.cfngin.CFNgin.plan")
-        module = CloudFormation(
-            self.get_context(), module_root=tmp_path, parameters=self.generic_parameters
-        )
-        assert not module.plan()  # type: ignore[func-returns-value]
+        module = CloudFormation(self.get_context(), module_root=tmp_path, parameters=self.generic_parameters)
+        assert not module.plan()
         mock_action.assert_called_once()

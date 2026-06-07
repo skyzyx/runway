@@ -64,9 +64,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-def generate_stack_definition(
-    base_name: str, stack_id: Any = None, **overrides: Any
-) -> CfnginStackDefinitionModel:
+def generate_stack_definition(base_name: str, stack_id: Any = None, **overrides: Any) -> CfnginStackDefinitionModel:
     """Generate stack definition."""
     definition: dict[str, Any] = {
         "name": f"{base_name}-{stack_id}" if stack_id else base_name,
@@ -104,7 +102,7 @@ class TestConfigNotFound:
 
     def test_pickle(self, tmp_path: Path) -> None:
         """Test pickling."""
-        exc = ConfigNotFound(["foo"], tmp_path)  # type: ignore[arg-type]
+        exc = ConfigNotFound(["foo"], tmp_path)
         assert str(pickle.loads(pickle.dumps(exc))) == str(exc)
 
 
@@ -122,7 +120,7 @@ class TestFailedLookup:
 
     def test_pickle(self) -> None:
         """Test pickling."""
-        exc = FailedLookup("foo", "bar")  # type: ignore[arg-type]
+        exc = FailedLookup("foo", "bar")
         assert str(pickle.loads(pickle.dumps(exc))) == str(exc)
 
 
@@ -133,9 +131,7 @@ class TestFailedVariableLookup:
         """Test pickling."""
         exc = FailedVariableLookup(
             variable,
-            FailedLookup(
-                VariableValueLookup(VariableValueLiteral("env"), "foo"), Exception("error")
-            ),
+            FailedLookup(VariableValueLookup(VariableValueLiteral("env"), "foo"), Exception("error")),
         )
         assert str(pickle.loads(pickle.dumps(exc))) == str(exc)
 
@@ -146,9 +142,7 @@ class TestInvalidLookupConcatenation:
     def test_pickle(self) -> None:
         """Test pickling."""
         data = [VariableValueLiteral("test")]
-        exc = InvalidLookupConcatenation(
-            VariableValue.parse_obj("test"), VariableValueConcatenation(data)
-        )
+        exc = InvalidLookupConcatenation(VariableValue.parse_obj("test"), VariableValueConcatenation(data))
         assert str(pickle.loads(pickle.dumps(exc))) == str(exc)
 
 
@@ -247,7 +241,7 @@ class TestInvalidConfig:
 
     def test_pickle(self) -> None:
         """Test pickling."""
-        exc = InvalidConfig(Exception("error"))  # type: ignore[arg-type]
+        exc = InvalidConfig(Exception("error"))
         assert str(pickle.loads(pickle.dumps(exc))) == str(exc)
 
 
