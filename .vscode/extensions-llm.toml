@@ -1,0 +1,6 @@
+recommendations = [
+  # @config-manager:start llm
+  'anthropic.claude-code',
+  'github.copilot-chat',
+  # @config-manager:end llm
+]

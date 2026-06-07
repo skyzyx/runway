@@ -1,0 +1,61 @@
+{
+  "[python]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports": "always"
+    },
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.detectIndentation": false,
+    "editor.formatOnSave": true,
+    "editor.insertSpaces": true,
+    "editor.rulers": [
+      81,
+      88,
+      100
+    ],
+    "editor.tabSize": 4
+  },
+  "cSpell.enableFiletypes": [
+    "restructuredtext"
+  ],
+  "cSpell.enabled": true,
+  "esbonio.sphinx.buildDir": "${workspaceRoot}/docs/build",
+  "esbonio.sphinx.confDir": "${workspaceFolder}/docs/source",
+  "explorerExclude.backup": null,
+  "files.exclude": {
+    "**/*.egg-info": true,
+    "**/*.pyc": true,
+    "**/.DS_Store": true,
+    "**/.cache": true,
+    "**/.eggs": true,
+    "**/.git": true,
+    "**/.hg": true,
+    "**/.mypy_cache": true,
+    "**/.pytest_cache": true,
+    "**/.runway": true,
+    "**/.serverless": true,
+    "**/.svn": true,
+    "**/CVS": true,
+    "**/Thumbs.db": true,
+    "**/__pycache__": true
+  },
+  "files.insertFinalNewline": true,
+  "python.analysis.typeCheckingMode": "off",
+  "python.languageServer": "None",
+  "python.pythonPath": "${workspaceFolder}/.venv/",
+  "python.testing.pytestArgs": [
+    "tests",
+    "--no-cov"
+  ],
+  "pythonTestExplorer.testFramework": "pytest",
+  "restructuredtext.builtDocumentationPath": "${workspaceRoot}/docs/build/html",
+  "restructuredtext.confPath": "${workspaceFolder}/docs/source",
+  "restructuredtext.languageServer.disabled": true,
+  "restructuredtext.linter.extraArgs": [
+    "--ignore D001"
+  ],
+  "restructuredtext.preview.scrollEditorWithPreview": false,
+  "restructuredtext.preview.scrollPreviewWithEditor": false,
+  "restructuredtext.sphinxBuildPath": "${workspaceFolder}/docs/.venv/bin/sphinx-build",
+  "restructuredtext.updateOnTextChanged": "true"
+}

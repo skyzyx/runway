@@ -1,0 +1,23 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+##
+# https://taskfile.dev/docs/guide
+##
+
+# @config-manager:start terraform
+version: "3"
+
+set: [pipefail]
+shopt: [globstar]
+
+tasks:
+# @config-manager:end terraform
+
+# ## clean-tests: [clean] Cleans all test artifacts.
+# clean-tests:
+# 	@ $(HEADER) "=====> Cleaning artifacts from tests..."
+# 	- find . -type d -name ".terraform" | xargs -I% rm -fv "%"
+# 	- find . -type d -name "terratest-*" | xargs -I% rm -fv "%"
+# 	- find . -type f -name "terraform.tfstate*" | xargs -I% rm -fv "%"
+# 	- find ./examples -type d -name "\.*" | xargs -I% rm -fv "%"

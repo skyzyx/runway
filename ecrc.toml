@@ -1,0 +1,98 @@
+##
+# Generate with:
+#   tomljson ecrc.toml > .editorconfig-checker.json
+##
+
+# @config-manager:start config
+Debug = false
+IgnoreDefaults = true
+NoColor = false
+SpacesAfterTabs = false
+Verbose = false
+# @config-manager:end config
+
+Exclude = [
+  # @config-manager:start excludes
+  # Directories
+  "\\.config-manager\\.d/",
+  "\\.kiro/",
+  "\\.kirograph/",
+  "\\.rumdl_cache/",
+  "node_modules/",
+  "testdata/",
+
+  # Files
+  "\\.7z$",
+  "\\.avif$",
+  "\\.bak$",
+  "\\.bin$",
+  "\\.bz2$",
+  "\\.cache$",
+  "\\.css\\.map$",
+  "\\.dcignore$",
+  "\\.ecrc$",
+  "\\.editorconfig-checker\\.json$",
+  "\\.eot$",
+  "\\.example$",
+  "\\.gif$",
+  "\\.git/.*$",
+  "\\.go$",
+  "\\.golangci\\.yml$",
+  "\\.goreleaser\\.yml$",
+  "\\.gotmpl$",
+  "\\.gz$",
+  "\\.ico$",
+  "\\.infracost/.*$",
+  "\\.jpeg$",
+  "\\.jpg$",
+  "\\.js\\.map$",
+  "\\.lefthook-local/.*$",
+  "\\.lefthook/.*$",
+  "\\.licenses\\.cache\\.json$",
+  "\\.lock$",
+  "\\.log$",
+  "\\.mp4$",
+  "\\.otf$",
+  "\\.out$",
+  "\\.patch$",
+  "\\.pbm$",
+  "\\.pdf$",
+  "\\.pgm$",
+  "\\.png$",
+  "\\.pnm$",
+  "\\.ppm$",
+  "\\.snap$",
+  "\\.svg$",
+  "\\.tar$",
+  "\\.terraform-docs\\.yml$",
+  "\\.terraform/.*$",
+  "\\.terraform\\.lock\\.hcl$",
+  "\\.tfstate\\.backup$",
+  "\\.tfstate$",
+  "\\.ttf$",
+  "\\.txt$",
+  "\\.vscode/.*?\\.(json|sh|toml|yaml|yml)$",
+  "\\.webp$",
+  "\\.wmv$",
+  "\\.woff$",
+  "\\.woff2$",
+  "\\.zip$",
+  "^\\.pnp\\.cjs$",
+  "^\\.pnp\\.js$",
+  "^\\.pnp\\.loader\\.mjs$",
+  "^\\.yarn/",
+  "^package-lock\\.json$",
+  "aube-lock\\.yaml$",
+  "cliff\\.toml$",
+  "go\\.mod$",
+  "go\\.sum$",
+  "go\\.tools\\.mod$",
+  "go\\.tools\\.sum$",
+  "min\\.css$",
+  "min\\.js$",
+  "package-lock\\.json$",
+  "standard\\.mk$",
+  # @config-manager:end excludes
+
+  "runway/templates/static-angular/sampleapp.web/package-lock\\.json"
+]

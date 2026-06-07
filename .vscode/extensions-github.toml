@@ -1,0 +1,6 @@
+recommendations = [
+  # @config-manager:start github
+  'github.vscode-github-actions',
+  'github.vscode-pull-request-github',
+  # @config-manager:end github
+]

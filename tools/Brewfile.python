@@ -1,0 +1,21 @@
+##
+# brew bundle --upgrade --upgrade-formulae --install --jobs=auto --file=Brewfile.python
+##
+
+#-------------------------------------------------------------------------------
+# FORMULAE
+
+# @config-manager:start brew
+# https://www.python.org
+brew "python3"
+
+# https://docs.astral.sh/uv/
+brew "uv"
+# @config-manager:end brew
+
+#-------------------------------------------------------------------------------
+# UV PACKAGES
+
+# @config-manager:start uv
+uv "ruff"
+# @config-manager:end uv

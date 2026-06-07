@@ -1,0 +1,72 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+##
+# https://taskfile.dev/docs/guide
+##
+
+# @config-manager:start python
+version: "3"
+
+set: [pipefail]
+shopt: [globstar]
+
+vars:
+# BASH: /opt/homebrew/opt/bash/bin/bash
+# FIND: /opt/homebrew/opt/findutils/bin/gfind
+# XARGS: /opt/homebrew/opt/findutils/bin/gxargs
+
+tasks:
+  #-----------------------------------------------------------------------------
+  # Building
+
+  build:
+    desc: Bundle the code into a package
+    summary: |
+      Bundles the code into a package.
+
+      @TODO
+    cmds:
+      - task: internal:header
+        vars:
+          TEXT: "Packaging..."
+      - cmd: echo "@TODO"
+
+  deps:py:
+    desc: Update packages to their latest versions supported by the range in pyproject.toml.
+    summary: |
+      Updates packages to their latest versions supported by the range in pyproject.toml.
+
+      This is useful for keeping the dependencies up to date with little effort.
+    cmds:
+      - task: internal:header
+        vars:
+          TEXT: "Upgrade Python dependencies..."
+      - cmd: uv lock --upgrade
+
+  #-----------------------------------------------------------------------------
+  # Testing
+
+  test:py:
+    desc: "Run Python testing tasks."
+    summary: |
+      Runs Python testing tasks.
+    cmds:
+      - cmd: uv run tryke test
+
+  #-------------------------------------------------------------------------------
+  # Documentation
+
+  #-----------------------------------------------------------------------------
+  # Cleanup
+
+  clean:py:
+    desc: Clean Python artifacts
+    summary: Cleans Python artifacts.
+    cmds:
+      - task: internal:header
+        vars:
+          TEXT: "Cleaning Python cache and artifacts..."
+      - cmd: rm -rfv .hypothesis .ruff_cache .tryke .venv *.egg-info/ **/__pycache__ dist/
+
+# @config-manager:end python
