@@ -2,7 +2,7 @@
   "name": "runway",
   "version": "0.0.0",
   "devDependencies": {
-    "cspell": "^9.2.0",
-    "pyright": "^1.1.408"
+    "cspell": "^9.8.0",
+    "pyright": "^1.1.410"
   }
 }
