@@ -40,16 +40,12 @@ def test_push(
     mocker.patch.object(ImagePushArgs, "model_validate", return_value=args)
     mocker.patch.object(DockerHookData, "client", mock_docker_client)
     docker_hook_data = DockerHookData()
-    mock_from_cfngin_context = mocker.patch.object(
-        DockerHookData, "from_cfngin_context", return_value=docker_hook_data
-    )
-    mock_update_context = mocker.patch.object(
-        DockerHookData, "update_context", return_value=docker_hook_data
-    )
+    mock_from_cfngin_context = mocker.patch.object(DockerHookData, "from_cfngin_context", return_value=docker_hook_data)
+    mock_update_context = mocker.patch.object(DockerHookData, "update_context", return_value=docker_hook_data)
     cfngin_context.hook_data["docker"] = docker_hook_data
     assert push(context=cfngin_context, **args.model_dump()) == docker_hook_data
     mock_from_cfngin_context.assert_called_once_with(cfngin_context)
-    docker_hook_data.client.api.push.assert_has_calls(  # type: ignore[attr-defined]
+    docker_hook_data.client.api.push.assert_has_calls(
         [call(args.repo, tag=args.tags[0]), call(args.repo, tag=args.tags[1])]
     )
     mock_update_context.assert_called_once_with(cfngin_context)

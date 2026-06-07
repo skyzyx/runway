@@ -51,9 +51,7 @@ class TestSourceCode:
         assert obj.project_root == tmp_path
         assert obj.root_directory == tmp_path
         gitignore_filter.parse_rule_files.assert_called_once_with(tmp_path)
-        gitignore_filter.add_rule.assert_has_calls(
-            [call(".git/", tmp_path), call(".gitignore", tmp_path)]
-        )
+        gitignore_filter.add_rule.assert_has_calls([call(".git/", tmp_path), call(".gitignore", tmp_path)])
 
     def test___init___gitignore_filter_provided(self, tmp_path: Path) -> None:
         """Test __init__ gitignore_filter provided."""
@@ -120,7 +118,7 @@ class TestSourceCode:
         pattern = "foobar/"
         src_path = tmp_path / "src"
         obj = SourceCode(src_path, gitignore_filter=gitignore_filter, project_root=tmp_path)
-        assert not obj.add_filter_rule(pattern)  # type: ignore[func-returns-value]
+        assert not obj.add_filter_rule(pattern)
         gitignore_filter.add_rule.assert_called_once_with(pattern=pattern, base_path=src_path)
 
     def test_md5_hash(self, mocker: MockerFixture, tmp_path: Path) -> None:

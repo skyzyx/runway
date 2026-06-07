@@ -44,23 +44,16 @@ def test_remove(
     mocker.patch.object(DockerHookData, "client", mock_docker_client)
     docker_hook_data = DockerHookData()
     docker_hook_data.image = image
-    mock_from_cfngin_context = mocker.patch.object(
-        DockerHookData, "from_cfngin_context", return_value=docker_hook_data
-    )
-    mock_update_context = mocker.patch.object(
-        DockerHookData, "update_context", return_value=docker_hook_data
-    )
+    mock_from_cfngin_context = mocker.patch.object(DockerHookData, "from_cfngin_context", return_value=docker_hook_data)
+    mock_update_context = mocker.patch.object(DockerHookData, "update_context", return_value=docker_hook_data)
     cfngin_context.hook_data["docker"] = docker_hook_data
-    assert (
-        remove(context=cfngin_context, force=args.force, image=image, tags=args.tags)
-        == docker_hook_data
-    )
+    assert remove(context=cfngin_context, force=args.force, image=image, tags=args.tags) == docker_hook_data
     mock_from_cfngin_context.assert_called_once_with(cfngin_context)
-    docker_hook_data.client.api.remove_image.assert_has_calls(  # type: ignore
+    docker_hook_data.client.api.remove_image.assert_has_calls(
         [call(force=True, image=f"{args.repo}:{tag}", noprune=False) for tag in args.tags]
     )
     assert docker_hook_data.image is None
-    mock_update_context.assert_called_once_with(cfngin_context)  # type: ignore[unreachable]
+    mock_update_context.assert_called_once_with(cfngin_context)
 
 
 def test_remove_image_not_found(
@@ -78,15 +71,11 @@ def test_remove_image_not_found(
     mocker.patch.object(DockerHookData, "client", mock_docker_client)
     docker_hook_data = DockerHookData()
     mocker.patch.object(DockerHookData, "from_cfngin_context", return_value=docker_hook_data)
-    mock_update_context = mocker.patch.object(
-        DockerHookData, "update_context", return_value=docker_hook_data
-    )
+    mock_update_context = mocker.patch.object(DockerHookData, "update_context", return_value=docker_hook_data)
     cfngin_context.hook_data["docker"] = docker_hook_data
-    docker_hook_data.client.api.remove_image.side_effect = ImageNotFound(  # type: ignore
-        f"{args.repo}:latest"
-    )
+    docker_hook_data.client.api.remove_image.side_effect = ImageNotFound(f"{args.repo}:latest")
     assert remove(context=cfngin_context, **args.model_dump()) == docker_hook_data
-    docker_hook_data.client.api.remove_image.assert_has_calls(  # type: ignore
+    docker_hook_data.client.api.remove_image.assert_has_calls(
         [call(force=False, image=f"{args.repo}:{tag}", noprune=False) for tag in args.tags]
     )
     mock_update_context.assert_called_once_with(cfngin_context)

@@ -72,9 +72,7 @@ class TestCfnginBucket:
         assert isinstance(obj.bucket_encryption, s3.BucketEncryption)
         assert len(obj.bucket_encryption.ServerSideEncryptionConfiguration) == 1
         assert (
-            obj.bucket_encryption.ServerSideEncryptionConfiguration[
-                0
-            ].ServerSideEncryptionByDefault.SSEAlgorithm
+            obj.bucket_encryption.ServerSideEncryptionConfiguration[0].ServerSideEncryptionByDefault.SSEAlgorithm
             == "AES256"
         )
 
@@ -111,7 +109,7 @@ class TestCfnginBucket:
         bucket = mocker.patch.object(CfnginBucket, "bucket", "bucket")
         obj = CfnginBucket("test", cfngin_context)
         mock_template = mocker.patch.object(obj, "template")
-        assert not obj.create_template()  # type: ignore[func-returns-value]
+        assert not obj.create_template()
         mock_template.set_description.assert_called_once_with(obj.DESCRIPTION)
         mock_template.set_version.assert_called_once_with("2010-09-09")
         mock_template.add_resource.assert_called_once_with(bucket)

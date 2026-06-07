@@ -105,14 +105,10 @@ class TestDockerDependencyInstaller:
         project = Mock(args=Mock(docker=DockerOptions(file=docker_file, pull=pull)))
 
         mock_build = Mock(return_value=(image, logs))
-        mock_log_docker_msg_dict = mocker.patch.object(
-            DockerDependencyInstaller, "log_docker_msg_dict"
-        )
+        mock_log_docker_msg_dict = mocker.patch.object(DockerDependencyInstaller, "log_docker_msg_dict")
 
         assert (
-            DockerDependencyInstaller(
-                project, client=Mock(images=Mock(build=mock_build))
-            ).build_image(
+            DockerDependencyInstaller(project, client=Mock(images=Mock(build=mock_build))).build_image(
                 docker_file,
                 **{"name": name} if name else {},
                 **{"tag": tag} if tag else {},
@@ -167,9 +163,7 @@ class TestDockerDependencyInstaller:
         Returns None when Docker is explicitly disabled, allowing the
         project to fall back to local pip installation.
         """
-        assert not DockerDependencyInstaller.from_project(
-            Mock(args=Mock(docker=DockerOptions(disabled=True)))
-        )
+        assert not DockerDependencyInstaller.from_project(Mock(args=Mock(docker=DockerOptions(disabled=True))))
 
     @pytest.mark.parametrize(
         "error_msg",
@@ -180,9 +174,7 @@ class TestDockerDependencyInstaller:
             "(2, 'CreateFile', 'The system cannot find the file specified.')",
         ],
     )
-    def test_from_project_handle_connection_refused(
-        self, error_msg: str, mocker: MockerFixture
-    ) -> None:
+    def test_from_project_handle_connection_refused(self, error_msg: str, mocker: MockerFixture) -> None:
         """Test from_project handle DockerException connection refused.
 
         Wraps raw DockerException into a user-friendly error when the
@@ -193,9 +185,7 @@ class TestDockerDependencyInstaller:
             side_effect=DockerException(error_msg),
         )
         with pytest.raises(DockerConnectionRefusedError):
-            DockerDependencyInstaller.from_project(
-                Mock(args=Mock(docker=DockerOptions(disabled=False)))
-            )
+            DockerDependencyInstaller.from_project(Mock(args=Mock(docker=DockerOptions(disabled=False))))
 
     def test_from_project_ping_false(self, mocker: MockerFixture) -> None:
         """Test from_project handle DockerException connection refused."""
@@ -217,9 +207,7 @@ class TestDockerDependencyInstaller:
             side_effect=DockerException("foobar"),
         )
         with pytest.raises(DockerException):
-            DockerDependencyInstaller.from_project(
-                Mock(args=Mock(docker=DockerOptions(disabled=False)))
-            )
+            DockerDependencyInstaller.from_project(Mock(args=Mock(docker=DockerOptions(disabled=False))))
 
     @pytest.mark.parametrize(
         "image, name, runtime",
@@ -240,9 +228,7 @@ class TestDockerDependencyInstaller:
         """Test image build image."""
         project = Mock(args=Mock(docker=Mock(file="foo", image=image), runtime=runtime))
         project.args.docker.name = name
-        build_image = mocker.patch.object(
-            DockerDependencyInstaller, "build_image", return_value="success"
-        )
+        build_image = mocker.patch.object(DockerDependencyInstaller, "build_image", return_value="success")
         obj = DockerDependencyInstaller(project, client=Mock())
         assert obj.image == build_image.return_value
         build_image.assert_called_once_with(project.args.docker.file, name=name)
@@ -260,15 +246,11 @@ class TestDockerDependencyInstaller:
     ) -> None:
         """Test image pull image."""
         project = Mock(args=Mock(docker=Mock(file=None, image=image, pull=pull), runtime=runtime))
-        pull_image = mocker.patch.object(
-            DockerDependencyInstaller, "pull_image", return_value="success"
-        )
+        pull_image = mocker.patch.object(DockerDependencyInstaller, "pull_image", return_value="success")
         obj = DockerDependencyInstaller(project, client=Mock())
         assert obj.image == pull_image.return_value
         if image:
-            pull_image.assert_called_once_with(
-                project.args.docker.image, force=project.args.docker.pull
-            )
+            pull_image.assert_called_once_with(project.args.docker.image, force=project.args.docker.pull)
         else:
             pull_image.assert_called_once_with(
                 f"{AWS_SAM_BUILD_IMAGE_PREFIX}{project.args.runtime}:latest",
@@ -288,25 +270,19 @@ class TestDockerDependencyInstaller:
 
     def test_install(self, mocker: MockerFixture) -> None:
         """Test install."""
-        install_commands = mocker.patch.object(
-            DockerDependencyInstaller, "install_commands", ["install"]
-        )
+        install_commands = mocker.patch.object(DockerDependencyInstaller, "install_commands", ["install"])
         post_install_commands = mocker.patch.object(
             DockerDependencyInstaller, "post_install_commands", ["post-install"]
         )
-        pre_install_commands = mocker.patch.object(
-            DockerDependencyInstaller, "pre_install_commands", ["pre-install"]
-        )
-        run_command = mocker.patch.object(
-            DockerDependencyInstaller, "run_command", return_value=["foo"]
-        )
+        pre_install_commands = mocker.patch.object(DockerDependencyInstaller, "pre_install_commands", ["pre-install"])
+        run_command = mocker.patch.object(DockerDependencyInstaller, "run_command", return_value=["foo"])
         obj = DockerDependencyInstaller(Mock(), client=Mock())
-        assert not obj.install()  # type: ignore[func-returns-value]
+        assert not obj.install()
         run_command.assert_has_calls(
             [
-                call(pre_install_commands[0]),  # type: ignore[index]
-                call(install_commands[0]),  # type: ignore[index]
-                call(post_install_commands[0]),  # type: ignore[index]
+                call(pre_install_commands[0]),
+                call(install_commands[0]),
+                call(post_install_commands[0]),
             ]
         )
 
@@ -355,12 +331,8 @@ class TestDockerDependencyInstaller:
         # these methods don't exist on windows so they need to be mocked
         getgid = mocker.patch(f"{MODULE}.os.getgid", create=True, return_value=3)
         getuid = mocker.patch(f"{MODULE}.os.getuid", create=True, return_value=4)
-        obj = DockerDependencyInstaller(
-            Mock(args=Mock(docker=Mock(extra_files=[])), cache_dir=False), client=Mock()
-        )
-        assert obj.post_install_commands == [
-            f"chown -R {getuid.return_value}:{getgid.return_value} /var/task/lambda"
-        ]
+        obj = DockerDependencyInstaller(Mock(args=Mock(docker=Mock(extra_files=[])), cache_dir=False), client=Mock())
+        assert obj.post_install_commands == [f"chown -R {getuid.return_value}:{getgid.return_value} /var/task/lambda"]
 
     def test_post_install_commands_cache_dir(
         self,
@@ -398,9 +370,7 @@ class TestDockerDependencyInstaller:
 
     def test_post_install_commands_windows(self, platform_windows: None) -> None:  # noqa: ARG002
         """Test post_install_commands Windows."""
-        obj = DockerDependencyInstaller(
-            Mock(args=Mock(docker=Mock(extra_files=[])), cache_dir=False), client=Mock()
-        )
+        obj = DockerDependencyInstaller(Mock(args=Mock(docker=Mock(extra_files=[])), cache_dir=False), client=Mock())
         assert obj.post_install_commands == []
 
     def test_pre_install_commands(self) -> None:
@@ -420,22 +390,18 @@ class TestDockerDependencyInstaller:
         "exists_locally, force",
         [(False, False), (False, True), (True, True), (True, False)],
     )
-    def test_pull_image(
-        self, caplog: pytest.LogCaptureFixture, exists_locally: bool, force: bool
-    ) -> None:
+    def test_pull_image(self, caplog: pytest.LogCaptureFixture, exists_locally: bool, force: bool) -> None:
         """Test pull_image."""
         caplog.set_level(logging.INFO, logger=MODULE)
         name = "foo:latest"
         image = Mock(spec=Image, id=FAKE_IMAGE_ID)
-        mock_get = (
-            Mock(return_value=image) if exists_locally else Mock(side_effect=ImageNotFound("test"))
-        )
+        mock_get = Mock(return_value=image) if exists_locally else Mock(side_effect=ImageNotFound("test"))
         mock_pull = Mock(return_value=image)
 
         assert (
-            DockerDependencyInstaller(
-                Mock(), client=Mock(images=Mock(get=mock_get, pull=mock_pull))
-            ).pull_image(name, force=force)
+            DockerDependencyInstaller(Mock(), client=Mock(images=Mock(get=mock_get, pull=mock_pull))).pull_image(
+                name, force=force
+            )
             == image
         )
 
@@ -462,15 +428,13 @@ class TestDockerDependencyInstaller:
             DockerDependencyInstaller, "log_docker_msg_bytes", return_value=["logs"]
         )
         bind_mounts = mocker.patch.object(DockerDependencyInstaller, "bind_mounts", ["mount"])
-        environment_variables = mocker.patch.object(
-            DockerDependencyInstaller, "environment_variables", {"foo": "bar"}
-        )
+        environment_variables = mocker.patch.object(DockerDependencyInstaller, "environment_variables", {"foo": "bar"})
         image = mocker.patch.object(DockerDependencyInstaller, "image", "image")
 
         assert (
-            DockerDependencyInstaller(
-                Mock(), client=Mock(containers=Mock(create=mock_create))
-            ).run_command(command, **{"level": level} if level else {})
+            DockerDependencyInstaller(Mock(), client=Mock(containers=Mock(create=mock_create))).run_command(
+                command, **{"level": level} if level else {}
+            )
             == mock_log_docker_msg_bytes.return_value
         )
         mock_create.assert_called_once_with(

@@ -60,9 +60,7 @@ def mock_stack_parameters(parameters: dict[str, Any]) -> StackTypeDef:
     Converts a flat dict into the CloudFormation Parameters list format so
     tests can simulate existing stack parameters without calling AWS.
     """
-    return {  # type: ignore
-        "Parameters": [{"ParameterKey": k, "ParameterValue": v} for k, v in parameters.items()]
-    }
+    return {"Parameters": [{"ParameterKey": k, "ParameterValue": v} for k, v in parameters.items()]}
 
 
 class MockProvider(BaseProvider):
@@ -83,9 +81,7 @@ class MockProvider(BaseProvider):
         """Set outputs."""
         self._outputs = outputs
 
-    def get_stack(
-        self, stack_name: str, *_args: Any, **_kwargs: Any
-    ) -> dict[str, dict[str, str] | str]:
+    def get_stack(self, stack_name: str, *_args: Any, **_kwargs: Any) -> dict[str, dict[str, str] | str]:
         """Get stack."""
         if stack_name not in self._outputs:
             raise exceptions.StackDoesNotExist(stack_name)
@@ -94,7 +90,7 @@ class MockProvider(BaseProvider):
     def get_outputs(self, stack_name: str, *_args: Any, **_kwargs: Any) -> dict[str, Any]:
         """Get outputs."""
         stack = self.get_stack(stack_name)
-        return stack["outputs"]  # type: ignore
+        return stack["outputs"]
 
 
 class MockStack:
@@ -157,9 +153,7 @@ class TestAction:
         obj.upload_explicitly_disabled = explicit
         assert obj.upload_disabled is expected
 
-    def test_upload_disabled_setter(
-        self, cfngin_context: CfnginContext, mocker: MockerFixture
-    ) -> None:
+    def test_upload_disabled_setter(self, cfngin_context: CfnginContext, mocker: MockerFixture) -> None:
         """Test upload_disabled."""
         mocker.patch.object(cfngin_context, "bucket_name", "something")
         obj = Action(cfngin_context)
@@ -169,7 +163,7 @@ class TestAction:
 
         obj.upload_disabled = True
         assert obj.upload_disabled
-        assert obj.upload_explicitly_disabled  # type: ignore[unreachable]
+        assert obj.upload_explicitly_disabled
 
     def test_upload_disabled_setter_raise_cfngin_bucket_required(
         self, cfngin_context: CfnginContext, mocker: MockerFixture
@@ -198,12 +192,10 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         self.provider = MockProvider()
         self.deploy_action = deploy.Action(
             self.context,
-            provider_builder=MockProviderBuilder(provider=self.provider),  # type: ignore
+            provider_builder=MockProviderBuilder(provider=self.provider),
         )
 
-    def _get_context(
-        self, extra_config_args: dict[str, Any] | None = None, **kwargs: Any
-    ) -> CfnginContext:
+    def _get_context(self, extra_config_args: dict[str, Any] | None = None, **kwargs: Any) -> CfnginContext:
         """Get context."""
         config: dict[str, Any] = {
             "namespace": "namespace",
@@ -249,8 +241,8 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         provider.get_stack_status_reason.return_value = "reason"
         self.deploy_action.provider_builder = MockProviderBuilder(provider=provider)
         status = self.deploy_action._destroy_stack(
-            MockStack("vpc", in_progress_behavior="wait"),  # type: ignore[arg-type]
-            status=PENDING,  # type: ignore
+            MockStack("vpc", in_progress_behavior="wait"),
+            status=PENDING,
         )
         provider.is_stack_being_destroyed.assert_called_once_with(provider.get_stack.return_value)
         provider.is_stack_destroyed.assert_called_once_with(provider.get_stack.return_value)
@@ -273,7 +265,7 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         context = self._get_context(extra_config_args={"persistent_graph_key": "test.json"})
         context._persistent_graph = Graph.from_steps([Step.from_stack_name("removed", context)])
         deploy_action = deploy.Action(context=context)
-        plan = cast("Plan", deploy_action._Action__generate_plan())  # type: ignore
+        plan = cast("Plan", deploy_action._Action__generate_plan())
 
         assert isinstance(plan, Plan)
         assert plan.description == deploy.Action.DESCRIPTION
@@ -308,9 +300,7 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
             "StackName": UsePreviousParameterValue,
             "Address": "192.168.0.1",
         }
-        result = _handle_missing_parameters(
-            parameter_values, all_params, required, existing_stack_params
-        )
+        result = _handle_missing_parameters(parameter_values, all_params, required, existing_stack_params)
         assert sorted(result) == sorted(expected_params.items())
 
     def test_missing_params_no_existing_stack(self) -> None:
@@ -339,9 +329,7 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         all_params = list(existing_stack_param_dict.keys())
         required = ["Address"]
         parameter_values = {"Address": "10.0.0.1"}
-        result = _handle_missing_parameters(
-            parameter_values, all_params, required, existing_stack_params
-        )
+        result = _handle_missing_parameters(parameter_values, all_params, required, existing_stack_params)
         assert sorted(result) == sorted(parameter_values.items())
 
     def test_generate_plan(self) -> None:
@@ -351,8 +339,8 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         output-reference variables, ensuring stacks deploy in the right order.
         """
         context = self._get_context()
-        deploy_action = deploy.Action(context, cancel=MockThreadingEvent())  # type: ignore
-        plan = cast("Plan", deploy_action._Action__generate_plan())  # type: ignore
+        deploy_action = deploy.Action(context, cancel=MockThreadingEvent())
+        plan = cast("Plan", deploy_action._Action__generate_plan())
         assert plan.graph.to_dict() == {
             "db": {"bastion", "vpc"},
             "bastion": {"vpc"},
@@ -367,7 +355,7 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         a safe dry-run for operators to review dependency order.
         """
         context = self._get_context()
-        deploy_action = deploy.Action(context, cancel=MockThreadingEvent())  # type: ignore
+        deploy_action = deploy.Action(context, cancel=MockThreadingEvent())
         with patch.object(deploy_action, "_generate_plan") as mock_generate_plan:
             deploy_action.run(outline=True)
             assert mock_generate_plan().execute.call_count == 0
@@ -375,7 +363,7 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
     def test_execute_plan_when_outline_not_specified(self) -> None:
         """Test execute plan when outline not specified."""
         context = self._get_context()
-        deploy_action = deploy.Action(context, cancel=MockThreadingEvent())  # type: ignore
+        deploy_action = deploy.Action(context, cancel=MockThreadingEvent())
         with patch.object(deploy_action, "_generate_plan") as mock_generate_plan:
             deploy_action.run(outline=False)
             assert mock_generate_plan().execute.call_count == 1
@@ -415,7 +403,7 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         not be updated unless force is True, providing a safety gate against
         accidental modifications to critical infrastructure.
         """
-        test_scenario = namedtuple("test_scenario", ["locked", "force", "result"])  # type: ignore
+        test_scenario = namedtuple("test_scenario", ["locked", "force", "result"])
         test_scenarios = (
             test_scenario(locked=False, force=False, result=True),
             test_scenario(locked=False, force=True, result=True),
@@ -427,7 +415,7 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         for test in test_scenarios:
             mock_stack.locked = test.locked
             mock_stack.force = test.force
-            assert deploy.should_update(mock_stack) == test.result  # type: ignore
+            assert deploy.should_update(mock_stack) == test.result
 
     def test_should_ensure_cfn_bucket(self) -> None:
         """Test should ensure cfn bucket.
@@ -448,7 +436,7 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
             dump = scenario["dump"]
             result = scenario["result"]
             try:
-                assert deploy.should_ensure_cfn_bucket(outline, dump) == result  # type: ignore
+                assert deploy.should_ensure_cfn_bucket(outline, dump) == result
             except AssertionError as err:
                 err.args += ("scenario", str(scenario))
                 raise
@@ -459,7 +447,7 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         Disabled stacks must not be submitted to CloudFormation, allowing
         operators to temporarily skip stacks without removing them from config.
         """
-        test_scenario = namedtuple("test_scenario", ["enabled", "result"])  # type: ignore
+        test_scenario = namedtuple("test_scenario", ["enabled", "result"])
         test_scenarios = (
             test_scenario(enabled=False, result=False),
             test_scenario(enabled=True, result=True),
@@ -469,7 +457,7 @@ class TestBuildAction(unittest.TestCase):  # TODO (kyle): refactor tests into th
         mock_stack.name = "test-stack"
         for test in test_scenarios:
             mock_stack.enabled = test.enabled
-            assert deploy.should_submit(mock_stack) == test.result  # type: ignore
+            assert deploy.should_submit(mock_stack) == test.result
 
 
 class TestLaunchStack(TestBuildAction):  # TODO (kyle): refactor tests to be pytest tests
@@ -484,12 +472,12 @@ class TestLaunchStack(TestBuildAction):  # TODO (kyle): refactor tests to be pyt
         """Run before tests."""
         self.context = self._get_context()
         self.session = get_session(region=None)
-        self.provider = Provider(self.session, interactive=False, recreate_failed=False)  # type: ignore[assignment]
-        provider_builder = MockProviderBuilder(provider=self.provider)  # type: ignore[arg-type]
+        self.provider = Provider(self.session, interactive=False, recreate_failed=False)
+        provider_builder = MockProviderBuilder(provider=self.provider)
         self.deploy_action = deploy.Action(
             self.context,
             provider_builder=provider_builder,
-            cancel=MockThreadingEvent(),  # type: ignore
+            cancel=MockThreadingEvent(),
         )
 
         self.stack = MagicMock()
@@ -500,7 +488,7 @@ class TestLaunchStack(TestBuildAction):  # TODO (kyle): refactor tests to be pyt
         self.stack.locked = False
         self.stack_status = None
 
-        plan = cast("Plan", self.deploy_action._Action__generate_plan())  # type: ignore
+        plan = cast("Plan", self.deploy_action._Action__generate_plan())
         self.step = plan.steps[0]
         self.step.stack = self.stack
 
@@ -610,7 +598,7 @@ class TestLaunchStack(TestBuildAction):  # TODO (kyle): refactor tests to be pyt
         and re-created rather than requiring manual intervention. This tests
         the full delete-then-create sequence.
         """
-        self.provider.recreate_failed = True  # type: ignore[attr-defined]
+        self.provider.recreate_failed = True
 
         # initial status should be PENDING
         assert self.step.status == PENDING
@@ -640,7 +628,7 @@ class TestLaunchStack(TestBuildAction):  # TODO (kyle): refactor tests to be pyt
         assert self.step.status == PENDING
 
         # start the upgrade, that will be skipped
-        self.provider.update_stack.side_effect = StackDidNotChange  # type: ignore
+        self.provider.update_stack.side_effect = StackDidNotChange
         self._advance("CREATE_COMPLETE", SKIPPED, "nochange")
 
     def test_launch_stack_update_rollback(self) -> None:

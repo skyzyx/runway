@@ -67,7 +67,7 @@ class TestStep(unittest.TestCase):
         self.step.submit()
         assert self.step.status == SUBMITTED
         assert self.step.submitted
-        assert not self.step.completed  # type: ignore[unreachable]
+        assert not self.step.completed
 
         self.step.complete()
         assert self.step.status == COMPLETE
@@ -212,7 +212,7 @@ class TestPlan(unittest.TestCase):
             """False Lookup."""
 
             @classmethod
-            def handle(cls, _value: str, *__args: Any, **__kwargs: Any) -> str:  # type: ignore
+            def handle(cls, _value: str, *__args: Any, **__kwargs: Any) -> str:
                 """Perform the lookup."""
                 return "test"
 
@@ -284,7 +284,7 @@ class TestPlan(unittest.TestCase):
         to reflect the final state.
         """
         context = CfnginContext(config=self.config)
-        context.put_persistent_graph = mock.MagicMock()  # type: ignore[method-assign]
+        context.put_persistent_graph = mock.MagicMock()
         vpc = Stack(definition=generate_definition("vpc", 1), context=context)
         bastion = Stack(
             definition=generate_definition("bastion", 1, requires=[vpc.name]),
@@ -311,7 +311,7 @@ class TestPlan(unittest.TestCase):
             ]
         )
         plan = Plan(description="Test", graph=graph, context=context)
-        plan.context._persistent_graph_lock_code = plan.lock_code  # type: ignore
+        plan.context._persistent_graph_lock_code = plan.lock_code
         plan.execute(walk)
 
         # the order these are appended changes between python2/3
@@ -321,7 +321,7 @@ class TestPlan(unittest.TestCase):
         context.put_persistent_graph.assert_called()
 
         # order is different between python2/3 so can't compare dicts
-        result_graph_dict = context.persistent_graph.to_dict()  # type: ignore
+        result_graph_dict = context.persistent_graph.to_dict()
         assert len(result_graph_dict) == 2
         assert set() == result_graph_dict.get("vpc-1")
         assert {"vpc-1"} == result_graph_dict.get("bastion-1")
@@ -334,7 +334,7 @@ class TestPlan(unittest.TestCase):
         normally and no S3 write is attempted.
         """
         context = CfnginContext(config=self.config)
-        context.put_persistent_graph = mock.MagicMock()  # type: ignore[method-assign]
+        context.put_persistent_graph = mock.MagicMock()
         vpc = Stack(definition=generate_definition("vpc", 1), context=context)
         bastion = Stack(
             definition=generate_definition("bastion", 1, requires=[vpc.name]),
@@ -589,9 +589,7 @@ class TestPlan(unittest.TestCase):
 
         with pytest.raises(GraphError) as expected:
             Graph.from_steps([Step(vpc), Step(db), Step(app)])
-        message = (
-            "Error detected when adding 'db-1' as a dependency of 'app-1': graph is not acyclic"
-        )
+        message = "Error detected when adding 'db-1' as a dependency of 'app-1': graph is not acyclic"
         assert str(expected.value) == message
 
     def test_dump(self) -> None:

@@ -61,7 +61,7 @@ class TestArgsDataModel:
         with pytest.raises(ValidationError, match="Policies"):
             assert not ArgsDataModel(
                 name="test",
-                Policies=True,  # type: ignore
+                Policies=True,
                 type="String",
             )
 
@@ -76,7 +76,7 @@ class TestArgsDataModel:
         ]
         assert ArgsDataModel(
             name="test",
-            Policies=data,  # type: ignore
+            Policies=data,
             type="String",
         ).policies == json.dumps(data)
 
@@ -97,7 +97,7 @@ class TestArgsDataModel:
         """Test tags."""
         assert ArgsDataModel(
             name="test",
-            tags={"tag-key": "tag-value"},  # type: ignore
+            tags={"tag-key": "tag-value"},
             type="String",
         ).tags == [TagDataModel(key="tag-key", value="tag-value")]
 
@@ -272,9 +272,7 @@ class TestParameter:
             assert Parameter(cfngin_context, name="test", type="String").get_current_tags() == data
         ssm_stubber.assert_no_pending_responses()
 
-    def test_get_current_tags_empty(
-        self, cfngin_context: CfnginContext, ssm_stubber: Stubber
-    ) -> None:
+    def test_get_current_tags_empty(self, cfngin_context: CfnginContext, ssm_stubber: Stubber) -> None:
         """Test get_current_tags."""
         ssm_stubber.add_response("list_tags_for_resource", {})
         with ssm_stubber:
@@ -299,9 +297,7 @@ class TestParameter:
             assert Parameter(cfngin_context, name="test", type="String").get_current_tags() == []
         ssm_stubber.assert_no_pending_responses()
 
-    def test_get_current_tags_raise_client_error(
-        self, cfngin_context: CfnginContext, ssm_stubber: Stubber
-    ) -> None:
+    def test_get_current_tags_raise_client_error(self, cfngin_context: CfnginContext, ssm_stubber: Stubber) -> None:
         """Test get_current_tags."""
         ssm_stubber.add_client_error("list_tags_for_resource")
         with ssm_stubber, pytest.raises(ClientError):
@@ -312,40 +308,28 @@ class TestParameter:
         """Test post_deploy."""
         mock_put = mocker.patch.object(Parameter, "put", return_value="success")
         mock_update_tags = mocker.patch.object(Parameter, "update_tags", return_value=None)
-        assert (
-            Parameter(cfngin_context, name="test", type="String").post_deploy()
-            == mock_put.return_value
-        )
+        assert Parameter(cfngin_context, name="test", type="String").post_deploy() == mock_put.return_value
         mock_put.assert_called_once_with()
         mock_update_tags.assert_called_once_with()
 
     def test_post_destroy(self, cfngin_context: CfnginContext, mocker: MockerFixture) -> None:
         """Test post_destroy."""
         mock_delete = mocker.patch.object(Parameter, "delete", return_value="success")
-        assert (
-            Parameter(cfngin_context, name="test", type="String").post_destroy()
-            == mock_delete.return_value
-        )
+        assert Parameter(cfngin_context, name="test", type="String").post_destroy() == mock_delete.return_value
         mock_delete.assert_called_once_with()
 
     def test_pre_deploy(self, cfngin_context: CfnginContext, mocker: MockerFixture) -> None:
         """Test pre_deploy."""
         mock_put = mocker.patch.object(Parameter, "put", return_value="success")
         mock_update_tags = mocker.patch.object(Parameter, "update_tags", return_value=None)
-        assert (
-            Parameter(cfngin_context, name="test", type="String").pre_deploy()
-            == mock_put.return_value
-        )
+        assert Parameter(cfngin_context, name="test", type="String").pre_deploy() == mock_put.return_value
         mock_put.assert_called_once_with()
         mock_update_tags.assert_called_once_with()
 
     def test_pre_destroy(self, cfngin_context: CfnginContext, mocker: MockerFixture) -> None:
         """Test pre_destroy."""
         mock_delete = mocker.patch.object(Parameter, "delete", return_value="success")
-        assert (
-            Parameter(cfngin_context, name="test", type="String").pre_destroy()
-            == mock_delete.return_value
-        )
+        assert Parameter(cfngin_context, name="test", type="String").pre_destroy() == mock_delete.return_value
         mock_delete.assert_called_once_with()
 
     def test_put(
@@ -398,9 +382,7 @@ class TestParameter:
         mocker.patch.object(Parameter, "get", return_value=expected)
         ssm_stubber.add_client_error("put_parameter", "ParameterAlreadyExists")
         with ssm_stubber:
-            assert (
-                Parameter(cfngin_context, name="test", type="String", value="foo").put() == expected
-            )
+            assert Parameter(cfngin_context, name="test", type="String", value="foo").put() == expected
         assert (
             "parameter test already exists; to overwrite it's value, "
             'set the overwrite field to "true"' in caplog.messages
@@ -447,9 +429,7 @@ class TestParameter:
         assert Parameter(cfngin_context, name="test", type="String", value="foo").put() == expected
         mock_get.assert_called_once_with()
 
-    def test_update_tags(
-        self, cfngin_context: CfnginContext, mocker: MockerFixture, ssm_stubber: Stubber
-    ) -> None:
+    def test_update_tags(self, cfngin_context: CfnginContext, mocker: MockerFixture, ssm_stubber: Stubber) -> None:
         """Test update_tags."""
         current_tags = [
             {"Key": "current", "Value": "current-value"},
@@ -459,9 +439,7 @@ class TestParameter:
             {"Key": "new", "Value": "new-value"},
             {"Key": "retain", "Value": "retain"},
         ]
-        get_current_tags = mocker.patch.object(
-            Parameter, "get_current_tags", return_value=current_tags
-        )
+        get_current_tags = mocker.patch.object(Parameter, "get_current_tags", return_value=current_tags)
         ssm_stubber.add_response(
             "remove_tags_from_resource",
             {},
@@ -477,9 +455,7 @@ class TestParameter:
             {"ResourceId": "test", "ResourceType": "Parameter", "Tags": new_tags},
         )
         with ssm_stubber:
-            assert not Parameter(  # type: ignore[func-returns-value]
-                cfngin_context, name="test", tags=new_tags, type="String"
-            ).update_tags()
+            assert not Parameter(cfngin_context, name="test", tags=new_tags, type="String").update_tags()
         get_current_tags.assert_called_once_with()
         ssm_stubber.assert_no_pending_responses()
 
@@ -498,9 +474,7 @@ class TestParameter:
             {"ResourceId": "test", "ResourceType": "Parameter", "Tags": new_tags},
         )
         with ssm_stubber:
-            assert not Parameter(  # type: ignore[func-returns-value]
-                cfngin_context, name="test", tags=new_tags, type="String"
-            ).update_tags()
+            assert not Parameter(cfngin_context, name="test", tags=new_tags, type="String").update_tags()
 
     def test_update_tags_add_only_raise_client_error(
         self, cfngin_context: CfnginContext, mocker: MockerFixture, ssm_stubber: Stubber
@@ -513,9 +487,7 @@ class TestParameter:
         mocker.patch.object(Parameter, "get_current_tags", return_value=[])
         ssm_stubber.add_client_error("add_tags_to_resource")
         with ssm_stubber, pytest.raises(ClientError):
-            assert Parameter(  # type: ignore[func-returns-value]
-                cfngin_context, name="test", tags=new_tags, type="String"
-            ).update_tags()
+            assert Parameter(cfngin_context, name="test", tags=new_tags, type="String").update_tags()
         ssm_stubber.assert_no_pending_responses()
 
     def test_update_tags_delete_only(
@@ -538,7 +510,7 @@ class TestParameter:
         )
         ssm_stubber.add_client_error("add_tags_to_resource")
         with ssm_stubber:
-            assert not Parameter(cfngin_context, name="test", type="String").update_tags()  # type: ignore[func-returns-value]
+            assert not Parameter(cfngin_context, name="test", type="String").update_tags()
 
     def test_update_tags_delete_only_raise_client_error(
         self, cfngin_context: CfnginContext, mocker: MockerFixture, ssm_stubber: Stubber
@@ -551,7 +523,7 @@ class TestParameter:
         mocker.patch.object(Parameter, "get_current_tags", return_value=current_tags)
         ssm_stubber.add_client_error("remove_tags_from_resource")
         with ssm_stubber, pytest.raises(ClientError):
-            assert Parameter(cfngin_context, name="test", type="String").update_tags()  # type: ignore[func-returns-value]
+            assert Parameter(cfngin_context, name="test", type="String").update_tags()
         ssm_stubber.assert_no_pending_responses()
 
     def test_update_tags_handle_invalid_resource_id(
@@ -570,9 +542,7 @@ class TestParameter:
         mocker.patch.object(Parameter, "get_current_tags", return_value=[])
         ssm_stubber.add_client_error("add_tags_to_resource", "InvalidResourceId")
         with ssm_stubber:
-            assert not Parameter(  # type: ignore[func-returns-value]
-                cfngin_context, name="test", tags=new_tags, type="String"
-            ).update_tags()
+            assert not Parameter(cfngin_context, name="test", tags=new_tags, type="String").update_tags()
         ssm_stubber.assert_no_pending_responses()
         assert "skipped updating tags; parameter test does not exist" in caplog.messages
         assert "updated tags for parameter test" not in caplog.messages

@@ -38,7 +38,7 @@ def test_delete_ecr_images() -> None:
     )
 
     with stubber:
-        assert not delete_ecr_images(client, image_ids=image_ids, repository_name=repo_name)  # type: ignore[func-returns-value]
+        assert not delete_ecr_images(client, image_ids=image_ids, repository_name=repo_name)
 
 
 def test_delete_ecr_images_failures() -> None:
@@ -129,9 +129,7 @@ def test_purge_repository(cfngin_context: MockCfnginContext, mocker: MockerFixtu
     Validates the orchestration: list images then delete them, returning
     a success status dict for the hook framework.
     """
-    mock_list_ecr_images = mocker.patch(
-        MODULE + ".list_ecr_images", return_value=[{"imageDigest": "abc123"}]
-    )
+    mock_list_ecr_images = mocker.patch(MODULE + ".list_ecr_images", return_value=[{"imageDigest": "abc123"}])
     mock_delete_ecr_images = mocker.patch(MODULE + ".delete_ecr_images")
     cfngin_context.add_stubber("ecr")
     client = cfngin_context.get_session().client("ecr")

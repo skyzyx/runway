@@ -51,9 +51,7 @@ class TestPythonProject:
             "build_directory",
             Mock(name="build_directory", iterdir=Mock(return_value=iter([]))),
         )
-        dependency_directory = mocker.patch.object(
-            PythonProject, "dependency_directory", "dependency_directory"
-        )
+        dependency_directory = mocker.patch.object(PythonProject, "dependency_directory", "dependency_directory")
         mock_rmtree = mocker.patch("shutil.rmtree")
         tmp_requirements_txt = mocker.patch.object(
             PythonProject,
@@ -62,7 +60,7 @@ class TestPythonProject:
         )
         mocker.patch.object(PythonProject, "poetry", poetry_value)
 
-        assert not PythonProject(Mock(), Mock()).cleanup()  # type: ignore[func-returns-value]
+        assert not PythonProject(Mock(), Mock()).cleanup()
         if poetry_value:
             tmp_requirements_txt.exists.assert_called_once_with()
         else:
@@ -86,9 +84,7 @@ class TestPythonProject:
             "build_directory",
             Mock(name="build_directory", iterdir=Mock(return_value=iter(["foobar"]))),
         )
-        dependency_directory = mocker.patch.object(
-            PythonProject, "dependency_directory", "dependency_directory"
-        )
+        dependency_directory = mocker.patch.object(PythonProject, "dependency_directory", "dependency_directory")
         mock_rmtree = mocker.patch("shutil.rmtree")
         mocker.patch.object(
             PythonProject,
@@ -97,7 +93,7 @@ class TestPythonProject:
         )
         mocker.patch.object(PythonProject, "poetry", None)
 
-        assert not PythonProject(Mock(), Mock()).cleanup()  # type: ignore[func-returns-value]
+        assert not PythonProject(Mock(), Mock()).cleanup()
         build_directory.iterdir.assert_called_once_with()
         mock_rmtree.assert_called_once_with(dependency_directory, ignore_errors=True)
 
@@ -116,14 +112,10 @@ class TestPythonProject:
         """Test install_dependencies."""
         args = Mock(cache_dir="foo", extend_pip_args=["--foo", "bar"], use_cache=True)
         mocker.patch.object(PythonProject, "poetry", poetry)
-        dependency_directory = mocker.patch.object(
-            PythonProject, "dependency_directory", "dependency_directory"
-        )
+        dependency_directory = mocker.patch.object(PythonProject, "dependency_directory", "dependency_directory")
         mock_pip = mocker.patch.object(PythonProject, "pip", Mock())
-        requirements_txt = mocker.patch.object(
-            PythonProject, "requirements_txt", "requirements_txt"
-        )
-        assert not PythonProject(args, Mock()).install_dependencies()  # type: ignore[func-returns-value]
+        requirements_txt = mocker.patch.object(PythonProject, "requirements_txt", "requirements_txt")
+        assert not PythonProject(args, Mock()).install_dependencies()
         mock_pip.install.assert_called_once_with(
             cache_dir="foo",
             extend_args=args.extend_pip_args,
@@ -139,24 +131,18 @@ class TestPythonProject:
         mock_pip = mocker.patch.object(PythonProject, "pip")
         mocker.patch.object(PythonProject, "dependency_directory", "dependency_directory")
         mocker.patch.object(PythonProject, "requirements_txt", "requirements.txt")
-        assert not PythonProject(Mock(), Mock()).install_dependencies()  # type: ignore[func-returns-value]
+        assert not PythonProject(Mock(), Mock()).install_dependencies()
         mock_docker.install.assert_called_once_with()
         mock_pip.install.assert_not_called()
 
     def test_install_dependencies_does_not_catch_errors(self, mocker: MockerFixture) -> None:
         """Test install_dependencies does not catch errors."""
         mocker.patch.object(PythonProject, "poetry", False)
-        dependency_directory = mocker.patch.object(
-            PythonProject, "dependency_directory", "dependency_directory"
-        )
-        mock_pip = mocker.patch.object(
-            PythonProject, "pip", Mock(install=Mock(side_effect=PipInstallFailedError))
-        )
-        requirements_txt = mocker.patch.object(
-            PythonProject, "requirements_txt", "requirements_txt"
-        )
+        dependency_directory = mocker.patch.object(PythonProject, "dependency_directory", "dependency_directory")
+        mock_pip = mocker.patch.object(PythonProject, "pip", Mock(install=Mock(side_effect=PipInstallFailedError)))
+        requirements_txt = mocker.patch.object(PythonProject, "requirements_txt", "requirements_txt")
         with pytest.raises(PipInstallFailedError):
-            assert not PythonProject(  # type: ignore[func-returns-value]
+            assert not PythonProject(
                 Mock(cache_dir="foo", extend_pip_args=None, use_cache=True), Mock()
             ).install_dependencies()
         mock_pip.install.assert_called_once_with(
@@ -168,16 +154,14 @@ class TestPythonProject:
             target=dependency_directory,
         )
 
-    def test_install_dependencies_skip(
-        self, caplog: pytest.LogCaptureFixture, mocker: MockerFixture
-    ) -> None:
+    def test_install_dependencies_skip(self, caplog: pytest.LogCaptureFixture, mocker: MockerFixture) -> None:
         """Test install_dependencies skip because no dependencies."""
         caplog.set_level(logging.INFO, logger=MODULE.replace("._", "."))
         mock_docker = mocker.patch.object(PythonProject, "docker")
         mock_pip = mocker.patch.object(PythonProject, "pip")
         mocker.patch.object(PythonProject, "dependency_directory", "dependency_directory")
         mocker.patch.object(PythonProject, "requirements_txt", None)
-        assert not PythonProject(Mock(), Mock()).install_dependencies()  # type: ignore[func-returns-value]
+        assert not PythonProject(Mock(), Mock()).install_dependencies()
         mock_docker.install.assert_not_called()
         mock_pip.install.assert_not_called()
         assert "skipped installing dependencies; none found" in caplog.messages
@@ -270,9 +254,7 @@ class TestPythonProject:
         """Test project_type."""
         caplog.set_level(logging.WARNING)
         mocker.patch.object(PythonProject, "project_root", tmp_path)
-        mock_poetry_dir_is_project = mocker.patch(
-            f"{MODULE}.Poetry.dir_is_project", return_value=poetry_project
-        )
+        mock_poetry_dir_is_project = mocker.patch(f"{MODULE}.Poetry.dir_is_project", return_value=poetry_project)
         assert (
             PythonProject(
                 Mock(use_poetry=use_poetry),
@@ -282,10 +264,7 @@ class TestPythonProject:
         )
         mock_poetry_dir_is_project.assert_called_once_with(tmp_path)
         if poetry_project and not use_poetry:
-            assert (
-                "poetry project detected but use of poetry is explicitly disabled"
-                in caplog.messages
-            )
+            assert "poetry project detected but use of poetry is explicitly disabled" in caplog.messages
 
     def test_requirements_txt(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test requirements_txt."""
@@ -308,12 +287,8 @@ class TestPythonProject:
     def test_requirements_txt_poetry(self, mocker: MockerFixture) -> None:
         """Test requirements_txt."""
         expected = "foo.txt"
-        poetry = mocker.patch.object(
-            PythonProject, "poetry", Mock(export=Mock(return_value=expected))
-        )
-        tmp_requirements_txt = mocker.patch.object(
-            PythonProject, "tmp_requirements_txt", "tmp_requirements_txt"
-        )
+        poetry = mocker.patch.object(PythonProject, "poetry", Mock(export=Mock(return_value=expected)))
+        tmp_requirements_txt = mocker.patch.object(PythonProject, "tmp_requirements_txt", "tmp_requirements_txt")
         mocker.patch.object(PythonProject, "project_root")
         assert PythonProject(Mock(), Mock()).requirements_txt == expected
         poetry.export.assert_called_once_with(output=tmp_requirements_txt)
@@ -357,9 +332,7 @@ class TestPythonProject:
         expected = {*Pip.CONFIG_FILES}
         if update_expected:
             expected.update(update_expected)
-        assert (
-            PythonProject(Mock(use_poetry=use_poetry), Mock()).supported_metadata_files == expected
-        )
+        assert PythonProject(Mock(use_poetry=use_poetry), Mock()).supported_metadata_files == expected
 
     def test_tmp_requirements_txt(self, mocker: MockerFixture, tmp_path: Path) -> None:
         """Test tmp_requirements_txt."""

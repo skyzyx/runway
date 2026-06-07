@@ -180,7 +180,7 @@ class TestFileLookup:
         expected = {"foo": "bar", "foobar": [1, None]}
         data = yaml.dump(expected)
         tmp_file = tmp_path / "test"
-        tmp_file.write_text(data, encoding="utf-8")  # type: ignore[arg-type]
+        tmp_file.write_text(data, encoding="utf-8")
 
         assert FileLookup.handle(f"yaml:file://{tmp_file}") == expected
         assert FileLookup.handle(f"yaml:{data}") == expected
@@ -198,7 +198,7 @@ class TestFileLookup:
             }
         )
         tmp_file = tmp_path / "test"
-        tmp_file.write_text(data, encoding="utf-8")  # type: ignore[arg-type]
+        tmp_file.write_text(data, encoding="utf-8")
 
         assert_template_dicts(FileLookup.handle(f"yaml-parameterized:file://{tmp_file}"), expected)
         assert_template_dicts(FileLookup.handle(f"yaml-parameterized:{data}"), expected)

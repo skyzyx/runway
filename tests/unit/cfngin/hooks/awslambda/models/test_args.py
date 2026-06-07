@@ -30,7 +30,7 @@ class TestAwsLambdaHookArgs:
         obj = AwsLambdaHookArgs(  # these are all required fields
             bucket_name="test-bucket",
             runtime="test",
-            source_code="./",  # type: ignore
+            source_code="./",
         )
         assert obj.source_code.is_absolute()
         assert obj.source_code == Path.cwd()
@@ -44,12 +44,8 @@ class TestAwsLambdaHookArgs:
         )
         assert obj.runtime == "test"
 
-    @pytest.mark.parametrize(
-        "kwargs", [{"image": "test"}, {"file": ""}, {"file": "", "image": "test"}]
-    )
-    def test__validate_runtime_or_docker_docker_no_runtime(
-        self, kwargs: dict[str, Any], tmp_path: Path
-    ) -> None:
+    @pytest.mark.parametrize("kwargs", [{"image": "test"}, {"file": ""}, {"file": "", "image": "test"}])
+    def test__validate_runtime_or_docker_docker_no_runtime(self, kwargs: dict[str, Any], tmp_path: Path) -> None:
         """Test _validate_runtime_or_docker no runtime if Docker."""
         if "file" in kwargs:
             dockerfile = tmp_path / "Dockerfile"
@@ -169,7 +165,7 @@ class TestPythonHookArgs:
         """Test extra fields."""
         obj = PythonHookArgs(
             bucket_name="test-bucket",
-            invalid=True,  # type: ignore
+            invalid=True,
             runtime="test",
             source_code=tmp_path,
         )

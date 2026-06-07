@@ -85,15 +85,11 @@ class TestBaseAction(unittest.TestCase):
             context=mock_context("mynamespace"),
             provider_builder=MockProviderBuilder(provider=Provider(get_session("us-east-1"))),
         )
-        assert not action.ensure_cfn_bucket()  # type: ignore[func-returns-value]
-        mock_ensure_s3_bucket.assert_called_once_with(
-            action.s3_conn, action.bucket_name, None, create=False
-        )
+        assert not action.ensure_cfn_bucket()
+        mock_ensure_s3_bucket.assert_called_once_with(action.s3_conn, action.bucket_name, None, create=False)
 
     @patch("runway.cfngin.actions.base.ensure_s3_bucket")
-    def test_ensure_cfn_bucket_exists_raise_cfngin_bucket_not_found(
-        self, mock_ensure_s3_bucket: MagicMock
-    ) -> None:
+    def test_ensure_cfn_bucket_exists_raise_cfngin_bucket_not_found(self, mock_ensure_s3_bucket: MagicMock) -> None:
         """Test ensure cfn bucket exists.
 
         Verifies that a ClientError from S3 is translated into
@@ -102,23 +98,19 @@ class TestBaseAction(unittest.TestCase):
         """
         mock_ensure_s3_bucket.side_effect = botocore.exceptions.ClientError(
             {},
-            "head_bucket",  # type: ignore
+            "head_bucket",
         )
         action = BaseAction(
             context=mock_context("mynamespace"),
             provider_builder=MockProviderBuilder(provider=Provider(get_session("us-east-1"))),
         )
         with pytest.raises(CfnginBucketNotFound):
-            assert action.ensure_cfn_bucket()  # type: ignore[func-returns-value]
-        mock_ensure_s3_bucket.assert_called_once_with(
-            action.s3_conn, action.bucket_name, None, create=False
-        )
+            assert action.ensure_cfn_bucket()
+        mock_ensure_s3_bucket.assert_called_once_with(action.s3_conn, action.bucket_name, None, create=False)
 
     @patch("runway.context.CfnginContext.persistent_graph_tags", new_callable=PropertyMock)
     @patch("runway.cfngin.actions.base.BaseAction._stack_action", new_callable=PropertyMock)
-    def test_generate_plan_no_persist_exclude(
-        self, mock_stack_action: PropertyMock, mock_tags: PropertyMock
-    ) -> None:
+    def test_generate_plan_no_persist_exclude(self, mock_stack_action: PropertyMock, mock_tags: PropertyMock) -> None:
         """Test generate plan no persist exclude.
 
         When no persistent graph is configured, the plan must only contain
@@ -150,9 +142,7 @@ class TestBaseAction(unittest.TestCase):
 
     @patch("runway.context.CfnginContext.persistent_graph_tags", new_callable=PropertyMock)
     @patch("runway.cfngin.actions.base.BaseAction._stack_action", new_callable=PropertyMock)
-    def test_generate_plan_no_persist_include(
-        self, mock_stack_action: PropertyMock, mock_tags: PropertyMock
-    ) -> None:
+    def test_generate_plan_no_persist_include(self, mock_stack_action: PropertyMock, mock_tags: PropertyMock) -> None:
         """Test generate plan no persist include.
 
         Even when include_persistent_graph=True, if no persistent graph key is
@@ -184,9 +174,7 @@ class TestBaseAction(unittest.TestCase):
 
     @patch("runway.context.CfnginContext.persistent_graph_tags", new_callable=PropertyMock)
     @patch("runway.cfngin.actions.base.BaseAction._stack_action", new_callable=PropertyMock)
-    def test_generate_plan_with_persist_exclude(
-        self, mock_stack_action: PropertyMock, mock_tags: PropertyMock
-    ) -> None:
+    def test_generate_plan_with_persist_exclude(self, mock_stack_action: PropertyMock, mock_tags: PropertyMock) -> None:
         """Test generate plan with persist exclude.
 
         When a persistent graph exists but is excluded from the plan, orphan
@@ -194,9 +182,7 @@ class TestBaseAction(unittest.TestCase):
         """
         mock_stack_action.return_value = MagicMock()
         mock_tags.return_value = {}
-        context = mock_context(
-            namespace="test", extra_config_args=self.config_persist, region=self.region
-        )
+        context = mock_context(namespace="test", extra_config_args=self.config_persist, region=self.region)
         persist_step = Step.from_stack_name("removed", context)
         context._persistent_graph = Graph.from_steps([persist_step])
         action = BaseAction(
@@ -217,9 +203,7 @@ class TestBaseAction(unittest.TestCase):
 
     @patch("runway.context.CfnginContext.persistent_graph_tags", new_callable=PropertyMock)
     @patch("runway.cfngin.actions.base.BaseAction._stack_action", new_callable=PropertyMock)
-    def test_generate_plan_with_persist_include(
-        self, mock_stack_action: PropertyMock, mock_tags: PropertyMock
-    ) -> None:
+    def test_generate_plan_with_persist_include(self, mock_stack_action: PropertyMock, mock_tags: PropertyMock) -> None:
         """Test generate plan with persist include.
 
         When the persistent graph is included, orphan stacks (e.g. "removed")
@@ -227,9 +211,7 @@ class TestBaseAction(unittest.TestCase):
         """
         mock_stack_action.return_value = MagicMock()
         mock_tags.return_value = {}
-        context = mock_context(
-            namespace="test", extra_config_args=self.config_persist, region=self.region
-        )
+        context = mock_context(namespace="test", extra_config_args=self.config_persist, region=self.region)
         persist_step = Step.from_stack_name("removed", context)
         context._persistent_graph = Graph.from_steps([persist_step])
         action = BaseAction(
@@ -263,9 +245,7 @@ class TestBaseAction(unittest.TestCase):
         """
         mock_stack_action.return_value = MagicMock()
         mock_tags.return_value = {}
-        context = mock_context(
-            namespace="test", extra_config_args=self.config_persist, region=self.region
-        )
+        context = mock_context(namespace="test", extra_config_args=self.config_persist, region=self.region)
         persist_step = Step.from_stack_name("removed", context)
         context._persistent_graph = Graph.from_steps([persist_step])
         action = BaseAction(

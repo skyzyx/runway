@@ -44,7 +44,7 @@ class TestHook:
         args = {"tags": {"key": "val"}}
         result = Hook(cfngin_context, provider, **args)
 
-        assert result.args.tags["key"] == "val"  # type: ignore
+        assert result.args.tags["key"] == "val"
         assert result.args.tags == {"cfngin_namespace": "example", "key": "val"}
         assert not result.blueprint
         assert result.context == cfngin_context
@@ -84,9 +84,7 @@ class TestHook:
         "runway.cfngin.hooks.base.HookDeployAction.run",
         MagicMock(return_value=COMPLETE),
     )
-    def test_deploy_stack(
-        self, cfngin_context: MockCfnginContext, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_deploy_stack(self, cfngin_context: MockCfnginContext, caplog: pytest.LogCaptureFixture) -> None:
         """Test for deploy_stack.
 
         Validates the no-wait path: a single action run that completes
@@ -105,9 +103,7 @@ class TestHook:
         "runway.cfngin.hooks.base.HookDeployAction.run",
         MagicMock(side_effect=[SUBMITTED, COMPLETE]),
     )
-    def test_deploy_stack_wait(
-        self, cfngin_context: MockCfnginContext, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_deploy_stack_wait(self, cfngin_context: MockCfnginContext, caplog: pytest.LogCaptureFixture) -> None:
         """Test for deploy_stack with wait.
 
         Exercises the wait=True poll loop: first run returns SUBMITTED,
@@ -163,9 +159,7 @@ class TestHook:
         "runway.cfngin.hooks.base.HookDestroyAction.run",
         MagicMock(side_effect=[SUBMITTED, COMPLETE_W_REASON]),
     )
-    def test_destroy_stack(
-        self, cfngin_context: MockCfnginContext, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_destroy_stack(self, cfngin_context: MockCfnginContext, caplog: pytest.LogCaptureFixture) -> None:
         """Test for destroy_stack with wait.
 
         Validates the destroy poll loop and that a CompleteStatus with
@@ -180,10 +174,7 @@ class TestHook:
 
         assert caplog.records[0].message == f"{stack.name}:{SUBMITTED.name}"
         assert caplog.records[1].message == "waiting for stack to complete..."
-        assert (
-            caplog.records[2].message
-            == f"{stack.name}:{COMPLETE_W_REASON.name} ({COMPLETE_W_REASON.reason})"
-        )
+        assert caplog.records[2].message == f"{stack.name}:{COMPLETE_W_REASON.name} ({COMPLETE_W_REASON.reason})"
 
     def test_wait_for_stack_till_reason(self, cfngin_context: MockCfnginContext) -> None:
         """Test _wait_for_stack till_reason option.

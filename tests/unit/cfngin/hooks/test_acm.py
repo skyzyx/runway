@@ -97,8 +97,8 @@ def gen_change_resource_record_sets(
         "SubmittedAt": datetime.now(),
         "Comment": "placeholder_comment",
     }
-    data.update(kwargs)  # type: ignore
-    return {"ChangeInfo": data}  # type: ignore
+    data.update(kwargs)
+    return {"ChangeInfo": data}
 
 
 def gen_domain_validation_option(**kwargs: Any) -> DomainValidationTypeDef:
@@ -114,7 +114,7 @@ def gen_domain_validation_option(**kwargs: Any) -> DomainValidationTypeDef:
         },
         "ValidationMethod": "DNS",
     }
-    data.update(kwargs)  # type: ignore
+    data.update(kwargs)
     return data
 
 
@@ -128,13 +128,11 @@ def gen_record_set(
         "Value": "placeholder_value",
     }
     if use_resource_record:
-        data["ResourceRecords"] = kwargs.pop(
-            "ResourceRecords", [{"Value": kwargs.pop("Value", data["Value"])}]
-        )
+        data["ResourceRecords"] = kwargs.pop("ResourceRecords", [{"Value": kwargs.pop("Value", data["Value"])}])
         del data["Value"]
 
     data.update(kwargs)
-    return data  # type: ignore
+    return data
 
 
 def gen_stack_resource(**kwargs: Any) -> StackResourceTypeDef:
@@ -146,7 +144,7 @@ def gen_stack_resource(**kwargs: Any) -> StackResourceTypeDef:
         "Timestamp": datetime.now(),
         "ResourceStatus": "CREATE_IN_PROGRESS",
     }
-    data.update(kwargs)  # type: ignore
+    data.update(kwargs)
     return data
 
 
@@ -209,7 +207,7 @@ class TestCertificate:
         # stack attributes
         assert result.stack
         assert result.stack.fqn == "test-stack-name"
-        assert result.stack.blueprint == result.blueprint  # type: ignore
+        assert result.stack.blueprint == result.blueprint
 
     def test_domain_changed(self, cfngin_context: MockCfnginContext) -> None:
         """Test for domain_changed.
@@ -233,7 +231,7 @@ class TestCertificate:
         )
 
         domain_match = {"DomainName": "example.com"}
-        checks = [  # type: ignore[var-annotated]
+        checks = [
             # is_stack_recreatable, is_stack_in_progress, is_stack_rolling_back, get_outputs
             (False, False, False, {"DomainName": "nope"}),
             (False, False, False, domain_match),
@@ -291,9 +289,7 @@ class TestCertificate:
             "LogicalResourceId": "Certificate",
         }
 
-        cfn_stubber.add_response(
-            "describe_stack_resources", {"StackResources": []}, expected_request
-        )
+        cfn_stubber.add_response("describe_stack_resources", {"StackResources": []}, expected_request)
         cfn_stubber.add_response(
             "describe_stack_resources",
             {"StackResources": [gen_stack_resource()]},
@@ -365,9 +361,7 @@ class TestCertificate:
         )
 
         with acm_stubber:
-            assert cert.get_validation_record(status=status) == gen_domain_validation_option().get(
-                "ResourceRecord"
-            )
+            assert cert.get_validation_record(status=status) == gen_domain_validation_option().get("ResourceRecord")
         acm_stubber.assert_no_pending_responses()
 
     @pytest.mark.parametrize(
@@ -487,7 +481,7 @@ class TestCertificate:
         )
 
         with r53_stubber:
-            assert not cert.put_record_set(cast("ResourceRecordTypeDef", gen_record_set()))  # type: ignore[func-returns-value]
+            assert not cert.put_record_set(cast("ResourceRecordTypeDef", gen_record_set()))
         r53_stubber.assert_no_pending_responses()
 
     def test_remove_validation_records(
@@ -541,7 +535,7 @@ class TestCertificate:
                                 gen_record_set(
                                     use_resource_record=True,
                                     TTL=cert.args.ttl,
-                                    **gen_domain_validation_option().get("ResourceRecord", {}),  # type: ignore[typeddict-item]
+                                    **gen_domain_validation_option().get("ResourceRecord", {}),
                                 ),
                             ),
                         )
@@ -555,7 +549,7 @@ class TestCertificate:
             r53_stubber,
             pytest.raises(ValueError, match="Must provide one of more record sets"),
         ):
-            assert not cert.remove_validation_records()  # type: ignore[func-returns-value]
+            assert not cert.remove_validation_records()
             cert.remove_validation_records()
 
         acm_stubber.assert_no_pending_responses()
@@ -595,12 +589,10 @@ class TestCertificate:
         )
 
         with r53_stubber:
-            assert not cert.update_record_set(cast("ResourceRecordTypeDef", gen_record_set()))  # type: ignore[func-returns-value]
+            assert not cert.update_record_set(cast("ResourceRecordTypeDef", gen_record_set()))
         r53_stubber.assert_no_pending_responses()
 
-    def test_deploy(
-        self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_deploy(self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test deploy."""
         # setup context
         cfngin_context.add_stubber("acm", region="us-east-1")
@@ -617,7 +609,7 @@ class TestCertificate:
             hosted_zone_id="test",
         )
         monkeypatch.setattr(cert, "domain_changed", lambda: False)
-        monkeypatch.setattr(cert, "deploy_stack", lambda: STATUS.new)  # type: ignore
+        monkeypatch.setattr(cert, "deploy_stack", lambda: STATUS.new)
         monkeypatch.setattr(cert, "get_certificate", lambda: cert_arn)
         monkeypatch.setattr(
             cert,
@@ -633,9 +625,7 @@ class TestCertificate:
 
         assert cert.deploy() == expected
 
-    def test_deploy_update(
-        self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_deploy_update(self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test deploy update stack."""
         # setup context
         cfngin_context.add_stubber("acm", region="us-east-1")
@@ -657,9 +647,7 @@ class TestCertificate:
         monkeypatch.setattr(
             cert,
             "get_validation_record",
-            lambda x, status: (
-                "get_validation_record" if x == cert_arn and status == "SUCCESS" else ValueError
-            ),
+            lambda x, status: "get_validation_record" if x == cert_arn and status == "SUCCESS" else ValueError,
         )
         monkeypatch.setattr(
             cert,
@@ -670,9 +658,7 @@ class TestCertificate:
 
         assert cert.deploy() == expected
 
-    def test_deploy_no_change(
-        self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_deploy_no_change(self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test deploy no change."""
         # setup context
         cfngin_context.add_stubber("acm", region="us-east-1")
@@ -689,14 +675,12 @@ class TestCertificate:
             hosted_zone_id="test",
         )
         monkeypatch.setattr(cert, "domain_changed", lambda: False)
-        monkeypatch.setattr(cert, "deploy_stack", lambda: STATUS.no)  # type: ignore
+        monkeypatch.setattr(cert, "deploy_stack", lambda: STATUS.no)
         monkeypatch.setattr(cert, "get_certificate", lambda: cert_arn)
 
         assert cert.deploy() == expected
 
-    def test_deploy_recreate(
-        self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_deploy_recreate(self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test deploy with stack recreation."""
         # setup context
         cfngin_context.add_stubber("acm", region="us-east-1")
@@ -713,12 +697,12 @@ class TestCertificate:
             hosted_zone_id="test",
         )
         monkeypatch.setattr(cert, "domain_changed", lambda: False)
-        monkeypatch.setattr(cert, "deploy_stack", lambda: STATUS.recreate)  # type: ignore
+        monkeypatch.setattr(cert, "deploy_stack", lambda: STATUS.recreate)
         monkeypatch.setattr(cert, "get_certificate", MagicMock(side_effect=["old", cert_arn]))
         monkeypatch.setattr(
             cert,
             "_wait_for_stack",
-            MagicMock(side_effect=[STATUS.new, None]),  # type: ignore
+            MagicMock(side_effect=[STATUS.new, None]),
         )
         monkeypatch.setattr(
             cert,
@@ -733,9 +717,7 @@ class TestCertificate:
 
         assert cert.deploy() == expected
 
-    def test_deploy_domain_changed(
-        self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_deploy_domain_changed(self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test deploy domain changed.
 
         Verifies that deploy returns falsy when the domain has changed,
@@ -757,9 +739,7 @@ class TestCertificate:
 
         assert not cert.deploy()
 
-    def test_deploy_error_destroy(
-        self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_deploy_error_destroy(self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test deploy with errors that result in destroy being called.
 
         Validates error recovery: R53 errors (InvalidChangeBatch,
@@ -781,7 +761,7 @@ class TestCertificate:
         )
 
         monkeypatch.setattr(cert, "domain_changed", lambda: False)
-        monkeypatch.setattr(cert, "deploy_stack", lambda: STATUS.new)  # type: ignore
+        monkeypatch.setattr(cert, "deploy_stack", lambda: STATUS.new)
         monkeypatch.setattr(cert, "get_certificate", lambda: cert_arn)
         monkeypatch.setattr(
             cert,
@@ -816,9 +796,7 @@ class TestCertificate:
         )
         assert not cert.deploy()  # StackFailed
 
-    def test_deploy_error_no_destroy(
-        self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_deploy_error_no_destroy(self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test deploy with errors that don't result in destroy being called.
 
         StackUpdateBadStatus indicates a pre-existing problem with the
@@ -845,9 +823,7 @@ class TestCertificate:
 
         assert not cert.deploy()
 
-    def test_destroy(
-        self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_destroy(self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test destroy."""
         # setup context
         cfngin_context.add_stubber("acm", region="us-east-1")
@@ -866,11 +842,9 @@ class TestCertificate:
 
         assert cert.destroy()
         assert cert.destroy(skip_r53=True)
-        assert cert.remove_validation_records.call_count == 1  # type: ignore
+        assert cert.remove_validation_records.call_count == 1
 
-    def test_destroy_aws_errors(
-        self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_destroy_aws_errors(self, cfngin_context: MockCfnginContext, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test destroy with errors from AWS.
 
         Ensures destroy handles known R53/ACM exceptions gracefully

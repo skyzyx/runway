@@ -309,16 +309,14 @@ class TestMethods(unittest.TestCase):
         """
         get_input_path = "runway.cfngin.ui.get_raw_input"
         with patch(get_input_path, return_value="y"):
-            assert ask_for_approval([], [], False) is None  # type: ignore[func-returns-value]
+            assert ask_for_approval([], [], False) is None
 
         for v in ("n", "N", "x", "\n"):
             with patch(get_input_path, return_value=v), pytest.raises(exceptions.CancelExecution):
                 ask_for_approval([], [])
 
         with patch(get_input_path, side_effect=["v", "n"]) as mock_get_input:
-            with patch(
-                "runway.cfngin.providers.aws.default.output_full_changeset"
-            ) as mock_full_changeset:
+            with patch("runway.cfngin.providers.aws.default.output_full_changeset") as mock_full_changeset:
                 with pytest.raises(exceptions.CancelExecution):
                     ask_for_approval([], [], True)
                 assert mock_full_changeset.call_count == 1
@@ -336,16 +334,14 @@ class TestMethods(unittest.TestCase):
             DictValue("ParamB", "param-b-old-value", "param-b-new-value-delta"),
         ]
         with patch(get_input_path, return_value="y"):
-            assert ask_for_approval([], params_diff, False) is None  # type: ignore[func-returns-value]
+            assert ask_for_approval([], params_diff, False) is None
 
         for v in ("n", "N", "x", "\n"):
             with patch(get_input_path, return_value=v), pytest.raises(exceptions.CancelExecution):
                 ask_for_approval([], params_diff)
 
         with patch(get_input_path, side_effect=["v", "n"]) as mock_get_input:
-            with patch(
-                "runway.cfngin.providers.aws.default.output_full_changeset"
-            ) as mock_full_changeset:
+            with patch("runway.cfngin.providers.aws.default.output_full_changeset") as mock_full_changeset:
                 with pytest.raises(exceptions.CancelExecution):
                     ask_for_approval([], params_diff, True)
                 assert mock_full_changeset.call_count == 1
@@ -353,9 +349,7 @@ class TestMethods(unittest.TestCase):
 
     @patch("runway.cfngin.providers.aws.default.format_params_diff")
     @patch("runway.cfngin.providers.aws.default.yaml.safe_dump")
-    def test_output_full_changeset(
-        self, mock_safe_dump: MagicMock, patched_format: MagicMock
-    ) -> None:
+    def test_output_full_changeset(self, mock_safe_dump: MagicMock, patched_format: MagicMock) -> None:
         """Test output full changeset.
 
         Validates the verbose changeset display logic handles all user input
@@ -368,7 +362,7 @@ class TestMethods(unittest.TestCase):
 
         for v in ["y", "v", "Y", "V"]:
             with patch(get_input_path, return_value=v) as prompt:
-                assert output_full_changeset(full_changeset=[], params_diff=[], fqn=None) is None  # type: ignore[func-returns-value]
+                assert output_full_changeset(full_changeset=[], params_diff=[], fqn=None) is None
                 assert prompt.call_count == 1
                 safe_dump_counter += 1
                 assert mock_safe_dump.call_count == safe_dump_counter
@@ -400,9 +394,7 @@ class TestMethods(unittest.TestCase):
         Confirms the poller exits cleanly on terminal states (CREATE_COMPLETE
         and FAILED) without raising, since both represent stabilized changesets.
         """
-        self.stubber.add_response(
-            "describe_change_set", generate_change_set_response("CREATE_COMPLETE")
-        )
+        self.stubber.add_response("describe_change_set", generate_change_set_response("CREATE_COMPLETE"))
         with self.stubber:
             wait_till_change_set_complete(self.cfn, "FAKEID")
 
@@ -418,9 +410,7 @@ class TestMethods(unittest.TestCase):
         """
         # Need 2 responses for try_count
         for _ in range(2):
-            self.stubber.add_response(
-                "describe_change_set", generate_change_set_response("CREATE_PENDING")
-            )
+            self.stubber.add_response("describe_change_set", generate_change_set_response("CREATE_PENDING"))
         with self.stubber, pytest.raises(exceptions.ChangesetDidNotStabilize):
             wait_till_change_set_complete(self.cfn, "FAKEID", try_count=2, sleep_time=0.1)
 
@@ -438,9 +428,7 @@ class TestMethods(unittest.TestCase):
             generate_change_set_response("FAILED", status_reason="Stack didn't contain changes."),
         )
 
-        self.stubber.add_response(
-            "delete_change_set", {}, expected_params={"ChangeSetName": "CHANGESETID"}
-        )
+        self.stubber.add_response("delete_change_set", {}, expected_params={"ChangeSetName": "CHANGESETID"})
 
         with self.stubber, pytest.raises(exceptions.StackDidNotChange):
             create_change_set(
@@ -569,9 +557,7 @@ class TestProvider:
         )
         obj = Provider(MagicMock())
         assert obj.get_delete_failed_status_reason("test") == "reason"
-        mock_get_event_by_resource_status.assert_called_once_with(
-            "test", "DELETE_FAILED", chronological=True
-        )
+        mock_get_event_by_resource_status.assert_called_once_with("test", "DELETE_FAILED", chronological=True)
         assert not obj.get_delete_failed_status_reason("test")
 
     def test_get_event_by_resource_status(self, mocker: MockerFixture) -> None:
@@ -622,9 +608,7 @@ class TestProvider:
             "test", "UPDATE_ROLLBACK_IN_PROGRESS", chronological=False
         )
         assert obj.get_rollback_status_reason("test") == "reason2"
-        mock_get_event_by_resource_status.assert_called_with(
-            "test", "ROLLBACK_IN_PROGRESS", chronological=True
-        )
+        mock_get_event_by_resource_status.assert_called_with("test", "ROLLBACK_IN_PROGRESS", chronological=True)
         assert not obj.get_rollback_status_reason("test")
 
     def test_get_stack_status_reason(self) -> None:
@@ -651,9 +635,7 @@ class TestProvider:
         states allow deletion to proceed.
         """
         assert (
-            Provider(MagicMock()).is_stack_destroy_possible(
-                generate_describe_stacks_stack("test", stack_status=status)  # type: ignore
-            )
+            Provider(MagicMock()).is_stack_destroy_possible(generate_describe_stacks_stack("test", stack_status=status))
             is expected
         )
 
@@ -707,9 +689,7 @@ class TestProviderDefaultMode(unittest.TestCase):
         """
         stack_name = "fake_stack"
         template_path = Path("./tests/unit/cfngin/fixtures/cfn_template.yaml")
-        template = Template(
-            body=template_path.read_text(encoding=locale.getpreferredencoding(do_setlocale=False))
-        )
+        template = Template(body=template_path.read_text(encoding=locale.getpreferredencoding(do_setlocale=False)))
         parameters: list[Any] = []
         tags: list[Any] = []
 
@@ -752,7 +732,7 @@ class TestProviderDefaultMode(unittest.TestCase):
         self.stubber.add_response("delete_stack", {}, stack)
 
         with self.stubber:
-            assert self.provider.destroy_stack(stack) is None  # type: ignore
+            assert self.provider.destroy_stack(stack) is None
             self.stubber.assert_no_pending_responses()
 
     def test_get_stack_stack_does_not_exist(self) -> None:
@@ -779,9 +759,7 @@ class TestProviderDefaultMode(unittest.TestCase):
         """
         stack_name = "MockStack"
         stack_response = {"Stacks": [generate_describe_stacks_stack(stack_name)]}
-        self.stubber.add_response(
-            "describe_stacks", stack_response, expected_params={"StackName": stack_name}
-        )
+        self.stubber.add_response("describe_stacks", stack_response, expected_params={"StackName": stack_name})
 
         with self.stubber:
             response = self.provider.get_stack(stack_name)
@@ -798,7 +776,7 @@ class TestProviderDefaultMode(unittest.TestCase):
             [{"force_interactive": False}, self.provider.noninteractive_destroy_stack],
             [{"force_interactive": True}, self.provider.interactive_destroy_stack],
         ]:
-            assert self.provider.select_destroy_method(**i[0]) == i[1]  # type: ignore
+            assert self.provider.select_destroy_method(**i[0]) == i[1]
 
     def test_select_update_method(self) -> None:
         """Test select update method.
@@ -825,7 +803,7 @@ class TestProviderDefaultMode(unittest.TestCase):
                 self.provider.interactive_update_stack,
             ],
         ]:
-            assert self.provider.select_update_method(**i[0]) == i[1]  # type: ignore
+            assert self.provider.select_update_method(**i[0]) == i[1]
 
     def test_prepare_stack_for_update_completed(self) -> None:
         """Test prepare stack for update completed.
@@ -897,9 +875,7 @@ class TestProviderDefaultMode(unittest.TestCase):
         self.provider.recreate_failed = True
 
         with pytest.raises(exceptions.StackUpdateBadStatus) as excinfo, self.stubber:
-            self.provider.prepare_stack_for_update(
-                stack, tags=[{"Key": "cfngin_namespace", "Value": "test"}]
-            )
+            self.provider.prepare_stack_for_update(stack, tags=[{"Key": "cfngin_namespace", "Value": "test"}])
 
         assert "tags differ" in str(excinfo.value).lower()
 
@@ -929,9 +905,7 @@ class TestProviderDefaultMode(unittest.TestCase):
         changes = [generate_change()]
         self.stubber.add_response(
             "describe_change_set",
-            generate_change_set_response(
-                status="CREATE_COMPLETE", execution_status="AVAILABLE", changes=changes
-            ),
+            generate_change_set_response(status="CREATE_COMPLETE", execution_status="AVAILABLE", changes=changes),
         )
 
         self.stubber.add_response("execute_change_set", {})
@@ -958,9 +932,7 @@ class TestProviderDefaultMode(unittest.TestCase):
         changes = [generate_change()]
         self.stubber.add_response(
             "describe_change_set",
-            generate_change_set_response(
-                status="CREATE_COMPLETE", execution_status="AVAILABLE", changes=changes
-            ),
+            generate_change_set_response(status="CREATE_COMPLETE", execution_status="AVAILABLE", changes=changes),
         )
         self.stubber.add_response("set_stack_policy", {})
         self.stubber.add_response("execute_change_set", {})
@@ -986,11 +958,7 @@ class TestProviderDefaultMode(unittest.TestCase):
         self.stubber.add_client_error("delete_stack", service_message="TerminationProtection")
         self.stubber.add_response(
             "describe_stacks",
-            {
-                "Stacks": [
-                    generate_describe_stacks_stack("fake-stack", stack_status="ROLLBACK_COMPLETE")
-                ]
-            },
+            {"Stacks": [generate_describe_stacks_stack("fake-stack", stack_status="ROLLBACK_COMPLETE")]},
         )
         self.stubber.add_response(
             "describe_stacks",
@@ -1019,9 +987,7 @@ class TestProviderDefaultMode(unittest.TestCase):
         self.stubber.add_client_error("delete_stack", service_message="TerminationProtection")
 
         with self.stubber, pytest.raises(ClientError):
-            self.provider.noninteractive_destroy_stack(
-                "fake-stack", allow_disable_termination_protection=False
-            )
+            self.provider.noninteractive_destroy_stack("fake-stack", allow_disable_termination_protection=False)
         self.stubber.assert_no_pending_responses()
 
     @patch("runway.cfngin.providers.aws.default.output_full_changeset")
@@ -1035,22 +1001,16 @@ class TestProviderDefaultMode(unittest.TestCase):
         stack_name = "MockStack"
         mock_stack = generate_stack_object(stack_name)
 
-        self.stubber.add_response(
-            "describe_stacks", {"Stacks": [generate_describe_stacks_stack(stack_name)]}
-        )
+        self.stubber.add_response("describe_stacks", {"Stacks": [generate_describe_stacks_stack(stack_name)]})
         self.stubber.add_response("get_template", generate_get_template("cfn_template.yaml"))
         self.stubber.add_response("create_change_set", {"Id": "CHANGESETID", "StackId": stack_name})
         changes = [generate_change()]
         self.stubber.add_response(
             "describe_change_set",
-            generate_change_set_response(
-                status="CREATE_COMPLETE", execution_status="AVAILABLE", changes=changes
-            ),
+            generate_change_set_response(status="CREATE_COMPLETE", execution_status="AVAILABLE", changes=changes),
         )
         self.stubber.add_response("delete_change_set", {})
-        self.stubber.add_response(
-            "describe_stacks", {"Stacks": [generate_describe_stacks_stack(stack_name)]}
-        )
+        self.stubber.add_response("describe_stacks", {"Stacks": [generate_describe_stacks_stack(stack_name)]})
 
         with self.stubber:
             result = self.provider.get_stack_changes(
@@ -1060,12 +1020,8 @@ class TestProviderDefaultMode(unittest.TestCase):
                 tags=[],
             )
 
-        mock_output_full_cs.assert_called_with(
-            full_changeset=changes, params_diff=[], fqn=stack_name, answer="y"
-        )
-        expected_outputs = {
-            "FakeOutput": "<inferred-change = MockStack.FakeOutput={'Ref': 'FakeResource'}>"
-        }
+        mock_output_full_cs.assert_called_with(full_changeset=changes, params_diff=[], fqn=stack_name, answer="y")
+        expected_outputs = {"FakeOutput": "<inferred-change = MockStack.FakeOutput={'Ref': 'FakeResource'}>"}
         assert self.provider.get_outputs(stack_name) == expected_outputs
         assert result == expected_outputs
 
@@ -1082,36 +1038,22 @@ class TestProviderDefaultMode(unittest.TestCase):
 
         self.stubber.add_response(
             "describe_stacks",
-            {
-                "Stacks": [
-                    generate_describe_stacks_stack(stack_name, stack_status="REVIEW_IN_PROGRESS")
-                ]
-            },
+            {"Stacks": [generate_describe_stacks_stack(stack_name, stack_status="REVIEW_IN_PROGRESS")]},
         )
         self.stubber.add_response("create_change_set", {"Id": "CHANGESETID", "StackId": stack_name})
         changes = [generate_change()]
         self.stubber.add_response(
             "describe_change_set",
-            generate_change_set_response(
-                status="CREATE_COMPLETE", execution_status="AVAILABLE", changes=changes
-            ),
+            generate_change_set_response(status="CREATE_COMPLETE", execution_status="AVAILABLE", changes=changes),
         )
         self.stubber.add_response("delete_change_set", {})
         self.stubber.add_response(
             "describe_stacks",
-            {
-                "Stacks": [
-                    generate_describe_stacks_stack(stack_name, stack_status="REVIEW_IN_PROGRESS")
-                ]
-            },
+            {"Stacks": [generate_describe_stacks_stack(stack_name, stack_status="REVIEW_IN_PROGRESS")]},
         )
         self.stubber.add_response(
             "describe_stacks",
-            {
-                "Stacks": [
-                    generate_describe_stacks_stack(stack_name, stack_status="REVIEW_IN_PROGRESS")
-                ]
-            },
+            {"Stacks": [generate_describe_stacks_stack(stack_name, stack_status="REVIEW_IN_PROGRESS")]},
         )
 
         self.stubber.add_response("delete_stack", {})
@@ -1124,9 +1066,7 @@ class TestProviderDefaultMode(unittest.TestCase):
                 tags=[],
             )
 
-        mock_output_full_cs.assert_called_with(
-            full_changeset=changes, params_diff=[], fqn=stack_name, answer="y"
-        )
+        mock_output_full_cs.assert_called_with(full_changeset=changes, params_diff=[], fqn=stack_name, answer="y")
 
     def test_tail_stack_retry_on_missing_stack(self) -> None:
         """Test tail stack retry on missing stack.
@@ -1139,7 +1079,7 @@ class TestProviderDefaultMode(unittest.TestCase):
         stack = MagicMock(spec=Stack)
         stack.fqn = f"my-namespace-{stack_name}"
 
-        default.TAIL_RETRY_SLEEP = 0.01  # type: ignore[assignment]
+        default.TAIL_RETRY_SLEEP = 0.01
 
         # Ensure the stack never appears before we run out of retries
         for i in range(MAX_TAIL_RETRIES + 5):
@@ -1156,7 +1096,7 @@ class TestProviderDefaultMode(unittest.TestCase):
                 self.provider.tail_stack(stack, threading.Event())
             except ClientError as exc:
                 assert (  # noqa: PT017
-                    exc.response.get("ResponseMetadata", {}).get("attempt") == MAX_TAIL_RETRIES  # type: ignore[typeddict-item]
+                    exc.response.get("ResponseMetadata", {}).get("attempt") == MAX_TAIL_RETRIES
                 )
 
     def test_tail_stack_retry_on_missing_stack_eventual_success(self) -> None:
@@ -1170,7 +1110,7 @@ class TestProviderDefaultMode(unittest.TestCase):
         stack = MagicMock(spec=Stack)
         stack.fqn = f"my-namespace-{stack_name}"
 
-        default.TAIL_RETRY_SLEEP = 0.01  # type: ignore[assignment]
+        default.TAIL_RETRY_SLEEP = 0.01
 
         received_events: list[Any] = []
 
@@ -1199,9 +1139,7 @@ class TestProviderDefaultMode(unittest.TestCase):
                 response_meta={"attempt": i + 1},
             )
 
-        self.stubber.add_response(
-            "describe_stack_events", valid_event_response(stack, "InitialEvents")
-        )
+        self.stubber.add_response("describe_stack_events", valid_event_response(stack, "InitialEvents"))
 
         self.stubber.add_response("describe_stack_events", valid_event_response(stack, "Event1"))
 
@@ -1233,13 +1171,7 @@ class TestProviderDefaultMode(unittest.TestCase):
         for test in test_cases:
             self.stubber.add_response(
                 "describe_stacks",
-                {
-                    "Stacks": [
-                        generate_describe_stacks_stack(
-                            stack_name, termination_protection=test["aws"]
-                        )
-                    ]
-                },
+                {"Stacks": [generate_describe_stacks_stack(stack_name, termination_protection=test["aws"])]},
                 {"StackName": stack_name},
             )
             if isinstance(test["expected"], bool):
@@ -1286,7 +1218,7 @@ class TestProviderInteractiveMode(unittest.TestCase):
         self.stubber.add_response("delete_stack", {}, stack)
 
         with self.stubber:
-            assert self.provider.interactive_destroy_stack(stack_name) is None  # type: ignore[func-returns-value]
+            assert self.provider.interactive_destroy_stack(stack_name) is None
             self.stubber.assert_no_pending_responses()
 
     @patch("runway.cfngin.providers.aws.default.Provider.update_termination_protection")
@@ -1322,7 +1254,7 @@ class TestProviderInteractiveMode(unittest.TestCase):
         patched_input.return_value = "n"
 
         with pytest.raises(exceptions.CancelExecution):
-            self.provider.destroy_stack({"StackName": "MockStack"})  # type: ignore
+            self.provider.destroy_stack({"StackName": "MockStack"})
 
     def test_successful_init(self) -> None:
         """Test successful init.
@@ -1352,9 +1284,7 @@ class TestProviderInteractiveMode(unittest.TestCase):
 
         self.stubber.add_response(
             "describe_change_set",
-            generate_change_set_response(
-                status="CREATE_COMPLETE", execution_status="AVAILABLE", changes=changes
-            ),
+            generate_change_set_response(status="CREATE_COMPLETE", execution_status="AVAILABLE", changes=changes),
         )
 
         self.stubber.add_response("execute_change_set", {})
@@ -1390,9 +1320,7 @@ class TestProviderInteractiveMode(unittest.TestCase):
 
         self.stubber.add_response(
             "describe_change_set",
-            generate_change_set_response(
-                status="CREATE_COMPLETE", execution_status="AVAILABLE", changes=changes
-            ),
+            generate_change_set_response(status="CREATE_COMPLETE", execution_status="AVAILABLE", changes=changes),
         )
 
         self.stubber.add_response("set_stack_policy", {})
@@ -1424,7 +1352,7 @@ class TestProviderInteractiveMode(unittest.TestCase):
             [{"force_interactive": False}, self.provider.interactive_destroy_stack],
             [{"force_interactive": True}, self.provider.interactive_destroy_stack],
         ]:
-            assert self.provider.select_destroy_method(**i[0]) == i[1]  # type: ignore
+            assert self.provider.select_destroy_method(**i[0]) == i[1]
 
     def test_select_update_method(self) -> None:
         """Test select update method.
@@ -1450,7 +1378,7 @@ class TestProviderInteractiveMode(unittest.TestCase):
                 self.provider.interactive_update_stack,
             ],
         ]:
-            assert self.provider.select_update_method(**i[0]) == i[1]  # type: ignore
+            assert self.provider.select_update_method(**i[0]) == i[1]
 
     @patch("runway.cfngin.providers.aws.default.output_full_changeset")
     @patch("runway.cfngin.providers.aws.default.output_summary")
@@ -1465,22 +1393,16 @@ class TestProviderInteractiveMode(unittest.TestCase):
         stack_name = "MockStack"
         mock_stack = generate_stack_object(stack_name)
 
-        self.stubber.add_response(
-            "describe_stacks", {"Stacks": [generate_describe_stacks_stack(stack_name)]}
-        )
+        self.stubber.add_response("describe_stacks", {"Stacks": [generate_describe_stacks_stack(stack_name)]})
         self.stubber.add_response("get_template", generate_get_template("cfn_template.yaml"))
         self.stubber.add_response("create_change_set", {"Id": "CHANGESETID", "StackId": stack_name})
         changes = [generate_change()]
         self.stubber.add_response(
             "describe_change_set",
-            generate_change_set_response(
-                status="CREATE_COMPLETE", execution_status="AVAILABLE", changes=changes
-            ),
+            generate_change_set_response(status="CREATE_COMPLETE", execution_status="AVAILABLE", changes=changes),
         )
         self.stubber.add_response("delete_change_set", {})
-        self.stubber.add_response(
-            "describe_stacks", {"Stacks": [generate_describe_stacks_stack(stack_name)]}
-        )
+        self.stubber.add_response("describe_stacks", {"Stacks": [generate_describe_stacks_stack(stack_name)]})
 
         with self.stubber:
             self.provider.get_stack_changes(
@@ -1490,9 +1412,5 @@ class TestProviderInteractiveMode(unittest.TestCase):
                 tags=[],
             )
 
-        mock_output_summary.assert_called_with(
-            stack_name, "changes", changes, [], replacements_only=False
-        )
-        mock_output_full_cs.assert_called_with(
-            full_changeset=changes, params_diff=[], fqn=stack_name
-        )
+        mock_output_summary.assert_called_with(stack_name, "changes", changes, [], replacements_only=False)
+        mock_output_full_cs.assert_called_with(full_changeset=changes, params_diff=[], fqn=stack_name)

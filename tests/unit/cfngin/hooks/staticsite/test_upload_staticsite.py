@@ -43,15 +43,11 @@ def test_auto_detect_content_type(provided: str, expected: str | None) -> None:
     "provided, expected",
     [
         (
-            RunwayStaticSiteExtraFileDataModel.model_construct(
-                content_type="text/plain", name="test.txt"
-            ),
+            RunwayStaticSiteExtraFileDataModel.model_construct(content_type="text/plain", name="test.txt"),
             "text/plain",
         ),
         (
-            RunwayStaticSiteExtraFileDataModel.model_construct(
-                name="test.txt", content_type="text/plain"
-            ),
+            RunwayStaticSiteExtraFileDataModel.model_construct(name="test.txt", content_type="text/plain"),
             "text/plain",
         ),
         (
@@ -61,9 +57,7 @@ def test_auto_detect_content_type(provided: str, expected: str | None) -> None:
         (RunwayStaticSiteExtraFileDataModel.model_construct(name="test.txt"), None),
     ],
 )
-def test_get_content_type(
-    provided: RunwayStaticSiteExtraFileDataModel, expected: str | None
-) -> None:
+def test_get_content_type(provided: RunwayStaticSiteExtraFileDataModel, expected: str | None) -> None:
     """Test get_content_type."""
     assert get_content_type(provided) == expected
 
@@ -72,11 +66,7 @@ def test_get_content_json() -> None:
     """Get content JSON."""
     content = {"a": 0}
 
-    actual = get_content(
-        RunwayStaticSiteExtraFileDataModel(
-            content_type="application/json", content=content, name=""
-        )
-    )
+    actual = get_content(RunwayStaticSiteExtraFileDataModel(content_type="application/json", content=content, name=""))
     expected = json.dumps(content)
 
     assert actual == expected
@@ -86,9 +76,7 @@ def test_get_content_yaml() -> None:
     """Get content YAML."""
     content = {"a": 0}
 
-    actual = get_content(
-        RunwayStaticSiteExtraFileDataModel(content_type="text/yaml", content=content, name="")
-    )
+    actual = get_content(RunwayStaticSiteExtraFileDataModel(content_type="text/yaml", content=content, name=""))
     expected = yaml.safe_dump(content)
 
     assert actual == expected
@@ -170,7 +158,7 @@ def test_sync_extra_files_yaml_content(cfngin_context: MockCfnginContext) -> Non
         {
             "Bucket": "bucket",
             "Key": "test.yaml",
-            "Body": yaml.safe_dump(content).encode(),  # type: ignore[union-attr]
+            "Body": yaml.safe_dump(content).encode(),
             "ContentType": "text/yaml",
         },
     )
@@ -194,9 +182,7 @@ def test_sync_extra_files_empty_content(cfngin_context: MockCfnginContext) -> No
         result = sync_extra_files(
             cfngin_context,
             "bucket",
-            extra_files=[
-                RunwayStaticSiteExtraFileDataModel.model_construct(name="test.yaml", content="")
-            ],
+            extra_files=[RunwayStaticSiteExtraFileDataModel.model_construct(name="test.yaml", content="")],
         )
         assert isinstance(result, list)
         assert not result
@@ -246,9 +232,7 @@ def test_sync_extra_files_file_reference_with_content_type(
         },
     )
 
-    files = [
-        RunwayStaticSiteExtraFileDataModel.model_construct(name="test.json", file=".gitignore")
-    ]
+    files = [RunwayStaticSiteExtraFileDataModel.model_construct(name="test.json", file=".gitignore")]
 
     with s3_stub as stub:
         assert sync_extra_files(cfngin_context, "bucket", extra_files=files) == ["test.json"]
@@ -292,9 +276,7 @@ def test_sync_extra_files_hash_updated(cfngin_context: MockCfnginContext) -> Non
     s3_stub = cfngin_context.add_stubber("s3")
     ssm_stub = cfngin_context.add_stubber("ssm")
 
-    extra = RunwayStaticSiteExtraFileDataModel(
-        name="test", content="test", content_type="text/plain"
-    )
+    extra = RunwayStaticSiteExtraFileDataModel(name="test", content="test", content_type="text/plain")
     extra_hash = calculate_hash_of_extra_files([extra])
 
     ssm_stub.add_response(

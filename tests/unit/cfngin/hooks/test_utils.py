@@ -20,7 +20,7 @@ from ..factories import mock_context, mock_provider
 if TYPE_CHECKING:
     from unittest.mock import MagicMock
 
-HOOK_QUEUE = queue.Queue()  # type: ignore[var-annotated]
+HOOK_QUEUE = queue.Queue()
 
 
 class TestHooks(unittest.TestCase):
@@ -97,9 +97,7 @@ class TestHooks(unittest.TestCase):
         ]
         handle_hooks("pre_deploy", hooks, self.provider, self.context)
         assert mock_load.call_count == 2
-        mock_load.assert_has_calls(
-            [call(hooks[0].path, try_reload=True), call(hooks[1].path, try_reload=True)]
-        )
+        mock_load.assert_has_calls([call(hooks[0].path, try_reload=True), call(hooks[1].path, try_reload=True)])
         good = HOOK_QUEUE.get_nowait()
         assert good["provider"].region == "us-east-1"
         with pytest.raises(queue.Empty):
@@ -245,7 +243,7 @@ class MockHook(CfnginHookProtocol):
 
     def __init__(self, **_kwargs: Any) -> None:
         """Instantiate class."""
-        self.args = {}  # type: ignore
+        self.args = {}
 
     def post_deploy(self) -> dict[str, str]:
         """Run during the **post_deploy** stage."""

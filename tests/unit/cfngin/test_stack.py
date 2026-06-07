@@ -40,7 +40,7 @@ def fake_lookup() -> Iterator[None]:
         TYPE_NAME: ClassVar[str] = "fake"
 
         @classmethod
-        def handle(cls, value: str, *__args: Any, **__kwargs: Any) -> str:  # type: ignore  # noqa: ARG003
+        def handle(cls, value: str, *__args: Any, **__kwargs: Any) -> str:
             """Perform the lookup."""
             return "test"
 
@@ -49,9 +49,7 @@ def fake_lookup() -> Iterator[None]:
     unregister_lookup_handler(FakeLookup.TYPE_NAME)
 
 
-def generate_stack_definition(
-    base_name: str, stack_id: Any = None, **overrides: Any
-) -> CfnginStackDefinitionModel:
+def generate_stack_definition(base_name: str, stack_id: Any = None, **overrides: Any) -> CfnginStackDefinitionModel:
     """Generate stack definition.
 
     Factory helper that produces minimal valid stack definitions, allowing
@@ -105,10 +103,7 @@ class TestStack:
                 base_name="vpc",
                 variables={
                     "Var1": "${fake fakeStack2::FakeOutput}",
-                    "Var2": (
-                        "some.template.value:${output fakeStack1.FakeOutput}:"
-                        "${output fakeStack0.FakeOutput}"
-                    ),
+                    "Var2": ("some.template.value:${output fakeStack1.FakeOutput}:${output fakeStack0.FakeOutput}"),
                     "Var3": "${output fakeStack0.FakeOutput},${output fakeStack1.FakeOutput}",
                 },
                 requires=["fakeStack0"],
@@ -149,10 +144,8 @@ class TestStack:
             context=cfngin_context,
         )
         stack._blueprint = Mock()
-        assert not stack.resolve(cfngin_context, mock_provider)  # type: ignore[func-returns-value]
-        mock_resolve_variables.assert_called_once_with(
-            stack.variables, cfngin_context, mock_provider
-        )
+        assert not stack.resolve(cfngin_context, mock_provider)
+        mock_resolve_variables.assert_called_once_with(stack.variables, cfngin_context, mock_provider)
         stack._blueprint.resolve_variables.assert_called_once_with(stack.variables)
 
     def test_set_outputs(self, cfngin_context: MockCfnginContext) -> None:
@@ -167,7 +160,7 @@ class TestStack:
         )
         assert not stack.outputs
         outputs = {"foo": "bar"}
-        assert not stack.set_outputs(outputs)  # type: ignore[func-returns-value]
+        assert not stack.set_outputs(outputs)
         assert stack.outputs == outputs
 
     def test_stack_policy(self, cfngin_context: MockCfnginContext, tmp_path: Path) -> None:
@@ -181,9 +174,7 @@ class TestStack:
         stack_policy_path.write_text("success")
         assert (
             Stack(
-                definition=generate_stack_definition(
-                    base_name="vpc", stack_policy_path=stack_policy_path
-                ),
+                definition=generate_stack_definition(base_name="vpc", stack_policy_path=stack_policy_path),
                 context=cfngin_context,
             ).stack_policy
             == "success"
@@ -208,9 +199,7 @@ class TestStack:
         """
         cfngin_context.config.tags = {"environment": "prod"}
         assert Stack(
-            definition=generate_stack_definition(
-                base_name="vpc", tags={"app": "graph", "environment": "stage"}
-            ),
+            definition=generate_stack_definition(base_name="vpc", tags={"app": "graph", "environment": "stage"}),
             context=cfngin_context,
         ).tags == {"app": "graph", "environment": "stage"}
 
@@ -244,9 +233,7 @@ class TestStack:
         """
         assert (
             Stack(
-                definition=generate_stack_definition(
-                    base_name="vpc", termination_protection=termination_protection
-                ),
+                definition=generate_stack_definition(base_name="vpc", termination_protection=termination_protection),
                 context=cfngin_context,
             ).termination_protection
             is expected

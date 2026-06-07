@@ -31,7 +31,7 @@ def copy_fixture(src: Path, dest: Path) -> Path:
     Ensures consistent fixture copying across Python versions where Path
     support in shutil was not always guaranteed.
     """
-    return shutil.copy(src.absolute(), dest.absolute())  # type: ignore[return-value]
+    return shutil.copy(src.absolute(), dest.absolute())
 
 
 def copy_basic_fixtures(cfngin_fixtures: Path, tmp_path: Path) -> None:
@@ -156,9 +156,7 @@ class TestCFNgin:
         assert not cfngin.tail
 
         assert mock_action.call_count == 2
-        mock_instance.__call__(
-            [{"concurrency": 0, "tail": False}, {"concurrency": 0, "tail": False}]
-        )
+        mock_instance.__call__([{"concurrency": 0, "tail": False}, {"concurrency": 0, "tail": False}])
         patch_safehaven.assert_has_calls(
             [
                 call(

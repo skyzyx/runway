@@ -40,8 +40,7 @@ class FunctionalTests(Blueprint):
         },
         "CFNginBucket": {
             "type": CFNString,
-            "description": "The name of the bucket that the tests will use "
-            "for uploading templates.",
+            "description": "The name of the bucket that the tests will use for uploading templates.",
         },
     }
 
@@ -51,9 +50,7 @@ class FunctionalTests(Blueprint):
 
         bucket_arn = Sub("arn:aws:s3:::${CFNginBucket}*")
         objects_arn = Sub("arn:aws:s3:::${CFNginBucket}*/*")
-        cloudformation_scope = Sub(
-            "arn:aws:cloudformation:*:${AWS::AccountId}:stack/${Namespace}-*"
-        )
+        cloudformation_scope = Sub("arn:aws:cloudformation:*:${AWS::AccountId}:stack/${Namespace}-*")
         changeset_scope = "*"
 
         # This represents the precise IAM permissions that cfngin itself
@@ -155,28 +152,20 @@ class FunctionalTests(Blueprint):
             ),
         )
 
-        user = template.add_resource(
-            iam.User("FunctionalTestUser", Policies=[cfngin_policy, assumerole_policy])
-        )
+        user = template.add_resource(iam.User("FunctionalTestUser", Policies=[cfngin_policy, assumerole_policy]))
 
-        key = template.add_resource(
-            iam.AccessKey("FunctionalTestKey", Serial=1, UserName=Ref(user))
-        )
+        key = template.add_resource(iam.AccessKey("FunctionalTestKey", Serial=1, UserName=Ref(user)))
 
         template.add_output(Output("User", Value=Ref(user)))
         template.add_output(Output("AccessKeyId", Value=Ref(key)))
-        template.add_output(
-            Output("SecretAccessKey", Value=GetAtt("FunctionalTestKey", "SecretAccessKey"))
-        )
+        template.add_output(Output("SecretAccessKey", Value=GetAtt("FunctionalTestKey", "SecretAccessKey")))
         template.add_output(Output("FunctionalTestRole", Value=GetAtt(role, "Arn")))
 
 
 class Dummy(Blueprint):
     """Dummy blueprint."""
 
-    VARIABLES: ClassVar[dict[str, BlueprintVariableTypeDef]] = {
-        "StringVariable": {"type": str, "default": ""}
-    }
+    VARIABLES: ClassVar[dict[str, BlueprintVariableTypeDef]] = {"StringVariable": {"type": str, "default": ""}}
 
     def create_template(self) -> None:
         """Create template."""
@@ -192,9 +181,7 @@ class Dummy2(Blueprint):
 
     """
 
-    VARIABLES: ClassVar[dict[str, BlueprintVariableTypeDef]] = {
-        "StringVariable": {"type": str, "default": ""}
-    }
+    VARIABLES: ClassVar[dict[str, BlueprintVariableTypeDef]] = {"StringVariable": {"type": str, "default": ""}}
 
     def create_template(self) -> None:
         """Create template."""
@@ -220,8 +207,7 @@ class LongRunningDummy(Blueprint):
         },
         "BreakLast": {
             "type": bool,
-            "description": "Whether or not to break the last WaitCondition "
-            "by creating an invalid WaitConditionHandle.",
+            "description": "Whether or not to break the last WaitCondition by creating an invalid WaitConditionHandle.",
             "default": True,
         },
         "OutputValue": {
@@ -253,7 +239,7 @@ class LongRunningDummy(Blueprint):
             template.add_resource(
                 WaitCondition(
                     "BrokenWaitCondition",
-                    Handle=wch.Ref(),  # type: ignore
+                    Handle=wch.Ref(),
                     # Timeout is made deliberately large so CF rejects it
                     Timeout=2**32,
                     Count=0,
@@ -269,9 +255,7 @@ class Broken(Blueprint):
 
     """
 
-    VARIABLES: ClassVar[dict[str, BlueprintVariableTypeDef]] = {
-        "StringVariable": {"type": str, "default": ""}
-    }
+    VARIABLES: ClassVar[dict[str, BlueprintVariableTypeDef]] = {"StringVariable": {"type": str, "default": ""}}
 
     def create_template(self) -> None:
         """Create template."""
@@ -328,8 +312,7 @@ class VPC(Blueprint):
         },
         "ImageName": {
             "type": CFNString,
-            "description": "The image name to use from the AMIMap (usually "
-            "found in the config file.)",
+            "description": "The image name to use from the AMIMap (usually found in the config file.)",
             "default": "NAT",
         },
         "UseNatGateway": {
@@ -409,8 +392,7 @@ class Bastion(Blueprint):
         },
         "ImageName": {
             "type": CFNString,
-            "description": "The image name to use from the AMIMap (usually "
-            "found in the config file.)",
+            "description": "The image name to use from the AMIMap (usually found in the config file.)",
             "default": "bastion",
         },
     }
@@ -463,8 +445,7 @@ class PreOneOhBastion(Blueprint):
         },
         "ImageName": {
             "type": "String",
-            "description": "The image name to use from the AMIMap (usually "
-            "found in the config file.)",
+            "description": "The image name to use from the AMIMap (usually found in the config file.)",
             "default": "bastion",
         },
     }

@@ -130,7 +130,7 @@ class TestAction:
                 "create_change_set",
             ),
         )
-        provider = Provider(cfngin_context.get_session())  # type: ignore
+        provider = Provider(cfngin_context.get_session())
         stack = MagicMock(
             blueprint=Mock(rendered="{}"),
             fqn="test-stack",
@@ -146,7 +146,7 @@ class TestAction:
         result = Action(
             context=cfngin_context,
             provider_builder=MockProviderBuilder(provider=provider),
-            cancel=MockThreadingEvent(),  # type: ignore
+            cancel=MockThreadingEvent(),
         )._diff_stack(stack)
         mock_build_parameters.assert_called_once_with(
             stack, None if stack_not_exist else provider_get_stack.return_value

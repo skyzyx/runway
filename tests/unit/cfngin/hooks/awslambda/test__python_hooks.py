@@ -53,14 +53,14 @@ class TestPythonFunction:
     def test_cleanup(self, args: PythonHookArgs, mocker: MockerFixture) -> None:
         """Test cleanup."""
         project = mocker.patch.object(PythonFunction, "project")
-        assert not PythonFunction(Mock(), **args.model_dump()).cleanup()  # type: ignore[func-returns-value]
+        assert not PythonFunction(Mock(), **args.model_dump()).cleanup()
         project.cleanup.assert_called_once_with()
 
     def test_cleanup_on_error(self, args: PythonHookArgs, mocker: MockerFixture) -> None:
         """Test cleanup_on_error."""
         deployment_package = mocker.patch.object(PythonFunction, "deployment_package")
         project = mocker.patch.object(PythonFunction, "project")
-        assert not PythonFunction(Mock(), **args.model_dump()).cleanup_on_error()  # type: ignore[func-returns-value]
+        assert not PythonFunction(Mock(), **args.model_dump()).cleanup_on_error()
         deployment_package.delete.assert_called_once_with()
         project.cleanup_on_error.assert_called_once_with()
 
@@ -69,8 +69,7 @@ class TestPythonFunction:
         deployment_package_class = mocker.patch(f"{MODULE}.PythonDeploymentPackage")
         project = mocker.patch.object(PythonFunction, "project", "project")
         assert (
-            PythonFunction(Mock(), **args.model_dump()).deployment_package
-            == deployment_package_class.init.return_value
+            PythonFunction(Mock(), **args.model_dump()).deployment_package == deployment_package_class.init.return_value
         )
         deployment_package_class.init.assert_called_once_with(project, "function")
 
@@ -81,10 +80,7 @@ class TestPythonFunction:
         cleanup = mocker.patch.object(PythonFunction, "cleanup")
         cleanup_on_error = mocker.patch.object(PythonFunction, "cleanup_on_error")
         deployment_package = mocker.patch.object(PythonFunction, "deployment_package")
-        assert (
-            PythonFunction(Mock(), **args.model_dump()).pre_deploy()
-            == model.model_dump.return_value
-        )
+        assert PythonFunction(Mock(), **args.model_dump()).pre_deploy() == model.model_dump.return_value
         deployment_package.upload.assert_called_once_with()
         build_response.assert_called_once_with("deploy")
         model.model_dump.assert_called_once_with(by_alias=True)
@@ -97,9 +93,7 @@ class TestPythonFunction:
         Ensures cleanup runs even when upload raises, preventing orphaned
         build artifacts from accumulating on disk.
         """
-        build_response = mocker.patch.object(
-            PythonFunction, "build_response", return_value="success"
-        )
+        build_response = mocker.patch.object(PythonFunction, "build_response", return_value="success")
         cleanup = mocker.patch.object(PythonFunction, "cleanup")
         cleanup_on_error = mocker.patch.object(PythonFunction, "cleanup_on_error")
         deployment_package = mocker.patch.object(
@@ -129,8 +123,5 @@ class TestPythonLayer:
         """Test deployment_package."""
         deployment_package_class = mocker.patch(f"{MODULE}.PythonDeploymentPackage")
         project = mocker.patch.object(PythonLayer, "project", "project")
-        assert (
-            PythonLayer(Mock(), **args.model_dump()).deployment_package
-            == deployment_package_class.init.return_value
-        )
+        assert PythonLayer(Mock(), **args.model_dump()).deployment_package == deployment_package_class.init.return_value
         deployment_package_class.init.assert_called_once_with(project, "layer")

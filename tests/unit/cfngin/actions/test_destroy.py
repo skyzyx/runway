@@ -48,11 +48,9 @@ class TestDestroyAction(unittest.TestCase):
     def setUp(self) -> None:
         """Run before tests."""
         self.context = self._get_context()
-        self.action = destroy.Action(self.context, cancel=MockThreadingEvent())  # type: ignore
+        self.action = destroy.Action(self.context, cancel=MockThreadingEvent())
 
-    def _get_context(
-        self, extra_config_args: dict[str, Any] | None = None, **kwargs: Any
-    ) -> CfnginContext:
+    def _get_context(self, extra_config_args: dict[str, Any] | None = None, **kwargs: Any) -> CfnginContext:
         """Get context."""
         config = {
             "namespace": "namespace",
@@ -120,11 +118,11 @@ class TestDestroyAction(unittest.TestCase):
         provider = MagicMock()
         provider.get_stack.side_effect = StackDoesNotExist("mock")
         self.action.provider_builder = MockProviderBuilder(provider=provider)
-        status = self.action._destroy_stack(MockStack("vpc"), status=PENDING)  # type: ignore
+        status = self.action._destroy_stack(MockStack("vpc"), status=PENDING)
         # if we haven't processed the step (ie. has never been SUBMITTED,
         # should be skipped)
         assert status == SKIPPED
-        status = self.action._destroy_stack(MockStack("vpc"), status=SUBMITTED)  # type: ignore
+        status = self.action._destroy_stack(MockStack("vpc"), status=SUBMITTED)
         # if we have processed the step and then can't find the stack, it means
         # we successfully deleted it
         assert status == COMPLETE
@@ -146,7 +144,7 @@ class TestDestroyAction(unittest.TestCase):
         provider.is_stack_destroy_possible.return_value = False
         provider.get_stack_status_reason.return_value = "reason"
         self.action.provider_builder = MockProviderBuilder(provider=provider)
-        status = self.action._destroy_stack(MockStack("vpc"), status=PENDING)  # type: ignore
+        status = self.action._destroy_stack(MockStack("vpc"), status=PENDING)
         provider.is_stack_destroyed.assert_called_once_with(provider.get_stack.return_value)
         provider.is_stack_in_progress.assert_called_once_with(provider.get_stack.return_value)
         provider.is_stack_destroy_possible.assert_called_once_with(provider.get_stack.return_value)

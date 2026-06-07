@@ -50,4 +50,4 @@ class TestDockerHookData:
         obj = DockerHookData()
         assert obj.update_context(cfngin_context) == obj
         assert cfngin_context.hook_data["docker"] == obj
-        assert not obj.update_context()  # type: ignore[func-returns-value]
+        assert not obj.update_context()

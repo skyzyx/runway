@@ -85,7 +85,7 @@ def test_ensure_s3_bucket() -> None:
     stubber = Stubber(s3_client)
     stubber.add_response("head_bucket", {}, {"Bucket": "test-bucket"})
     with stubber:
-        assert not ensure_s3_bucket(s3_client, "test-bucket")  # type: ignore[func-returns-value]
+        assert not ensure_s3_bucket(s3_client, "test-bucket")
     stubber.assert_no_pending_responses()
 
 
@@ -101,11 +101,10 @@ def test_ensure_s3_bucket_forbidden(caplog: pytest.LogCaptureFixture) -> None:
     stubber = Stubber(s3_client)
     stubber.add_client_error("head_bucket", service_message="Forbidden")
     with stubber, pytest.raises(ClientError, match="Forbidden"):
-        assert ensure_s3_bucket(s3_client, "test-bucket")  # type: ignore[func-returns-value]
+        assert ensure_s3_bucket(s3_client, "test-bucket")
     stubber.assert_no_pending_responses()
-    assert (
-        "Access denied for bucket test-bucket. Did you remember to use a globally unique name?"
-        in "\n".join(caplog.messages)
+    assert "Access denied for bucket test-bucket. Did you remember to use a globally unique name?" in "\n".join(
+        caplog.messages
     )
 
 
@@ -126,13 +125,11 @@ def test_ensure_s3_bucket_not_found(mocker: MockerFixture) -> None:
         {},
         {
             "Bucket": "test-bucket",
-            "CreateBucketConfiguration": {
-                "LocationConstraint": mock_s3_bucket_location_constraint.return_value
-            },
+            "CreateBucketConfiguration": {"LocationConstraint": mock_s3_bucket_location_constraint.return_value},
         },
     )
     with stubber:
-        assert not ensure_s3_bucket(s3_client, "test-bucket", "us-east-1")  # type: ignore[func-returns-value]
+        assert not ensure_s3_bucket(s3_client, "test-bucket", "us-east-1")
     stubber.assert_no_pending_responses()
     mock_s3_bucket_location_constraint.assert_called_once_with("us-east-1")
 
@@ -147,7 +144,7 @@ def test_ensure_s3_bucket_not_found_not_create() -> None:
     stubber = Stubber(s3_client)
     stubber.add_client_error("head_bucket", service_message="Not Found")
     with stubber, pytest.raises(ClientError, match="Not Found"):
-        assert not ensure_s3_bucket(s3_client, "test-bucket", create=False)  # type: ignore[func-returns-value]
+        assert not ensure_s3_bucket(s3_client, "test-bucket", create=False)
     stubber.assert_no_pending_responses()
 
 
@@ -167,7 +164,7 @@ def test_ensure_s3_bucket_not_found_persist_graph() -> None:
         {"Bucket": "test-bucket", "VersioningConfiguration": {"Status": "Enabled"}},
     )
     with stubber:
-        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)  # type: ignore[func-returns-value]
+        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)
     stubber.assert_no_pending_responses()
 
 
@@ -183,7 +180,7 @@ def test_ensure_s3_bucket_persist_graph(caplog: pytest.LogCaptureFixture) -> Non
     stubber.add_response("head_bucket", {}, {"Bucket": "test-bucket"})
     stubber.add_response("get_bucket_versioning", {"Status": "Enabled"}, {"Bucket": "test-bucket"})
     with stubber:
-        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)  # type: ignore[func-returns-value]
+        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)
     stubber.assert_no_pending_responses()
     assert not caplog.messages
 
@@ -204,7 +201,7 @@ def test_ensure_s3_bucket_persist_graph_mfa_delete(caplog: pytest.LogCaptureFixt
         {"Bucket": "test-bucket"},
     )
     with stubber:
-        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)  # type: ignore[func-returns-value]
+        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)
     stubber.assert_no_pending_responses()
     assert (
         'MFADelete must be disabled on bucket "test-bucket" when using persistent '
@@ -212,9 +209,7 @@ def test_ensure_s3_bucket_persist_graph_mfa_delete(caplog: pytest.LogCaptureFixt
     )
 
 
-@pytest.mark.parametrize(
-    "versioning_response", [{"Status": "Disabled"}, {"Status": "Suspended"}, {}]
-)
+@pytest.mark.parametrize("versioning_response", [{"Status": "Disabled"}, {"Status": "Suspended"}, {}])
 def test_ensure_s3_bucket_persist_graph_versioning_not_enabled(
     caplog: pytest.LogCaptureFixture, versioning_response: dict[str, Any]
 ) -> None:
@@ -230,11 +225,9 @@ def test_ensure_s3_bucket_persist_graph_versioning_not_enabled(
     stubber.add_response("head_bucket", {}, {"Bucket": "test-bucket"})
     stubber.add_response("get_bucket_versioning", versioning_response, {"Bucket": "test-bucket"})
     with stubber:
-        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)  # type: ignore[func-returns-value]
+        assert not ensure_s3_bucket(s3_client, "test-bucket", persist_graph=True)
     stubber.assert_no_pending_responses()
-    assert "it is recommended to enable versioning when using persistent graphs" in "\n".join(
-        caplog.messages
-    )
+    assert "it is recommended to enable versioning when using persistent graphs" in "\n".join(caplog.messages)
 
 
 def test_ensure_s3_bucket_raise_client_error(caplog: pytest.LogCaptureFixture) -> None:
@@ -249,7 +242,7 @@ def test_ensure_s3_bucket_raise_client_error(caplog: pytest.LogCaptureFixture) -
     stubber = Stubber(s3_client)
     stubber.add_client_error("head_bucket")
     with stubber, pytest.raises(ClientError):
-        assert not ensure_s3_bucket(s3_client, "test-bucket")  # type: ignore[func-returns-value]
+        assert not ensure_s3_bucket(s3_client, "test-bucket")
     stubber.assert_no_pending_responses()
     assert 'error creating bucket "test-bucket"' in caplog.messages
 
@@ -315,10 +308,7 @@ def test_read_value_from_path_root_path_file(tmp_path: Path) -> None:
     """
     test_file = tmp_path / "test.txt"
     test_file.write_text("success")
-    assert (
-        read_value_from_path(f"file://./{test_file.name}", root_path=tmp_path / "something.json")
-        == "success"
-    )
+    assert read_value_from_path(f"file://./{test_file.name}", root_path=tmp_path / "something.json") == "success"
 
 
 class TestUtil(unittest.TestCase):
@@ -501,7 +491,7 @@ Outputs:
         """
         path = self.tmp_path / "my_directory"
         with tarfile.open(self.tmp_path / self.tar_file, "r") as tar:
-            assert safe_tar_extract(tar, path) is None  # type: ignore[func-returns-value]
+            assert safe_tar_extract(tar, path) is None
 
     def test_safe_tar_extract_path_traversal(self) -> None:
         """Test when a tar file tries to go outside the specified area.
@@ -517,7 +507,7 @@ Outputs:
             path = self.tmp_path / "my_directory"
             with pytest.raises(Exception) as excinfo:  # noqa: PT011
                 safe_tar_extract(tar, path)
-            assert str(excinfo.value) == "Attempted Path Traversal in Tar File"  # type: ignore
+            assert str(excinfo.value) == "Attempted Path Traversal in Tar File"
 
     def test_extractors(self) -> None:
         """Test extractors.
@@ -532,7 +522,7 @@ Outputs:
         assert ZipExtractor().extension == ".zip"
         for i in [TarExtractor(), ZipExtractor(), ZipExtractor()]:
             i.set_archive(Path("/tmp/foo"))
-            assert i.archive.name.endswith(i.extension) is True  # type: ignore
+            assert i.archive.name.endswith(i.extension) is True
 
     def test_SourceProcessor_helpers(self) -> None:  # noqa: N802
         """Test SourceProcessor helpers.
@@ -546,35 +536,22 @@ Outputs:
             "create_cache_directories",
             new=mock_create_cache_directories,
         ):
-            sp = SourceProcessor(cache_dir=self.tmp_path, sources={})  # type: ignore
+            sp = SourceProcessor(cache_dir=self.tmp_path, sources={})
 
             assert sp.sanitize_git_path("git@github.com:foo/bar.git") == "git_github.com_foo_bar"
+            assert sp.sanitize_uri_path("http://example.com/foo/bar.gz@1") == "http___example.com_foo_bar.gz_1"
+            assert sp.sanitize_git_path("git@github.com:foo/bar.git", "v1") == "git_github.com_foo_bar-v1"
             assert (
-                sp.sanitize_uri_path("http://example.com/foo/bar.gz@1")
-                == "http___example.com_foo_bar.gz_1"
-            )
-            assert (
-                sp.sanitize_git_path("git@github.com:foo/bar.git", "v1")
-                == "git_github.com_foo_bar-v1"
-            )
-            assert (
-                sp.determine_git_ls_remote_ref(
-                    GitCfnginPackageSourceDefinitionModel(branch="foo", uri="test")
-                )
+                sp.determine_git_ls_remote_ref(GitCfnginPackageSourceDefinitionModel(branch="foo", uri="test"))
                 == "refs/heads/foo"
             )
             for i in [cast("dict[str, Any]", {}), {"tag": "foo"}, {"commit": "1234"}]:
                 assert (
-                    sp.determine_git_ls_remote_ref(
-                        GitCfnginPackageSourceDefinitionModel(uri="git@foo", **i)  # type: ignore[arg-type]
-                    )
-                    == "HEAD"
+                    sp.determine_git_ls_remote_ref(GitCfnginPackageSourceDefinitionModel(uri="git@foo", **i)) == "HEAD"
                 )
 
             assert (
-                sp.git_ls_remote(
-                    "https://github.com/remind101/stacker.git", "refs/heads/release-1.0"
-                )
+                sp.git_ls_remote("https://github.com/remind101/stacker.git", "refs/heads/release-1.0")
                 == "857b4834980e582874d70feef77bb064b60762d1"
             )
 
@@ -587,7 +564,7 @@ Outputs:
             ]
             for i in bad_configs:
                 with pytest.raises(ValidationError):
-                    sp.determine_git_ref(GitCfnginPackageSourceDefinitionModel(**i))  # type: ignore[arg-type]
+                    sp.determine_git_ref(GitCfnginPackageSourceDefinitionModel(**i))
 
             assert (
                 sp.determine_git_ref(
@@ -597,18 +574,8 @@ Outputs:
                 )
                 == "857b4834980e582874d70feef77bb064b60762d1"
             )
-            assert (
-                sp.determine_git_ref(
-                    GitCfnginPackageSourceDefinitionModel(uri="git@foo", commit="1234")
-                )
-                == "1234"
-            )
-            assert (
-                sp.determine_git_ref(
-                    GitCfnginPackageSourceDefinitionModel(uri="git@foo", tag="v1.0.0")
-                )
-                == "v1.0.0"
-            )
+            assert sp.determine_git_ref(GitCfnginPackageSourceDefinitionModel(uri="git@foo", commit="1234")) == "1234"
+            assert sp.determine_git_ref(GitCfnginPackageSourceDefinitionModel(uri="git@foo", tag="v1.0.0")) == "v1.0.0"
 
 
 class MockException1(Exception):
