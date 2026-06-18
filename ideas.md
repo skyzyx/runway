@@ -72,21 +72,28 @@ There are different ways to deploy different technologies to the cloud. Provide 
 #### New features
 
 * Addition of multi-cloud support.
+  * What does this actually mean?
 
 ## Open questions
 
 * Is Runway a CLI, or a _system?_
 * What are the most useful _specific_ features?
 * What are the existing papercuts?
-* Kubernetes is a platform that you deploy atop.
-  * Does Runway set up the platform?
-  * Does it set up the things that drive the platform?
-  * How does Runway converge with ArgoCD?
+* ~~Kubernetes is a platform that you deploy atop.~~
+  * ~~Does Runway set up the platform?~~
+  * ~~Does it set up the things that drive the platform?~~
+  * ~~How does Runway converge with ArgoCD?~~
 * Is there a CI component?
   * Which CI systems should we support?
 * What is "the standardized query syntax" in `runway.cfngin.*`?
+* How does this compare to [Atmos](https://atmos.tools)?
+  * Terraform/OpenTofu
+  * DevContainers
+  * Ansible
+  * Packer
+  * Helmfile
 
-## Core tenets
+## Core tenets (unless you know better ones)
 
 * Make the lives of the users better.
   * Don't repeat yourself.
@@ -106,16 +113,13 @@ There are different ways to deploy different technologies to the cloud. Provide 
 
 ### Technologies
 
-Do we really need all these? Yes they exist, but are they necessary?
-
 * [AWS CloudFormation]
   * [AWS CDK]
   * [AWS Serverless Application Model][AWS SAM]
 * [Terraform]/[OpenTofu]
   * [Amazon S3] + [CloudFront]
-* [Kubernetes]
+* ~~Kubernetes~~
 * [Serverless Framework]
-* [DevContainers]
 
 ### Clouds/services
 
@@ -162,7 +166,7 @@ What is this integration, exactly?
   * Streaming buffer
   * Colors?
 
-## Development changes
+## Development changes (Python)
 
 * Publicly state that we only support Python versions which are not EOL.
   * Dropping EOL versions of Python is NOT a breaking change for Runway.
@@ -185,16 +189,70 @@ What is this integration, exactly?
   * [tryke] (replaces pytest)
   * [zuban] (replaces mypy)
 
+## Development changes (Go)
+
 * Migrate to Go, one feature at a time.
   * Maintain existing v2 (Python) alongside v3 (Go) until feature parity is achieved.
   * Go = improved performance + concurrency + no runtime dependencies
-    * Which features would benefit from concurrency?
+* Which features would benefit from concurrency?
+  * AWS CDK — [Don't fail on diff](https://runway.readthedocs.io/stable/cdk/configuration.html#aws-cdk-enablediffnofail).
+  * AWS CDK — [Run build steps in parallel](https://runway.readthedocs.io/stable/cdk/advanced_features.html#build-steps) (opt-in)
+    * Support updated YAML syntax which can name tasks and specify dependencies.
+  * [Plugin system](https://github.com/hashicorp/go-plugin)
+    * [go-embed-python](https://github.com/kluctl/go-embed-python) for running custom Python CFNgin plugins.
+    * Maybe we add support for new services using plugins?
+      * Want AWS CDK and Serverless? Just install those plugins!
+* Support same config formats as [Viper](https://github.com/spf13/viper).
+  * JSON
+  * TOML
+  * YAML
+  * INI
+  * .env
+  * Java Propeties
+* log_formats
+  * kv-string format: `time=2023-03-15T13:00:11.333+01:00 level=INFO msg="Info message"`
+  * JSON format: `{"time":"2023-03-15T13:00:11.333+01:00","level":"INFO","msg":"Info message"}`
+* Lookup system (feature)
+  * Don't try to lookup values from state files or whatever on-demand (need to look at implementation).
+  * Create a registry where these values are written by default; read from the registry.
+
+## Development changes (AI)
 
 * Adopt AI tooling and guardrails in the codebase
   * [Agent Toolkit for AWS](https://aws.amazon.com/products/developer-tools/agent-toolkit-for-aws/)
   * [Kirograph](https://github.com/davide-desio-eleva/kirograph)
   * Custom steering definitions
   * Instruct agents to use deterministic checks to validate code writing.
+
+## How CFNgin seems to work
+
+* It _seems_ as though CFNgin is an abstraction layer over Troposphere.
+* A LOT of work went into supporting CloudFormation.
+* YAML document with support for anchors and merges.
+* CloudFormation pushes CloudFormation templates (JSON/YAML) to S3, then the CloudFormation engine reads from there.
+  * AWS CLI works like that.
+  * AWS SAM works like that.
+  * Terraform deploying CloudFormation templates works like that.
+  * Not sure how CloudFormation Rain works, but _probably_ similar.
+  * Need an S3 bucket + region.
+* Lookup system — For [CFNgin](https://runway.readthedocs.io/stable/cfngin/lookups/index.html) and [Runway itself](https://runway.readthedocs.io/stable/lookups/index.html)
+* [Remote sources](https://runway.readthedocs.io/stable/cfngin/remote_sources.html) — Docs don't explain what this is for.
+* [Hook system](https://runway.readthedocs.io/stable/cfngin/hooks/index.html) — Pre/post events.
+* [Templating](https://runway.readthedocs.io/stable/cfngin/templates.html) with Jinja2
+* Blueprints — For both [Troposphere](https://github.com/cloudtools/troposphere) and [Runway itself](https://github.com/rackspace/runway/tree/master/runway/blueprints).
+  * Can we simply ship a compiler for these (separate from Runway 3) that compiles the Python code into CloudFormation YAML/JSON?
+  * Runway 3 just worries about deploying the finished templates to CloudFormation?
+* [Persistent dependency graph](https://runway.readthedocs.io/stable/cfngin/persistent_graph.html)
+  * Stored in S3.
+  * Supports locking — similar to [Terraform's locking S3 backend](https://developer.hashicorp.com/terraform/language/backend/s3).
+* Supports IAM roles for deployments (good)
+  * How does CI assume this role?
+
+## How static site configuration seems to work
+
+* Takes a YAML config and generates a CloudFormation template.
+* S3 + CloudFront + Cognito + Lambda@Edge + ACM + WAF
+* Candidate for removal?
 
 ## Documentation
 
@@ -225,14 +283,12 @@ What is this integration, exactly?
 [Azure]: https://azure.com
 [Cloudflare]: https://www.cloudflare.com/products/
 [CloudFront]: https://aws.amazon.com/cloudfront/
-[DevContainers]: https://containers.dev
 [editorconfig-checker]: https://editorconfig-checker.github.io
 [editorconfig]: https://editorconfig.org
 [GCP]: https://cloud.google.com
 [govulncheck]: https://go.dev/doc/tutorial/govulncheck
 [hk]: https://hk.jdx.dev
 [Jinja2]: https://pypi.org/project/Jinja2/
-[Kubernetes]: https://kubernetes.io
 [lychee]: https://lychee.cli.rs
 [OpenTofu]: https://opentofu.org
 [osv-scanner]: https://google.github.io/osv-scanner/
